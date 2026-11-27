@@ -93,7 +93,7 @@ onBeforeUnmount(() => {
       />
     </div>
     <aside
-      class="column detail-sidebar-column detail-sidebar-sheet"
+      class="detail-sidebar-column detail-sidebar-sheet"
       :class="{
         'is-open': isSheetOpen,
         'is-dragging': dragging,
@@ -123,7 +123,7 @@ onBeforeUnmount(() => {
     </aside>
   </Teleport>
 
-  <div v-else class="column detail-sidebar-column" :inert="hidden || undefined">
+  <div v-else class="detail-sidebar-column" :inert="hidden || undefined">
     <slot />
   </div>
 </template>

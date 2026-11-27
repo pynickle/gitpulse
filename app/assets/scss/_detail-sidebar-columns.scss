@@ -3,29 +3,40 @@
 // hiding the Detail Sidebar transitions grid-template-columns, mirroring the
 // repository file view precedent. $scope is the component's root selector.
 @mixin detail-sidebar-columns($scope) {
-  #{$scope} :deep(.columns) {
+  #{$scope} :deep(.detail-columns) {
     --detail-columns: minmax(0, 72%) minmax(0, 28%);
 
     display: grid;
     grid-template-columns: var(--detail-columns);
+    margin: 0;
     transition: grid-template-columns 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  #{$scope} :deep(.columns--detail-sidebar-hidden) {
+  #{$scope} :deep(.detail-columns--sidebar-hidden) {
     --detail-columns: minmax(0, 100%) minmax(0, 0%);
   }
 
+  #{$scope} :deep(.detail-main-column) {
+    min-width: 0;
+  }
+
   #{$scope} :deep(.detail-sidebar-column) {
+    min-width: 0;
+    padding-left: 0.75rem;
     transition:
       opacity 0.22s cubic-bezier(0.4, 0, 0.2, 1),
-      visibility 0.22s;
+      visibility 0.22s,
+      padding-left 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+      padding-right 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   /* Staged fade: while collapsing, the content fade lags the track collapse;
      while showing, it starts immediately. */
-  #{$scope} :deep(.columns--detail-sidebar-hidden .detail-sidebar-column) {
+  #{$scope} :deep(.detail-columns--sidebar-hidden .detail-sidebar-column) {
     opacity: 0;
     visibility: hidden;
+    padding-left: 0;
+    padding-right: 0;
     transition-delay: 0.06s;
   }
 
@@ -42,7 +53,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    #{$scope} :deep(.columns),
+    #{$scope} :deep(.detail-columns),
     #{$scope} :deep(.detail-sidebar-column) {
       transition: none;
     }
@@ -59,7 +70,7 @@
       padding: 1.25rem 1.25rem 1.5rem;
     }
 
-    #{$scope} :deep(.columns) {
+    #{$scope} :deep(.detail-columns) {
       display: block;
       height: auto;
     }
@@ -70,7 +81,7 @@
       overflow: visible;
     }
 
-    #{$scope} :deep(.columns > .detail-sidebar-column) {
+    #{$scope} :deep(.detail-columns > .detail-sidebar-column) {
       display: none;
     }
   }

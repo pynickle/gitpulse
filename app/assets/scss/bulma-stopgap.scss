@@ -1,26 +1,15 @@
 @use 'sass:meta';
 
 // Temporary layered Bulma stopgap (ADR 0057).
-// Excluded immediately: base/minireset, base/generic, base/skeleton, helpers/*,
-// grid/grid, components/{breadcrumb,dropdown,menu,message,modal,panel},
-// elements/{block,content,progress,table}, form/{file,select},
-// layout/{container,footer,section}.
+// Excluded: base/minireset, base/generic, base/skeleton, helpers/*,
+// grid/{grid,columns}, components/{breadcrumb,dropdown,menu,message,modal,navbar,pagination,panel,tabs},
+// elements/{block,box,content,loader,progress,table}, form/{file,select},
+// layout/{container,footer,hero,level,media,section}.
 @layer bulma {
   @layer components {
     // Core runtime required while any Bulma component module remains (#206)
     @include meta.load-css('bulma/sass/themes');
     @include meta.load-css('bulma/sass/base/animations');
-
-    // Layout & single-file relics (#200)
-    @include meta.load-css('bulma/sass/grid/columns');
-    @include meta.load-css('bulma/sass/components/navbar');
-    @include meta.load-css('bulma/sass/layout/hero');
-    @include meta.load-css('bulma/sass/components/tabs');
-    @include meta.load-css('bulma/sass/components/pagination');
-    @include meta.load-css('bulma/sass/layout/media');
-    @include meta.load-css('bulma/sass/layout/level');
-    @include meta.load-css('bulma/sass/elements/loader');
-    @include meta.load-css('bulma/sass/elements/box');
 
     // Forms, notices, delete, cards (#201)
     @include meta.load-css('bulma/sass/form/shared');

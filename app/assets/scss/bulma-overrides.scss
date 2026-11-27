@@ -93,23 +93,6 @@ html.dark {
   --bulma-link-soft: rgba(165, 180, 252, 0.14);
 }
 
-.hero-body {
-  padding: 0;
-}
-
-.hero {
-  background: var(--gitpulse-page-bg);
-  color: var(--bulma-text, var(--gitpulse-text));
-}
-
-.navbar {
-  border-bottom: 1px solid var(--gitpulse-border);
-  background-color: var(--gitpulse-surface);
-  box-shadow: none;
-  transition: $theme-transition;
-}
-
-.navbar .title,
 .title,
 .label,
 .has-text-weight-semibold {
@@ -124,15 +107,10 @@ html.dark {
   color: var(--gitpulse-text-muted);
 }
 
-.card,
-.box {
+.card {
   border-color: var(--gitpulse-border);
   background-color: var(--gitpulse-surface);
   color: var(--bulma-text, var(--gitpulse-text));
-}
-
-.box {
-  box-shadow: var(--gitpulse-shadow-raised);
 }
 
 .input,
@@ -397,17 +375,6 @@ html.dark {
   border: 1px solid var(--gitpulse-border);
   background-color: var(--gitpulse-surface-muted);
   color: var(--bulma-text, var(--gitpulse-text));
-}
-
-.tabs a {
-  color: var(--gitpulse-text-muted);
-
-  @include hover-only {
-    &:hover {
-      border-bottom-color: var(--gitpulse-border-strong);
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
-    }
-  }
 }
 
 .delete {

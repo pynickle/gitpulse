@@ -29,10 +29,10 @@ const showNavbar = computed(() => {
     <main
       id="main-content"
       tabindex="-1"
-      class="hero dashboard-shell"
-      :class="showNavbar ? 'is-fullheight-with-navbar' : 'is-fullheight'"
+      class="dashboard-shell"
+      :class="showNavbar ? 'dashboard-shell--with-navbar' : 'dashboard-shell--fullheight'"
     >
-      <div class="hero-body dashboard-shell__body">
+      <div class="dashboard-shell__body">
         <NuxtPage />
       </div>
     </main>
@@ -40,19 +40,37 @@ const showNavbar = computed(() => {
 </template>
 
 <style scoped lang="scss">
-.dashboard-shell__body {
+.dashboard-shell {
+  display: flex;
+  flex-direction: column;
   align-items: stretch;
+  justify-content: space-between;
+}
+
+.dashboard-shell--fullheight {
+  min-height: 100vh;
+}
+
+.dashboard-shell--with-navbar {
+  min-height: calc(100vh - var(--gitpulse-topbar-height));
+}
+
+.dashboard-shell__body {
+  display: flex;
+  flex: 1 0 auto;
+  align-items: stretch;
+  padding: 0;
 }
 
 @media (max-width: 860px) {
-  .dashboard-frame--home :deep(.navbar) {
+  .dashboard-frame--home :deep(.top-navbar) {
     display: none;
   }
 
   .dashboard-frame--home,
   .dashboard-frame--home .dashboard-shell,
-  .dashboard-frame--home .dashboard-shell.is-fullheight,
-  .dashboard-frame--home .dashboard-shell.is-fullheight-with-navbar {
+  .dashboard-frame--home .dashboard-shell--fullheight,
+  .dashboard-frame--home .dashboard-shell--with-navbar {
     height: var(--gitpulse-frame-height);
     max-height: var(--gitpulse-frame-height);
     min-height: 0;

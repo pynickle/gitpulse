@@ -664,8 +664,8 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 
 <template>
   <div class="repo-detail-layout">
-    <div class="columns" :class="{ 'columns--detail-sidebar-hidden': detailSidebarHidden }">
-      <div class="column detail-main-column">
+    <div class="detail-columns" :class="{ 'detail-columns--sidebar-hidden': detailSidebarHidden }">
+      <div class="detail-main-column">
         <section class="repo-detail-header">
           <div class="repo-detail-header__title-row">
             <GitHubIcon :size="28" class="repo-detail-header__icon" />
@@ -1111,7 +1111,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
   min-height: 100%;
 }
 
-.repo-detail-layout :deep(.columns) {
+.repo-detail-layout :deep(.detail-columns) {
   align-items: flex-start;
   margin-bottom: 0;
 }
@@ -1150,8 +1150,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
   display: flex;
   flex-direction: column;
   min-height: 0;
-  /* Column padding plus the gap the sticky inset used to add. */
-  padding-top: calc(var(--bulma-column-gap) + var(--repo-detail-sidebar-extra-top-gap));
+  padding-top: var(--repo-detail-sidebar-extra-top-gap);
   padding-right: 1rem;
   box-sizing: border-box;
 }
@@ -1164,7 +1163,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 /* The header section wraps the whole main column, so this readability cap is
    lifted while the Detail Sidebar is hidden and the main column is expected
    to fill the overlay width. */
-.repo-detail-layout .columns--detail-sidebar-hidden .repo-detail-header {
+.repo-detail-layout .detail-columns--sidebar-hidden .repo-detail-header {
   max-width: none;
 }
 
@@ -1878,7 +1877,7 @@ html.dark .repo-detail-section__chrome {
 @include sidebar-github-link;
 
 @media screen and (max-width: 1024px) {
-  .repo-detail-layout :deep(.columns) {
+  .repo-detail-layout :deep(.detail-columns) {
     display: block;
   }
 
@@ -1891,7 +1890,7 @@ html.dark .repo-detail-section__chrome {
     min-height: 0;
   }
 
-  .repo-detail-layout :deep(.columns > .detail-sidebar-column) {
+  .repo-detail-layout :deep(.detail-columns > .detail-sidebar-column) {
     display: none;
   }
 

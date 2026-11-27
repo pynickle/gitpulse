@@ -1,5 +1,5 @@
 <template>
-  <nav class="navbar" role="navigation" aria-label="main navigation">
+  <nav class="top-navbar" role="navigation" aria-label="main navigation">
     <div class="navbar-bar">
       <NavbarBrand :title-tag="variant === 'public' ? 'span' : 'h1'" />
       <div
@@ -21,6 +21,17 @@ const { variant = 'app' } = defineProps<{ variant?: 'app' | 'public' }>();
 
 <style scoped lang="scss">
 @use '~/assets/scss/pointer' as *;
+@use '~/assets/scss/variables' as *;
+
+.top-navbar {
+  position: relative;
+  z-index: 30;
+  min-height: var(--gitpulse-topbar-height);
+  border-bottom: 1px solid var(--gitpulse-border);
+  background-color: var(--gitpulse-surface);
+  box-shadow: none;
+  transition: $theme-transition;
+}
 
 .navbar-bar {
   display: flex;

@@ -447,3 +447,31 @@ test('clicking the total while the field is open selects the page number again',
   expect(page.pageInput().selectionStart).toBe(0);
   expect(page.pageInput().selectionEnd).toBe(1);
 });
+
+test('wide pagination renders semantic controls and emits page changes without Bulma classes', async () => {
+  const page = harness({
+    page: 5,
+    perPage: 30,
+    hasPrev: true,
+    hasNext: true,
+    totalCount: 300,
+    totalPages: 10,
+  });
+  await flush();
+
+  const nav = page.dom.document.querySelector<HTMLElement>('nav.dashboard-pagination')!;
+  expect(nav).not.toBeNull();
+  expect(nav.classList.contains('pagination')).toBe(false);
+  expect(nav.querySelector('.pagination-list')).toBeNull();
+
+  const current = nav.querySelector<HTMLButtonElement>('.dashboard-pagination__link.is-current');
+  expect(current?.textContent?.trim()).toBe('5');
+  expect(current?.getAttribute('aria-current')).toBe('page');
+  expect(nav.querySelectorAll('.dashboard-pagination__ellipsis').length).toBeGreaterThan(0);
+
+  nav.querySelector<HTMLButtonElement>('.dashboard-pagination__prev')!.click();
+  nav.querySelector<HTMLButtonElement>('.dashboard-pagination__next')!.click();
+  nav.querySelector<HTMLButtonElement>('.dashboard-pagination__link:not(.is-current)')!.click();
+
+  expect(page.changes).toEqual([4, 6, 1]);
+});

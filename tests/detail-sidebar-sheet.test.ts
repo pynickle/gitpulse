@@ -57,8 +57,8 @@ const DetailPeoplePickerModal = await compileVue(
 const detailPane = defineComponent({
   props: { detailSidebarHidden: Boolean },
   setup: (props) => () =>
-    h('div', { class: 'columns' }, [
-      h('div', { class: 'column detail-main-column' }, [
+    h('div', { class: 'detail-columns' }, [
+      h('div', { class: 'detail-main-column' }, [
         h('button', { class: 'page-control', type: 'button' }, 'page'),
       ]),
       h(
@@ -227,7 +227,7 @@ test('a wide viewport leaves the Detail Sidebar inline and ignores outside click
   try {
     const view = await mountHost(dom);
 
-    const columns = view.root.querySelector('.columns');
+    const columns = view.root.querySelector('.detail-columns');
     expect(columns?.querySelector('.detail-sidebar-column')).not.toBeNull();
     expect(view.root.querySelector('.detail-sidebar-sheet-backdrop')).toBeNull();
     expect(view.root.querySelector('.detail-sidebar-sheet')).toBeNull();

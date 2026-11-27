@@ -22,10 +22,14 @@
       @switch-pull-request="switchToPullRequest"
     />
 
-    <div v-else class="columns" :class="{ 'columns--detail-sidebar-hidden': detailSidebarHidden }">
+    <div
+      v-else
+      class="detail-columns"
+      :class="{ 'detail-columns--sidebar-hidden': detailSidebarHidden }"
+    >
       <ScrollArea
         @scroll-element="mainColumnRef = $event"
-        class="column detail-main-column"
+        class="detail-main-column"
         @scroll="onCompactHeaderScroll"
         media="(min-width: 1025px)"
       >
@@ -1260,7 +1264,7 @@ watch(
 @use '~/assets/scss/detail-sidebar-columns' as *;
 @use '~/assets/scss/pointer' as *;
 
-.pr-detail-layout :deep(.columns) {
+.pr-detail-layout :deep(.detail-columns) {
   height: 100%;
   min-height: 0;
   align-items: stretch;

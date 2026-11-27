@@ -96,8 +96,8 @@ usePageMeta(
 
 <template>
   <ScrollArea class="release-detail detail-scroll" media="(max-width: 1024px)">
-    <div class="columns" :class="{ 'columns--detail-sidebar-hidden': detailSidebarHidden }">
-      <ScrollArea class="column detail-main-column" media="(min-width: 1025px)">
+    <div class="detail-columns" :class="{ 'detail-columns--sidebar-hidden': detailSidebarHidden }">
+      <ScrollArea class="detail-main-column" media="(min-width: 1025px)">
         <header class="release-header">
           <div class="detail-header-eyebrow release-header__eyebrow">
             <a
@@ -258,7 +258,7 @@ usePageMeta(
   overflow: hidden;
 }
 
-.detail-scroll :deep(.columns) {
+.detail-scroll :deep(.detail-columns) {
   height: 100%;
   min-height: 0;
   align-items: stretch;
