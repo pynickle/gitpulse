@@ -43,6 +43,7 @@ import { parseCanonicalOrigin } from '#shared/utils/canonical-origin';
 import AuthenticatedLandingCard from '~/components/auth/AuthenticatedLandingCard.vue';
 import AuthGateway from '~/components/auth/AuthGateway.vue';
 import PersonalLockForm from '~/components/auth/PersonalLockForm.vue';
+import PublicAuthCard from '~/components/auth/PublicAuthCard.vue';
 import LoadingIcon from '~/components/ui/LoadingIcon.vue';
 
 const { user, loggedIn, fetch: fetchUserSession } = useUserSession();
