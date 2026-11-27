@@ -283,6 +283,12 @@ const pageItems = computed(() => {
   gap: 0.125rem;
 }
 
+.pagination-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
 .pagination-link,
 .pagination-previous,
 .pagination-next {

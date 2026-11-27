@@ -97,8 +97,7 @@ html.dark {
   padding: 0;
 }
 
-.hero,
-.section {
+.hero {
   background: var(--gitpulse-page-bg);
   color: var(--bulma-text, var(--gitpulse-text));
 }
@@ -113,8 +112,7 @@ html.dark {
 .navbar .title,
 .title,
 .label,
-.has-text-weight-semibold,
-.has-text-weight-bold {
+.has-text-weight-semibold {
   color: var(--bulma-text-strong, var(--gitpulse-text-strong));
 }
 
@@ -123,66 +121,22 @@ html.dark {
 .has-text-grey,
 .has-text-grey-dark,
 .has-text-grey-light {
-  color: var(--gitpulse-text-muted) !important;
+  color: var(--gitpulse-text-muted);
 }
 
 .card,
-.box,
-.modal-card,
-.dropdown-content,
-.panel {
+.box {
   border-color: var(--gitpulse-border);
   background-color: var(--gitpulse-surface);
   color: var(--bulma-text, var(--gitpulse-text));
 }
 
-.dropdown-content,
-.box,
-.modal-card {
+.box {
   box-shadow: var(--gitpulse-shadow-raised);
 }
 
-.dropdown-item {
-  color: var(--bulma-text, var(--gitpulse-text));
-
-  @include hover-only {
-    &:hover {
-      background-color: var(--gitpulse-surface-hover);
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
-    }
-  }
-
-  &:focus-visible {
-    background-color: var(--gitpulse-surface-hover);
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
-  }
-
-  &.is-active {
-    background-color: var(--gitpulse-accent);
-    color: #fff;
-  }
-}
-
-.navbar-item,
-.navbar-link {
-  color: var(--bulma-text, var(--gitpulse-text));
-
-  @include hover-only {
-    &:hover {
-      background-color: var(--gitpulse-surface-hover);
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
-    }
-  }
-
-  &:focus-visible {
-    background-color: var(--gitpulse-surface-hover);
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
-  }
-}
-
 .input,
-.textarea,
-.select select {
+.textarea {
   border-color: var(--gitpulse-input-border);
   background-color: var(--gitpulse-input-bg);
   color: var(--bulma-text-strong, var(--gitpulse-text-strong));
@@ -192,8 +146,7 @@ html.dark {
   }
 }
 
-.checkbox,
-.radio {
+.checkbox {
   color: var(--bulma-text, var(--gitpulse-text));
 }
 
@@ -366,6 +319,22 @@ html.dark {
   }
 }
 
+.button.is-loading {
+  color: transparent;
+
+  @include hover-only {
+    &:hover {
+      color: transparent;
+    }
+  }
+
+  &:focus-visible,
+  &:active,
+  &:disabled {
+    color: transparent;
+  }
+}
+
 .tag.is-light,
 .tag:not([class*='is-']) {
   border: 1px solid var(--gitpulse-border);
@@ -423,22 +392,11 @@ html.dark {
   color: var(--gitpulse-warning);
 }
 
-.tag.is-dark {
-  background-color: var(--gitpulse-surface-raised);
-  color: var(--gitpulse-text-strong);
-}
-
 .notification.is-light,
 .notification:not([class*='is-']) {
   border: 1px solid var(--gitpulse-border);
   background-color: var(--gitpulse-surface-muted);
   color: var(--bulma-text, var(--gitpulse-text));
-}
-
-.tabs.is-boxed li.is-active a {
-  border-color: var(--gitpulse-border);
-  background-color: var(--gitpulse-surface);
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
 }
 
 .tabs a {
@@ -450,37 +408,6 @@ html.dark {
       color: var(--bulma-text-strong, var(--gitpulse-text-strong));
     }
   }
-}
-
-.table {
-  background-color: var(--gitpulse-surface);
-  color: var(--bulma-text, var(--gitpulse-text));
-}
-
-.table th,
-.table td {
-  border-color: var(--gitpulse-border);
-  color: var(--bulma-text, var(--gitpulse-text));
-}
-
-.table th {
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
-}
-
-.modal-card-head,
-.modal-card-body,
-.modal-card-foot {
-  border-color: var(--gitpulse-border);
-  background-color: var(--gitpulse-surface);
-  color: var(--bulma-text, var(--gitpulse-text));
-}
-
-.modal-card-foot {
-  background-color: var(--gitpulse-surface-muted);
-}
-
-.modal-card-title {
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
 }
 
 .delete {
@@ -498,29 +425,29 @@ html.dark {
 }
 
 .has-background-grey-lighter {
-  background-color: var(--gitpulse-surface-muted) !important;
+  background-color: var(--gitpulse-surface-muted);
 }
 
 .has-text-primary {
-  color: var(--gitpulse-accent) !important;
+  color: var(--gitpulse-accent);
 }
 
 .has-text-link {
-  color: var(--gitpulse-link) !important;
+  color: var(--gitpulse-link);
 }
 
 .has-text-info {
-  color: var(--gitpulse-info) !important;
+  color: var(--gitpulse-info);
 }
 
 .has-text-success {
-  color: var(--gitpulse-success) !important;
+  color: var(--gitpulse-success);
 }
 
 .has-text-warning {
-  color: var(--gitpulse-warning) !important;
+  color: var(--gitpulse-warning);
 }
 
 .has-text-danger {
-  color: var(--gitpulse-danger) !important;
+  color: var(--gitpulse-danger);
 }

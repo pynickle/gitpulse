@@ -1617,15 +1617,15 @@ watch(
     }
   }
 
-  // Bulma's spacing helpers are `!important`, so the wide layout's scrollbar clearance —
-  // the rows' own `mr-4` — can only be reshaped at the same weight. Keep exactly one
-  // track's width here instead of the wide 1rem: the overlay thumb is 10px wide and sits
-  // inside the panel, so the row has to stand off it by that much on top of its own
-  // 0.25rem margin. That leaves the panel 0.75rem on the left and top, ~1.4rem right.
+  // Keep exactly one scrollbar track's width here instead of the wide 1rem (`mr-4`):
+  // the overlay thumb is 10px wide and sits inside the panel, so the row has to stand
+  // off it by that much on top of its own 0.25rem margin. Bulma spacing helpers live
+  // in `@layer bulma` without `!important`, so unlayered scoped rules win cleanly and
+  // the pagination footer's `:last-child` `margin-bottom: 0` below stays effective.
   .dashboard-list-row,
   :deep(.dashboard-loading-list > .mb-4) {
-    margin-block-end: 0.5rem !important;
-    margin-right: var(--gitpulse-scrollbar-track-size) !important;
+    margin-block-end: 0.5rem;
+    margin-right: var(--gitpulse-scrollbar-track-size);
   }
 
   // A row inside the narrow column may never widen it; the subject wraps instead.
