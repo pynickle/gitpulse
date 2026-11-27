@@ -65,7 +65,7 @@ onScopeDispose(clearFoldTimer);
 <template>
   <div v-if="minimized" class="comment-hidden">
     <div class="comment-hidden__notice">
-      <span class="tag is-light comment-hidden__state">
+      <span class="gp-tag comment-hidden__state">
         <EyeOffIcon class="comment-hidden__icon" :size="12" aria-hidden="true" />
         <span class="comment-hidden__label">{{ t('commentModeration.hidden') }}</span>
         <template v-if="reason">

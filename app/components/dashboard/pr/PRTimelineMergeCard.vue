@@ -43,7 +43,7 @@
         "
         target="_blank"
         rel="noopener"
-        class="merge-sha tag is-family-monospace ml-3"
+        class="merge-sha gp-tag is-family-monospace ml-3"
       >
         {{ item.commit.oid.slice(0, 7) }}
       </a>

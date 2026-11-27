@@ -15,8 +15,8 @@
       </div>
 
       <p class="auth-shell__eyebrow mb-3">{{ t('landing.sessionReady') }}</p>
-      <h2 class="title is-3 mb-2">{{ user.name }}</h2>
-      <p class="subtitle is-6 has-text-grey mb-5">@{{ user.login }}</p>
+      <h2 class="auth-shell__title mb-2">{{ user.name }}</h2>
+      <p class="auth-shell__subtitle has-text-grey mb-5">@{{ user.login }}</p>
 
       <div class="gp-btn-group is-flex is-flex-direction-column auth-shell__actions">
         <Button size="large" block @click="handleGoToDashboard">
@@ -76,6 +76,20 @@ const handleGoToDashboard = async () => {
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--gitpulse-accent);
+}
+
+.auth-shell__title {
+  color: var(--gitpulse-text-strong);
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.125;
+}
+
+.auth-shell__subtitle {
+  color: var(--gitpulse-text-muted);
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.25;
 }
 
 .auth-shell__actions {

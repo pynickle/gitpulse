@@ -103,7 +103,7 @@
             class="dashboard-tabs-header"
           >
             <div v-if="dashboardHomeChrome.showListTitleRow" class="dashboard-tabs-header__lead">
-              <h2 class="title is-5 dashboard-tab-title">{{ currentTabTitle }}</h2>
+              <h2 class="dashboard-tab-title">{{ currentTabTitle }}</h2>
               <span
                 v-if="dashboardHomeChrome.showCustomSubtitle && currentTabSubtitle"
                 class="dashboard-tab-subtitle"
@@ -1714,7 +1714,9 @@ watch(
 
 .dashboard-tab-title {
   margin-bottom: 0;
+  font-size: 1.25rem;
   font-weight: 700;
+  line-height: 1.125;
   color: var(--gitpulse-text-strong);
   letter-spacing: -0.01em;
   flex-shrink: 0;

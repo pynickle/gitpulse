@@ -206,7 +206,7 @@ watch(repoFullName, () => {
     <div class="releases-page">
       <div class="releases-page__header">
         <div class="releases-page__heading">
-          <h1 class="title is-5 mb-0 is-flex is-align-items-center">
+          <h1 class="releases-page__title mb-0 is-flex is-align-items-center">
             <TagIcon :size="18" class="mr-2" aria-hidden="true" />
             {{ t('releasesPage.heading') }}
           </h1>
@@ -327,6 +327,13 @@ watch(repoFullName, () => {
   flex-wrap: wrap;
   gap: 0.25rem 0.75rem;
   min-width: 0;
+}
+
+.releases-page__title {
+  color: var(--gitpulse-text-strong);
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.125;
 }
 
 .releases-page__repo {

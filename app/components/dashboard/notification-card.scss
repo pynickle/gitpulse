@@ -57,6 +57,13 @@ $transition-hint:
 // Notification Type Badges
 // ============================================
 
+.notification-card__avatar {
+  position: relative;
+  display: block;
+  width: 32px;
+  height: 32px;
+}
+
 .notification-type-badge {
   position: absolute;
   right: $badge-offset;

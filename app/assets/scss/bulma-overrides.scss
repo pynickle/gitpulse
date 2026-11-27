@@ -1,68 +1,11 @@
-.title,
 .has-text-weight-semibold {
   color: var(--gitpulse-text-strong);
 }
 
-.subtitle,
 .has-text-grey,
 .has-text-grey-dark,
 .has-text-grey-light {
   color: var(--gitpulse-text-muted);
-}
-
-.tag.is-light,
-.tag:not([class*='is-']) {
-  border: 1px solid var(--gitpulse-border);
-  background-color: var(--gitpulse-surface-muted);
-  color: var(--gitpulse-text-strong);
-}
-
-.tag.is-activity {
-  margin-bottom: 0.3rem;
-  font-size: 0.62rem;
-  font-weight: bold;
-}
-
-.tag.is-info.is-light {
-  border: 1px solid color-mix(in srgb, var(--gitpulse-info) 22%, transparent);
-  background-color: var(--gitpulse-info-soft);
-  color: var(--gitpulse-info);
-}
-
-.tag.is-link.is-light {
-  border: 1px solid color-mix(in srgb, var(--gitpulse-link) 24%, transparent);
-  background-color: var(--gitpulse-link-soft);
-  color: var(--gitpulse-link);
-}
-
-.tag.is-primary.is-light {
-  border: 1px solid color-mix(in srgb, var(--gitpulse-primary-solid) 24%, transparent);
-  background-color: var(--gitpulse-accent-soft);
-  color: var(--gitpulse-accent);
-}
-
-.tag.is-black.is-light {
-  border: 1px solid var(--gitpulse-border);
-  background-color: var(--gitpulse-surface-raised);
-  color: var(--gitpulse-text-strong);
-}
-
-.tag.is-success.is-light {
-  border: 1px solid color-mix(in srgb, var(--gitpulse-success) 24%, transparent);
-  background-color: var(--gitpulse-success-soft);
-  color: var(--gitpulse-success);
-}
-
-.tag.is-danger.is-light {
-  border: 1px solid color-mix(in srgb, var(--gitpulse-danger) 24%, transparent);
-  background-color: var(--gitpulse-danger-soft);
-  color: var(--gitpulse-danger);
-}
-
-.tag.is-warning.is-light {
-  border: 1px solid color-mix(in srgb, var(--gitpulse-warning) 28%, transparent);
-  background-color: var(--gitpulse-warning-soft);
-  color: var(--gitpulse-warning);
 }
 
 .has-background-grey-lighter {

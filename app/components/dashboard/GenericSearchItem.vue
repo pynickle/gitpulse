@@ -11,12 +11,12 @@
         </div>
         <div class="dashboard-list-card__content">
           <div class="dashboard-list-card__text-stack">
-            <p class="title is-6 mb-1 dashboard-list-card__title">
+            <p class="mb-1 dashboard-list-card__title">
               {{ title }}
             </p>
-            <p class="subtitle is-7 has-text-grey mb-2 dashboard-list-card__meta">
+            <p class="has-text-grey mb-2 dashboard-list-card__meta">
               <span class="dashboard-list-card__repo">{{ meta }}</span>
-              <span v-if="numberLabel" class="tag is-small dashboard-list-card__number">
+              <span v-if="numberLabel" class="gp-tag gp-tag--small dashboard-list-card__number">
                 {{ numberLabel }}
               </span>
               <span v-if="timeLabel" class="dashboard-list-card__separator">&middot;</span>
@@ -133,12 +133,16 @@ const icon = computed(() => {
 
 <style scoped lang="scss" src="~/assets/scss/dashboard-list-card.scss" />
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .generic-search-card {
   color: inherit;
   text-decoration: none;
 
-  &:hover {
-    border-color: var(--gitpulse-accent);
+  @include hover-only {
+    &:hover {
+      border-color: var(--gitpulse-accent);
+    }
   }
 }
 

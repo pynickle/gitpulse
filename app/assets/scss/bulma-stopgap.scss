@@ -3,26 +3,20 @@
 // Temporary layered Bulma stopgap (ADR 0057).
 // Excluded: base/minireset, base/generic, base/skeleton, helpers/*,
 // grid/{grid,columns}, components/{breadcrumb,card,dropdown,menu,message,modal,navbar,pagination,panel,tabs},
-// elements/{block,box,button,content,delete,loader,notification,progress,table},
+// elements/{block,box,button,content,delete,icon,image,loader,notification,progress,table,tag,title},
 // form/{checkbox-radio,file,input-textarea,select,shared,tools},
 // layout/{container,footer,hero,level,media,section}.
 @layer bulma {
   @layer components {
-    // Core runtime required while any Bulma component module remains (#206)
+    // Core runtime required while any Bulma stopgap remains (#206)
     @include meta.load-css('bulma/sass/themes');
     @include meta.load-css('bulma/sass/base/animations');
-
-    // Tags, titles, icons, images (#203)
-    @include meta.load-css('bulma/sass/elements/tag');
-    @include meta.load-css('bulma/sass/elements/title');
-    @include meta.load-css('bulma/sass/elements/icon');
-    @include meta.load-css('bulma/sass/elements/image');
   }
 
   // Thin, non-!important compatibility sheet for active utility helpers (#204/#205).
   // Layered after `bulma.components` so helpers override Bulma component defaults
-  // (e.g. `.title:not(:last-child)`) without `!important`, while all unlayered
-  // application and Vue scoped styles override both by normal cascade order.
+  // without `!important`, while all unlayered application and Vue scoped styles
+  // override both by normal cascade order.
   @layer helpers {
     // Color
     .has-text-grey,

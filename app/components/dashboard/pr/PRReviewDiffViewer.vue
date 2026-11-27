@@ -464,7 +464,7 @@ onBeforeUnmount(() => {
             aria-hidden="true"
           />
           <div class="pr-review-diff-viewer__header-info">
-            <h2 class="title is-6 mb-0 pr-review-diff-viewer__file-title">
+            <h2 class="mb-0 pr-review-diff-viewer__file-title">
               <a
                 v-if="opensGitHubLinks && getFilePreferredHref(section.file.filename)"
                 :href="getFilePreferredHref(section.file.filename)!"
@@ -702,8 +702,11 @@ html.dark .pr-review-diff-viewer__header {
   gap: 0.12rem;
 }
 
-.pr-review-diff-viewer__header-info .title {
+.pr-review-diff-viewer__file-title {
+  color: var(--gitpulse-text-strong);
   font-size: 0.875rem;
+  font-weight: 800;
+  line-height: 1.125;
 }
 
 .pr-review-diff-viewer__header-meta {

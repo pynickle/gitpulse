@@ -3,11 +3,8 @@
     <div class="dashboard-list-card__body p-3 pl-4">
       <div class="dashboard-list-card__content">
         <div class="dashboard-list-card__text-stack mb-2">
-          <p class="title is-6 mb-1 dashboard-list-card__title">{{ repo.name }}</p>
-          <p
-            v-if="repo.description"
-            class="subtitle is-7 has-text-grey mb-0 dashboard-list-card__description"
-          >
+          <p class="mb-1 dashboard-list-card__title">{{ repo.name }}</p>
+          <p v-if="repo.description" class="has-text-grey mb-0 dashboard-list-card__description">
             {{ repo.description }}
           </p>
         </div>

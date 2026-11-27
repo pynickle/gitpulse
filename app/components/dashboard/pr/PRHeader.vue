@@ -15,7 +15,7 @@
 
     <!-- Tier 2: Full-width Title -->
     <div class="detail-header-title">
-      <h1 class="title is-3 mb-0 header-title__text">{{ pullRequest?.title }}</h1>
+      <h1 class="mb-0 header-title__text">{{ pullRequest?.title }}</h1>
     </div>
 
     <!-- Tier 3: Single-line Status Strip -->

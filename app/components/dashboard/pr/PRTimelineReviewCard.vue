@@ -44,7 +44,7 @@
           {{ t('prReview.timelineDismissedNote') }}
         </span>
         <TimelineEventTime class="review-item__time has-text-grey" :date="item.createdAt" />
-        <span v-if="item.copilotReviewEffort" class="tag is-activity is-info is-light">
+        <span v-if="item.copilotReviewEffort" class="gp-tag gp-tag--activity gp-tag--info">
           {{ t(`prReview.copilot.${item.copilotReviewEffort}`) }}
         </span>
       </div>
@@ -170,7 +170,7 @@
                 </span>
                 <span
                   v-if="comment.isOutdated"
-                  class="tag is-warning is-light review-item__outdated-tag"
+                  class="gp-tag gp-tag--warning review-item__outdated-tag"
                 >
                   {{ t('prReview.threadOutdated') }}
                 </span>

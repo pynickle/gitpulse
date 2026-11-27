@@ -1,7 +1,7 @@
 <template>
   <div>
     <div v-if="loading" class="pr-timeline-events__loading mb-4 is-flex is-align-items-center">
-      <LoadingIcon class="icon" />
+      <LoadingIcon :size="16" aria-hidden="true" />
       <span class="ml-2 is-size-7 has-text-grey">{{ t('detailTimeline.loading') }}</span>
     </div>
 

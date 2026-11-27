@@ -42,11 +42,11 @@
         :href="item.commit.commitUrl"
         target="_blank"
         rel="noopener"
-        class="tag is-light is-family-monospace ml-3"
+        class="gp-tag is-family-monospace ml-3"
       >
         {{ item.commit?.oid?.slice(0, 7) }}
       </a>
-      <span v-else class="tag is-light is-family-monospace ml-3">
+      <span v-else class="gp-tag is-family-monospace ml-3">
         {{ item.commit?.oid?.slice(0, 7) || t('issueDetail.commitFallbackRef') }}
       </span>
     </div>

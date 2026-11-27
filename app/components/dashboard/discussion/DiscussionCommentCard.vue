@@ -87,7 +87,7 @@ const submitReplyDraft = async (body: string) => {
         <span class="discussion-comment__time is-size-7 has-text-grey">
           {{ formatDurationFromNow(comment.createdAt || '', localeCode, relativeTimeNow) }}
         </span>
-        <span v-if="comment.isAnswer" class="tag is-success is-light is-small ml-auto">
+        <span v-if="comment.isAnswer" class="gp-tag gp-tag--success gp-tag--small ml-auto">
           <CircleCheckIcon :size="14" />
           {{ t('discussionDetail.answer') }}
         </span>

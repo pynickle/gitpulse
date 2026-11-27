@@ -16,7 +16,7 @@ $hover-capable: '(hover: hover) and (pointer: fine)';
 // copy. A `[role="button"]` row and the list card are deliberately absent: both are
 // usually a title a reader may want to select, and refusing a press answer does not
 // have to take the text away with it.
-$unselectable-chrome: 'button, summary, .tag, .gp-btn, .gp-tag, .gp-dismiss, .gitpulse-floating-fab';
+$unselectable-chrome: 'button, summary, .gp-btn, .gp-tag, .gp-dismiss, .gitpulse-floating-fab';
 
 // The one gate for a hover state. Everything a pointer-only affordance paints —
 // tint, border, shadow, a revealed control — goes inside this.

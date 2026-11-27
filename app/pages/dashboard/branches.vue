@@ -237,7 +237,7 @@ watch(repoFullName, () => {
     <div class="branches-page">
       <div class="branches-page__header">
         <div class="branches-page__heading">
-          <h1 class="title is-5 mb-0 is-flex is-align-items-center">
+          <h1 class="branches-page__title mb-0 is-flex is-align-items-center">
             <GitBranchIcon :size="18" class="mr-2" aria-hidden="true" />
             {{ t('branchesPage.heading') }}
           </h1>
@@ -335,10 +335,10 @@ watch(repoFullName, () => {
                 <GitBranchIcon :size="15" class="branches-page__item-icon" aria-hidden="true" />
                 <span class="branches-page__item-title">{{ branch.name }}</span>
 
-                <span v-if="branch.isDefault" class="tag is-success is-light">
+                <span v-if="branch.isDefault" class="gp-tag gp-tag--success">
                   {{ t('branchesPage.default') }}
                 </span>
-                <span v-if="branch.protected" class="tag is-info is-light">
+                <span v-if="branch.protected" class="gp-tag gp-tag--info">
                   {{ t('branchesPage.protected') }}
                 </span>
               </div>
@@ -458,6 +458,13 @@ watch(repoFullName, () => {
   flex-wrap: wrap;
   gap: 0.25rem 0.75rem;
   min-width: 0;
+}
+
+.branches-page__title {
+  color: var(--gitpulse-text-strong);
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.125;
 }
 
 .branches-page__repo {
