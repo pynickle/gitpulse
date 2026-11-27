@@ -4,6 +4,7 @@ import { computed, ref, toRef, type Component } from 'vue';
 
 import type { PackageSummary, PackageType, PackageTypeFilter } from '#shared/types/packages';
 import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
+import Button from '~/components/ui/Button.vue';
 import { useUserPackages } from '~/composables/useUserPackages';
 
 interface PackageFilterOption {
@@ -115,9 +116,9 @@ const updatedLabel = (pkg: PackageSummary) => {
 
     <div v-if="error" class="profile-package-list__status profile-package-list__status--error">
       <p>{{ error }}</p>
-      <button type="button" class="button is-small is-light" @click="refresh">
+      <Button variant="light" size="small" @click="refresh">
         {{ t('profile.retry') }}
-      </button>
+      </Button>
     </div>
 
     <template v-else>

@@ -198,7 +198,7 @@ watch(repoFullName, () => {
           <button
             type="button"
             v-if="repoTarget"
-            class="contributors-page__repo button is-ghost is-small"
+            class="contributors-page__repo gp-btn gp-btn--ghost gp-btn--small"
             :title="t('contributorsPage.openRepo')"
             @click="handleRepoClick"
           >

@@ -3,6 +3,7 @@ import { computed } from 'vue';
 
 import type { PRReviewWorkspaceMode } from '#shared/utils/pr-review-workspace-presentation';
 import MarkdownComposer from '~/components/dashboard/composer/MarkdownComposer.vue';
+import Button from '~/components/ui/Button.vue';
 
 const { body } = defineProps<{
   path: string;
@@ -47,22 +48,17 @@ const trimmedDraft = computed(() => draft.value.trim());
           {{ t('prReview.lineLabel', { line }) }}
         </span>
         <div class="pr-review-inline-comment__actions">
-          <button
-            class="button is-small is-light"
-            type="button"
-            :disabled="submitting"
-            @click="emit('cancel')"
-          >
+          <Button variant="light" size="small" :disabled="submitting" @click="emit('cancel')">
             {{ t('prReview.cancelDraft') }}
-          </button>
-          <button
-            class="button is-small is-link"
-            type="button"
+          </Button>
+          <Button
+            variant="link"
+            size="small"
             :disabled="submitting || !trimmedDraft"
             @click="emit('save', path, line, trimmedDraft)"
           >
             {{ t('prReview.saveDraft') }}
-          </button>
+          </Button>
         </div>
       </footer>
     </section>

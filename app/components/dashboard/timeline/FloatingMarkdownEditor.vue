@@ -96,7 +96,7 @@
                 <div class="floating-markdown-editor__footer">
                   <div class="floating-markdown-editor__footer-actions">
                     <button
-                      class="button is-light is-small"
+                      class="gp-btn gp-btn--light gp-btn--small"
                       type="button"
                       :disabled="isSubmitting"
                       @click="collapseComposer"
@@ -104,10 +104,11 @@
                       {{ t('floatingMarkdownEditor.cancel') }}
                     </button>
                     <button
-                      class="button is-link is-small"
+                      class="gp-btn gp-btn--link gp-btn--small"
                       type="button"
-                      :class="{ 'is-loading': isSubmitting }"
+                      :class="{ 'gp-btn--loading': isSubmitting }"
                       :disabled="isSubmitting || !trimmedDraft || !canSubmit"
+                      :aria-busy="isSubmitting || undefined"
                       @click="handleSubmit"
                     >
                       {{ isSubmitting ? resolvedSubmittingLabel : resolvedSubmitLabel }}
@@ -138,7 +139,7 @@
 
       <button
         v-if="!compact && !isExpanded"
-        class="floating-markdown-editor__capsule button is-light"
+        class="floating-markdown-editor__capsule gp-btn gp-btn--light"
         type="button"
         @click="expandComposer"
       >
@@ -154,7 +155,7 @@
         <span class="floating-markdown-editor__capsule-placeholder has-text-grey">
           {{ resolvedPlaceholder }}
         </span>
-        <span class="button is-link is-small floating-markdown-editor__capsule-submit">
+        <span class="gp-btn gp-btn--link gp-btn--small floating-markdown-editor__capsule-submit">
           {{ resolvedSubmitLabel }}
         </span>
       </button>
@@ -210,7 +211,7 @@
           <div class="floating-markdown-editor__footer">
             <div class="floating-markdown-editor__footer-actions">
               <button
-                class="button is-light is-small"
+                class="gp-btn gp-btn--light gp-btn--small"
                 type="button"
                 :disabled="isSubmitting"
                 @click="collapseComposer"
@@ -218,10 +219,11 @@
                 {{ t('floatingMarkdownEditor.cancel') }}
               </button>
               <button
-                class="button is-link is-small"
+                class="gp-btn gp-btn--link gp-btn--small"
                 type="button"
-                :class="{ 'is-loading': isSubmitting }"
+                :class="{ 'gp-btn--loading': isSubmitting }"
                 :disabled="isSubmitting || !trimmedDraft || !canSubmit"
+                :aria-busy="isSubmitting || undefined"
                 @click="handleSubmit"
               >
                 {{ isSubmitting ? resolvedSubmittingLabel : resolvedSubmitLabel }}

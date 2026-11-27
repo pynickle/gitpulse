@@ -28,7 +28,15 @@
   cursor: pointer;
   transition: $theme-transition;
 
+  @include hover-only {
+    &:hover:not(:disabled, [aria-disabled='true']) {
+      border-color: var(--gitpulse-border-strong);
+      color: var(--gitpulse-text-strong);
+    }
+  }
+
   &:focus-visible {
+    border-color: var(--gitpulse-border-strong);
     outline: 2px solid var(--gitpulse-focus-ring);
     outline-offset: 2px;
   }
@@ -76,18 +84,21 @@
   &:not(.gp-btn--outlined) {
     border-color: $solid;
     background-color: $solid;
-    color: #ffffff;
+
+    &:not(.gp-btn--loading) {
+      color: #ffffff;
+    }
 
     @include hover-only {
-      &:hover:not(:disabled, [aria-disabled='true']) {
+      &:hover:not(:disabled, [aria-disabled='true'], .gp-btn--loading) {
         border-color: $hover;
         background-color: $hover;
         color: #ffffff;
       }
     }
 
-    &:focus-visible,
-    &:active:not(:disabled, [aria-disabled='true']) {
+    &:focus-visible:not(.gp-btn--loading),
+    &:active:not(:disabled, [aria-disabled='true'], .gp-btn--loading) {
       border-color: $hover;
       background-color: $hover;
       color: #ffffff;
@@ -97,7 +108,10 @@
     &[aria-disabled='true'] {
       border-color: $solid;
       background-color: $solid;
-      color: #ffffff;
+
+      &:not(.gp-btn--loading) {
+        color: #ffffff;
+      }
     }
   }
 }
@@ -156,12 +170,14 @@
 
   @include hover-only {
     &:hover:not(:disabled, [aria-disabled='true']) {
+      border-color: transparent;
       background-color: var(--gitpulse-surface-hover);
       color: var(--gitpulse-text-strong);
     }
   }
 
   &:focus-visible {
+    border-color: transparent;
     background-color: var(--gitpulse-surface-hover);
     color: var(--gitpulse-text-strong);
   }
@@ -255,7 +271,7 @@
   }
 }
 
-.gp-btn--loading {
+.gp-btn.gp-btn--loading {
   color: transparent;
   pointer-events: none;
 

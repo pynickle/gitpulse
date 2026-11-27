@@ -245,7 +245,7 @@ watch(repoFullName, () => {
           <button
             type="button"
             v-if="repoTarget"
-            class="branches-page__repo button is-ghost is-small"
+            class="branches-page__repo gp-btn gp-btn--ghost gp-btn--small"
             :title="t('branchesPage.openRepo')"
             @click="handleRepoClick"
           >

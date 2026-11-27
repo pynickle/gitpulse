@@ -92,7 +92,7 @@ const {
               {{ t('releaseTimeline.recoveredDescription') }}
             </p>
             <button
-              class="button is-small recovered-history__clear"
+              class="gp-btn gp-btn--small recovered-history__clear"
               type="button"
               :disabled="saving"
               @click="emit('clear')"

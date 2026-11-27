@@ -110,7 +110,7 @@ const submitReplyDraft = async (body: string) => {
       <div class="discussion-comment__toolbar">
         <button
           v-if="comment.replies.totalCount > 0"
-          class="button is-ghost is-small discussion-comment__reply-toggle"
+          class="gp-btn gp-btn--ghost gp-btn--small discussion-comment__reply-toggle"
           type="button"
           :aria-expanded="showReplies"
           @click="showReplies = !showReplies"
@@ -134,7 +134,7 @@ const submitReplyDraft = async (body: string) => {
       <div v-if="canReply" class="discussion-comment__reply-entry mt-3">
         <button
           v-if="!isEditorActive"
-          class="discussion-comment__reply-capsule button is-light"
+          class="discussion-comment__reply-capsule gp-btn gp-btn--light"
           type="button"
           @click="expandReplyEditor"
         >
@@ -227,7 +227,7 @@ const submitReplyDraft = async (body: string) => {
   margin-top: 0.5rem;
 }
 
-.discussion-comment__toolbar .button {
+.discussion-comment__toolbar .gp-btn {
   gap: 0.375rem;
 }
 

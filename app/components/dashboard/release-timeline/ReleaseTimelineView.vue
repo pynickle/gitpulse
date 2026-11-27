@@ -221,7 +221,7 @@ defineExpose({
         <p class="release-timeline__empty-description">
           {{ t('releaseTimeline.emptyDescription') }}
         </p>
-        <button class="button is-primary is-small" type="button" @click="emit('manage')">
+        <button class="gp-btn gp-btn--primary gp-btn--small" type="button" @click="emit('manage')">
           {{ t('releaseTimeline.emptyAction') }}
         </button>
       </div>
@@ -241,7 +241,11 @@ defineExpose({
         class="release-timeline__status release-timeline__status--error"
       >
         <p class="release-timeline__empty-title">{{ t('releaseTimeline.error') }}</p>
-        <button class="button is-small is-danger is-outlined" type="button" @click="fetchTimeline">
+        <button
+          class="gp-btn gp-btn--small gp-btn--danger gp-btn--outlined"
+          type="button"
+          @click="fetchTimeline"
+        >
           {{ t('releaseTimeline.retry') }}
         </button>
       </div>
@@ -264,7 +268,11 @@ defineExpose({
         <p class="release-timeline__empty-description">
           {{ t('releaseTimeline.filterEmptyDescription') }}
         </p>
-        <button class="button is-primary is-small" type="button" @click="clearTimelineFilters">
+        <button
+          class="gp-btn gp-btn--primary gp-btn--small"
+          type="button"
+          @click="clearTimelineFilters"
+        >
           {{ t('releaseTimeline.filterEmptyAction') }}
         </button>
       </div>

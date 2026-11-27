@@ -18,7 +18,7 @@
       <h2 class="title is-3 mb-2">{{ user.name }}</h2>
       <p class="subtitle is-6 has-text-grey mb-5">@{{ user.login }}</p>
 
-      <div class="buttons is-flex is-flex-direction-column auth-shell__actions">
+      <div class="gp-btn-group is-flex is-flex-direction-column auth-shell__actions">
         <Button size="large" block @click="handleGoToDashboard">
           <LayoutDashboardIcon class="mr-3" :size="20" />
           {{ t('landing.goToDashboard') }}

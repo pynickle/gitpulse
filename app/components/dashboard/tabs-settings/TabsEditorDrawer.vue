@@ -71,7 +71,7 @@ const {
         <span>{{ selectedGroupName }}</span>
       </span>
       <button
-        class="button is-ghost drawer-close"
+        class="gp-btn gp-btn--ghost drawer-close"
         type="button"
         :aria-label="t('dashboard.tabsSettings.closeEditorLabel')"
         @click="closeEditor"
@@ -235,11 +235,11 @@ const {
     </ScrollArea>
 
     <footer class="drawer-footer">
-      <button class="button is-light drawer-cancel-btn" type="button" @click="closeEditor">
+      <button class="gp-btn gp-btn--light drawer-cancel-btn" type="button" @click="closeEditor">
         {{ t('dashboard.tabsSettings.cancelEditorButton') }}
       </button>
       <button
-        class="button drawer-save-btn"
+        class="gp-btn drawer-save-btn"
         type="button"
         :disabled="!canSaveTab"
         :title="saveValidationMessage || undefined"
