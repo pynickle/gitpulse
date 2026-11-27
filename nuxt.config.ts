@@ -177,7 +177,7 @@ export default defineNuxtConfig({
     },
   },
 
-  css: ['bulma/css/bulma.min.css', '~/assets/scss/main.scss'],
+  css: ['~/assets/scss/main.scss'],
 
   build: {
     // Nuxt 4.7 emits a synthetic ESM-only `vue` package in server output; packages
@@ -256,6 +256,9 @@ export default defineNuxtConfig({
     '@nuxtjs/color-mode',
     '@nuxt/fonts',
     './modules/route-table',
+    // Temporary Bulma stopgap guard (ADR 0057): strips `!important` inside
+    // `@layer bulma` so unlayered app styles win by normal cascade order.
+    './modules/bulma-layer-clean',
     // The hover gate (ADR 0049): every `:hover` rule in the built CSS is moved
     // inside the hover-capable query, so a stylesheet cannot forget to.
     './modules/hover-gate',

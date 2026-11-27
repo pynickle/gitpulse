@@ -5,14 +5,18 @@ import { pathToFileURL } from 'node:url';
 
 import { parse as parseSfc } from '@vue/compiler-sfc';
 import postcss from 'postcss';
-import type { AtRule, Declaration, Root, Rule } from 'postcss';
+import type { AtRule, Declaration, Node, Root, Rule } from 'postcss';
 import { initCompiler } from 'sass-embedded';
 import type { FileImporter } from 'sass-embedded';
 
-import { HOVER_QUERY } from '../modules/hover-gate/plugin';
+import { installBulmaLayerClean } from '../modules/bulma-layer-clean/install';
+import { stripBulmaLayerImportant } from '../modules/bulma-layer-clean/plugin';
+import { hoverGate, HOVER_QUERY } from '../modules/hover-gate/plugin';
 
-const APP_DIR = resolve(import.meta.dir, '../app');
+const REPO_ROOT = resolve(import.meta.dir, '..');
+const APP_DIR = resolve(REPO_ROOT, 'app');
 const SCSS_DIR = resolve(APP_DIR, 'assets/scss');
+const NODE_MODULES_DIR = resolve(REPO_ROOT, 'node_modules');
 
 const compiler = initCompiler();
 afterAll(() => {
@@ -28,10 +32,26 @@ const nuxtAliasImporter: FileImporter<'sync'> = {
   },
 };
 
+const SASS_OPTIONS = {
+  importers: [nuxtAliasImporter],
+  loadPaths: [NODE_MODULES_DIR],
+  quietDeps: true,
+  silenceDeprecations: ['if-function', 'global-builtin', 'import'] as const,
+};
+
+const compiledFileCache = new Map<string, string>();
+
 function compileScssFile(filename: string) {
-  return compiler.compile(resolve(SCSS_DIR, filename), {
-    importers: [nuxtAliasImporter],
+  const cached = compiledFileCache.get(filename);
+  if (cached !== undefined) {
+    return cached;
+  }
+  const css = compiler.compile(resolve(SCSS_DIR, filename), {
+    ...SASS_OPTIONS,
+    silenceDeprecations: [...SASS_OPTIONS.silenceDeprecations],
   }).css;
+  compiledFileCache.set(filename, css);
+  return css;
 }
 
 function compileScssAtPath(relativeToApp: string) {
@@ -74,8 +94,37 @@ function collectSelectors(root: Root): string[] {
 
 function compileScssSnippet(source: string) {
   return compiler.compileString(source, {
-    importers: [nuxtAliasImporter],
+    ...SASS_OPTIONS,
+    silenceDeprecations: [...SASS_OPTIONS.silenceDeprecations],
   }).css;
+}
+
+let processedMainCssPromise: Promise<string> | undefined;
+
+async function getProcessedMainRoot(): Promise<Root> {
+  processedMainCssPromise ??= postcss([stripBulmaLayerImportant(), hoverGate()])
+    .process(compileScssFile('main.scss'), { from: undefined })
+    .then((result) => result.css);
+  return postcss.parse(await processedMainCssPromise);
+}
+
+function compileVueSfcStyles(relativeAppPath: string): Root {
+  const fullPath = resolve(REPO_ROOT, relativeAppPath);
+  const { descriptor } = parseSfc(readFileSync(fullPath, 'utf8'), { filename: fullPath });
+  const compiled = descriptor.styles.map((style) => compileScssSnippet(style.content)).join('\n');
+  return postcss.parse(compiled);
+}
+
+function enclosingLayerNames(node: Node): string[] {
+  const layers: string[] = [];
+  let current = node.parent;
+  while (current && current.type !== 'root') {
+    if (current.type === 'atrule' && (current as AtRule).name === 'layer') {
+      layers.unshift((current as AtRule).params.trim());
+    }
+    current = current.parent;
+  }
+  return layers;
 }
 
 function collectTopLevelDecls(root: Root, selector: string): Map<string, string> {
@@ -219,9 +268,8 @@ describe('global SCSS architecture (#196)', () => {
     expect(findUngatedHoverSelectors(root)).toEqual([]);
   });
 
-  test('main.scss composes all partials in cascade order with no duplicate output', () => {
-    const css = compileScssFile('main.scss');
-    const root = postcss.parse(css);
+  test('main.scss composes all partials in cascade order with no duplicate output', async () => {
+    const root = await getProcessedMainRoot();
 
     expect(findUngatedHoverSelectors(root)).toEqual([]);
 
@@ -229,7 +277,8 @@ describe('global SCSS architecture (#196)', () => {
     root.walkAtRules('keyframes', (atRule) => {
       keyframesNames.push(atRule.params);
     });
-    expect(keyframesNames).toEqual(['spin']);
+    expect(keyframesNames.filter((name) => name === 'spin')).toEqual(['spin']);
+    expect(keyframesNames.filter((name) => name === 'spinAround')).toEqual(['spinAround']);
 
     let fabCount = 0;
     let lightPrimarySolidCount = 0;
@@ -242,20 +291,20 @@ describe('global SCSS architecture (#196)', () => {
       if (rule.parent === root && rule.selector === '.gitpulse-floating-fab') {
         fabCount += 1;
       }
-      if (rule.selector === ':root') {
+      if (rule.parent === root && rule.selector === ':root') {
         rule.walkDecls('--gitpulse-primary-solid', () => {
           lightPrimarySolidCount += 1;
         });
       }
-      if (rule.selector === 'html.dark') {
+      if (rule.parent === root && rule.selector === 'html.dark') {
         rule.walkDecls('--gitpulse-primary-solid', () => {
           darkPrimarySolidCount += 1;
         });
       }
-      if (rule.selector === 'a' && baseLinkIndex === -1) {
+      if (rule.parent === root && rule.selector === 'a' && baseLinkIndex === -1) {
         baseLinkIndex = ruleIndex;
       }
-      if (rule.selector === '.tabs a' && tabsLinkIndex === -1) {
+      if (rule.parent === root && rule.selector === '.tabs a' && tabsLinkIndex === -1) {
         tabsLinkIndex = ruleIndex;
       }
       ruleIndex += 1;
@@ -489,5 +538,308 @@ describe('feature stylesheet ownership and modal shell extraction (#197)', () =>
     expect(issueTypeSelectors.some((selector) => selector.includes('.sidebar-card'))).toBe(true);
     expect(issueTypeSelectors.some((selector) => selector.includes('.label-tags'))).toBe(true);
     expect(findUngatedHoverSelectors(issueTypeRoot)).toEqual([]);
+  });
+});
+
+describe('layered Bulma stopgap, in-house reset, and non-important helpers (#198)', () => {
+  test('main.scss declares @layer reset, bulma; first and keeps application rules unlayered', async () => {
+    const root = await getProcessedMainRoot();
+
+    const topLevelAtRules = root.nodes.filter(
+      (node): node is AtRule => node.type === 'atrule' && node.name === 'layer'
+    );
+    expect(topLevelAtRules.length).toBeGreaterThanOrEqual(3);
+    expect(topLevelAtRules[0]?.params.trim()).toBe('reset, bulma');
+    expect(topLevelAtRules[0]?.nodes).toBeUndefined();
+
+    // Application global rules must remain unlayered so they override @layer reset and @layer bulma.
+    const unlayeredSelectors = new Set<string>();
+    root.walkRules((rule) => {
+      if (enclosingLayerNames(rule).length === 0) {
+        unlayeredSelectors.add(rule.selector);
+      }
+    });
+
+    expect(unlayeredSelectors.has('.gitpulse-floating-fab')).toBe(true);
+    expect(unlayeredSelectors.has('.dashboard-shell')).toBe(true);
+    expect(unlayeredSelectors.has('.button.is-primary')).toBe(true);
+    expect(unlayeredSelectors.has('.has-text-primary')).toBe(true);
+    expect(unlayeredSelectors.has('body')).toBe(true);
+  });
+
+  test('zero !important declarations exist inside @layer bulma after the PostCSS pipeline', async () => {
+    const root = await getProcessedMainRoot();
+
+    const bulmaImportants: string[] = [];
+    root.walkDecls((decl) => {
+      if (!decl.important) {
+        return;
+      }
+      if (enclosingLayerNames(decl)[0] === 'bulma') {
+        const selector = decl.parent?.type === 'rule' ? (decl.parent as Rule).selector : '';
+        bulmaImportants.push(`${selector} { ${decl.prop}: ${decl.value} !important }`);
+      }
+    });
+
+    expect(bulmaImportants).toEqual([]);
+  });
+
+  test('installBulmaLayerClean registers the PostCSS plugin on Nuxt options', () => {
+    const nuxt = { options: {} };
+    installBulmaLayerClean(nuxt);
+
+    const vite = nuxt.options as {
+      vite: { css: { postcss: { plugins: { postcssPlugin?: string }[] } } };
+    };
+    expect(vite.vite.css.postcss.plugins.map((plugin) => plugin.postcssPlugin)).toEqual([
+      'gitpulse-strip-bulma-layer-important',
+    ]);
+  });
+
+  test('@layer reset emits minimal reset without stripping list-style from bare ul or ol', async () => {
+    const root = await getProcessedMainRoot();
+
+    let hasBorderBox = false;
+    const bareListStrips: string[] = [];
+
+    root.walkRules((rule) => {
+      if (enclosingLayerNames(rule)[0] !== 'reset') {
+        return;
+      }
+      rule.walkDecls((decl) => {
+        if (decl.prop === 'box-sizing' && decl.value === 'border-box') {
+          hasBorderBox = true;
+        }
+        if (decl.prop === 'list-style' && decl.value === 'none') {
+          const selectors = rule.selector.split(',').map((s) => s.trim());
+          for (const sel of selectors) {
+            if (sel === 'ul' || sel === 'ol') {
+              bareListStrips.push(sel);
+            }
+          }
+        }
+      });
+    });
+
+    expect(hasBorderBox).toBe(true);
+    expect(bareListStrips).toEqual([]);
+  });
+
+  test('excluded unused Bulma modules emit zero rules in compiled CSS', async () => {
+    const root = await getProcessedMainRoot();
+
+    // Check module-defining root selectors (standalone selector arms) rather than
+    // cross-references inside still-active modules such as `.navbar > .container`,
+    // `.media .content:not(:last-child)`, or `.notification a:not(.dropdown-item)`.
+    const excludedRootSelectors = [
+      '.modal',
+      '.modal-card',
+      '.modal-card-head',
+      '.dropdown',
+      '.dropdown-content',
+      '.dropdown-item',
+      '.table',
+      '.panel',
+      '.section',
+      '.container',
+      '.content',
+      '.content ul',
+      '.content ol',
+      '.footer',
+      '.message',
+      '.breadcrumb',
+      '.progress',
+      '.block',
+      '.select select',
+      '.file',
+      '.menu',
+      '.menu-list',
+      '.is-skeleton',
+      '.skeleton-block',
+      '.fixed-grid',
+    ];
+
+    const emittedRootArms = new Set<string>();
+    root.walkRules((rule) => {
+      for (const arm of rule.selector.split(',')) {
+        emittedRootArms.add(arm.replace(/\s+/g, ' ').trim());
+      }
+    });
+
+    const unexpected = excludedRootSelectors.filter((sel) => emittedRootArms.has(sel));
+    expect(unexpected).toEqual([]);
+  });
+
+  test('active Bulma modules and non-important helper compat rules are emitted inside @layer bulma', async () => {
+    const root = await getProcessedMainRoot();
+
+    const bulmaLayeredClasses = new Set<string>();
+    root.walkRules((rule) => {
+      if (enclosingLayerNames(rule)[0] !== 'bulma') {
+        return;
+      }
+      for (const match of rule.selector.matchAll(/\.[a-z][a-z0-9-]*/g)) {
+        bulmaLayeredClasses.add(match[0]);
+      }
+    });
+
+    // Whitelisted component modules
+    for (const activeClass of [
+      '.columns',
+      '.column',
+      '.navbar',
+      '.hero',
+      '.tabs',
+      '.pagination',
+      '.media',
+      '.level',
+      '.loader',
+      '.box',
+      '.input',
+      '.textarea',
+      '.checkbox',
+      '.field',
+      '.control',
+      '.label',
+      '.help',
+      '.notification',
+      '.delete',
+      '.card',
+      '.button',
+      '.tag',
+      '.title',
+      '.subtitle',
+      '.icon',
+      '.image',
+    ]) {
+      expect(bulmaLayeredClasses.has(activeClass), `expected ${activeClass} in @layer bulma`).toBe(
+        true
+      );
+    }
+
+    // Active non-!important compatibility helpers
+    for (const helperClass of [
+      '.mb-0',
+      '.mb-4',
+      '.mr-4',
+      '.p-0',
+      '.px-6',
+      '.is-flex',
+      '.is-align-items-center',
+      '.is-justify-content-center',
+      '.is-size-7',
+      '.is-sr-only',
+      '.is-hidden',
+      '.is-clipped',
+      '.is-overlay',
+      '.is-radiusless',
+      '.has-text-grey',
+      '.has-text-link',
+      '.has-background-grey-lighter',
+    ]) {
+      expect(bulmaLayeredClasses.has(helperClass), `expected ${helperClass} in @layer bulma`).toBe(
+        true
+      );
+    }
+  });
+
+  test('bulma-overrides.scss removes dead module rules and uses zero !important declarations', () => {
+    const root = postcss.parse(compileScssFile('bulma-overrides.scss'));
+
+    const importantDecls: string[] = [];
+    root.walkDecls((decl) => {
+      if (decl.important) {
+        const selector = decl.parent?.type === 'rule' ? (decl.parent as Rule).selector : '';
+        importantDecls.push(`${selector} { ${decl.prop}: ${decl.value} !important }`);
+      }
+    });
+    expect(importantDecls).toEqual([]);
+
+    // Active semantic text overrides remain without !important
+    expect(collectTopLevelDecls(root, '.has-text-primary').get('color')).toBe(
+      'var(--gitpulse-accent)'
+    );
+    expect(collectTopLevelDecls(root, '.has-text-danger').get('color')).toBe(
+      'var(--gitpulse-danger)'
+    );
+    expect(collectTopLevelDecls(root, '.has-background-grey-lighter').get('background-color')).toBe(
+      'var(--gitpulse-surface-muted)'
+    );
+    expect(collectTopLevelDecls(root, '.button.is-loading').get('color')).toBe('transparent');
+  });
+
+  test('audited UI list components explicitly opt into unstyled list markers', () => {
+    const cases = [
+      {
+        file: 'app/components/dashboard/composer/MarkdownComposer.vue',
+        selectorMatch: '.markdown-composer__tabs.tabs ul',
+      },
+      {
+        file: 'app/components/dashboard/DashboardPagination.vue',
+        selectorMatch: '.pagination-list',
+      },
+      {
+        file: 'app/pages/dashboard/package.vue',
+        selectorMatch: '.package-page__version-list',
+      },
+    ];
+
+    for (const { file, selectorMatch } of cases) {
+      const root = compileVueSfcStyles(file);
+      const decls = new Map<string, string>();
+      root.walkRules((rule) => {
+        if (rule.selector === selectorMatch) {
+          rule.walkDecls((decl) => {
+            decls.set(decl.prop, decl.value);
+          });
+        }
+      });
+      expect(decls.get('list-style'), `${file} ${selectorMatch} list-style`).toBe('none');
+      expect(decls.get('margin'), `${file} ${selectorMatch} margin`).toBe('0');
+      expect(decls.get('padding'), `${file} ${selectorMatch} padding`).toBe('0');
+    }
+  });
+
+  test('dashboard.vue narrow scrollbar clearance works without !important and keeps pagination bottom-row margin clearance', () => {
+    const root = compileVueSfcStyles('app/pages/dashboard.vue');
+
+    const importantDecls: string[] = [];
+    let hasNarrowRowMargin = false;
+    let hasNarrowRowRightClearance = false;
+    let hasPaginationLastChildReset = false;
+
+    root.walkRules((rule) => {
+      if (rule.selector.includes('.dashboard-list-row')) {
+        rule.walkDecls((decl) => {
+          if (decl.important) {
+            importantDecls.push(`${rule.selector} { ${decl.prop}: ${decl.value} !important }`);
+          }
+          if (decl.prop === 'margin-block-end' && decl.value === '0.5rem') {
+            hasNarrowRowMargin = true;
+          }
+          if (
+            decl.prop === 'margin-right' &&
+            decl.value === 'var(--gitpulse-scrollbar-track-size)'
+          ) {
+            hasNarrowRowRightClearance = true;
+          }
+        });
+      }
+      if (
+        rule.selector.includes('.dashboard-pagination-footer') &&
+        rule.selector.includes('.mb-4:last-child')
+      ) {
+        rule.walkDecls('margin-bottom', (decl) => {
+          if (decl.value === '0') {
+            hasPaginationLastChildReset = true;
+          }
+        });
+      }
+    });
+
+    expect(importantDecls).toEqual([]);
+    expect(hasNarrowRowMargin).toBe(true);
+    expect(hasNarrowRowRightClearance).toBe(true);
+    expect(hasPaginationLastChildReset).toBe(true);
   });
 });

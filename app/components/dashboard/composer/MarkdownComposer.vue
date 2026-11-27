@@ -544,8 +544,11 @@ defineExpose({
   min-width: 0;
 
   &.tabs ul {
-    border-bottom: none !important;
+    border-bottom: none;
     gap: 2px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
   }
 
   &.tabs li a {

@@ -594,6 +594,9 @@ const handleHome = async () => {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 .package-page__version {

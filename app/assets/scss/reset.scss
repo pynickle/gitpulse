@@ -1,0 +1,157 @@
+@layer reset, bulma;
+
+// Minimal document reset aligned with Foundation Layer tokens and ADR 0049.
+// Bare `ul`/`ol` list markers and indentation are intentionally preserved so
+// prose and semantic lists keep browser defaults; UI lists opt out explicitly.
+@layer reset {
+  html {
+    box-sizing: border-box;
+    font-size: 16px;
+    min-width: 300px;
+    overflow-x: hidden;
+    text-rendering: optimizeLegibility;
+    text-size-adjust: 100%;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: inherit;
+  }
+
+  html,
+  body,
+  p,
+  dl,
+  dt,
+  dd,
+  blockquote,
+  figure,
+  fieldset,
+  legend,
+  textarea,
+  pre,
+  iframe,
+  hr,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-size: 1em;
+    font-weight: 400;
+    line-height: 1.5;
+  }
+
+  body,
+  button,
+  input,
+  optgroup,
+  select,
+  textarea {
+    font-family: var(--gitpulse-app-font-family);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-size: 100%;
+    font-weight: normal;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    margin: 0;
+  }
+
+  button {
+    appearance: none;
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 1em;
+    padding: 0;
+  }
+
+  a {
+    cursor: pointer;
+    text-decoration: none;
+
+    strong {
+      color: currentColor;
+    }
+  }
+
+  a:focus-visible,
+  button:focus-visible {
+    outline: 2px solid var(--gitpulse-focus-ring);
+    outline-offset: 2px;
+  }
+
+  img,
+  video {
+    height: auto;
+    max-width: 100%;
+  }
+
+  iframe,
+  fieldset {
+    border: 0;
+  }
+
+  hr {
+    border: none;
+    display: block;
+    height: 2px;
+    margin: 1.5rem 0;
+  }
+
+  input[type='checkbox'],
+  input[type='radio'] {
+    vertical-align: baseline;
+  }
+
+  small {
+    font-size: 0.875em;
+  }
+
+  span {
+    font-style: inherit;
+    font-weight: inherit;
+  }
+
+  strong {
+    color: var(--gitpulse-text-strong);
+    font-weight: 600;
+  }
+
+  table {
+    border-collapse: collapse;
+    border-spacing: 0;
+  }
+
+  td,
+  th {
+    padding: 0;
+    vertical-align: top;
+
+    &:not([align]) {
+      text-align: inherit;
+    }
+  }
+}
