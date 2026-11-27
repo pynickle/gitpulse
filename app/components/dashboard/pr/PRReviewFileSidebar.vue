@@ -11,6 +11,7 @@ import {
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
 
+import Button from '~/components/ui/Button.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 import type { PRReviewDraftComment, PRReviewFile } from '~/composables/usePRReview';
 
@@ -354,16 +355,17 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
         </template>
       </ScrollArea>
 
-      <button
+      <Button
         v-if="hasMoreFiles"
-        type="button"
-        class="button is-small is-fullwidth is-light mt-3"
-        :class="{ 'is-loading': loadingMore }"
-        :disabled="loadingMore"
+        variant="light"
+        size="small"
+        block
+        :loading="loadingMore"
+        class="mt-3"
         @click="emit('load-more')"
       >
         {{ t('prReview.loadMoreFiles') }}
-      </button>
+      </Button>
     </div>
 
     <button

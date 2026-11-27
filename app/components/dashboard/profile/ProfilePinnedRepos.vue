@@ -3,6 +3,7 @@ import { LoaderCircleIcon } from '@lucide/vue';
 import { computed, toRef } from 'vue';
 
 import RepoItem from '~/components/dashboard/RepoItem.vue';
+import Button from '~/components/ui/Button.vue';
 
 const { username } = defineProps<{
   username: string;
@@ -32,9 +33,9 @@ const showSection = computed(() => loading.value || Boolean(error.value) || item
 
     <div v-else-if="error" class="profile-pinned__status profile-pinned__status--error">
       <p>{{ error }}</p>
-      <button type="button" class="button is-small is-light" @click="refresh">
+      <Button variant="light" size="small" @click="refresh">
         {{ t('profile.retry') }}
-      </button>
+      </Button>
     </div>
 
     <div v-else class="profile-pinned__grid">

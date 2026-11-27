@@ -18,6 +18,7 @@ import {
 
 import { splitWikiHtmlSegments, type WikiHtmlSegment } from '#shared/utils/github-wiki';
 import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverlayFrame.vue';
+import Button from '~/components/ui/Button.vue';
 import GitHubIcon from '~/components/ui/GitHubIcon.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 import PageErrorState from '~/components/ui/PageErrorState.vue';
@@ -359,7 +360,7 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
           <button
             type="button"
             v-if="repoTarget"
-            class="wiki-page__repo button is-ghost is-small"
+            class="wiki-page__repo gp-btn gp-btn--ghost gp-btn--small"
             :title="t('wikiPage.openRepo')"
             @click="handleRepoClick"
           >
@@ -370,7 +371,7 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
 
         <a
           v-if="repoTarget && available"
-          class="wiki-page__github-link button is-ghost is-small"
+          class="wiki-page__github-link gp-btn gp-btn--ghost gp-btn--small"
           :href="pageHtmlUrl"
           target="_blank"
           rel="noopener noreferrer"
@@ -468,15 +469,16 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
 
               <div v-else class="wiki-page__empty">
                 <p class="mb-2">{{ t('wikiPage.pageUnavailable') }}</p>
-                <a
-                  class="button is-small is-ghost"
+                <Button
+                  variant="ghost"
+                  size="small"
                   :href="pageHtmlUrl"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
                   <ExternalLinkIcon :size="14" class="mr-1" />
                   <span>{{ t('wikiPage.viewOnGitHub') }}</span>
-                </a>
+                </Button>
               </div>
             </template>
           </section>

@@ -93,10 +93,11 @@ const hasReplies = computed(() => visibleReplies.value.length > 0);
 
     <button
       v-if="replies.pageInfo.hasNextPage"
-      class="button is-light is-small mt-3"
+      class="gp-btn gp-btn--light gp-btn--small mt-3"
       type="button"
-      :class="{ 'is-loading': loadingMore }"
+      :class="{ 'gp-btn--loading': loadingMore }"
       :disabled="loadingMore"
+      :aria-busy="loadingMore || undefined"
       @click="emit('load-more')"
     >
       {{

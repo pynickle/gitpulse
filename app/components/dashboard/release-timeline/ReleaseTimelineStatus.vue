@@ -49,7 +49,7 @@ const visible = computed(
     </p>
     <button
       v-if="canRetry"
-      class="button is-small"
+      class="gp-btn gp-btn--small"
       type="button"
       :disabled="loading"
       @click="emit('retry')"
@@ -58,7 +58,7 @@ const visible = computed(
     </button>
     <button
       v-if="hasMore"
-      class="button is-small timeline-status__older"
+      class="gp-btn gp-btn--small timeline-status__older"
       type="button"
       :disabled="loading"
       @click="emit('older')"

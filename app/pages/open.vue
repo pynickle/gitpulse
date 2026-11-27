@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue';
 
+import Button from '~/components/ui/Button.vue';
+
 const route = useRoute();
 const router = useRouter();
 const localePath = useLocalePath();
@@ -41,9 +43,9 @@ watch(
     <div v-else class="open-page__error">
       <h1 class="title is-4">{{ t('launch.unsupportedTitle') }}</h1>
       <p class="mb-5">{{ t('launch.unsupportedDescription') }}</p>
-      <NuxtLinkLocale class="button is-primary" :to="localePath('/dashboard')">
+      <Button variant="primary" :to="localePath('/dashboard')">
         {{ t('error.cta.dashboard') }}
-      </NuxtLinkLocale>
+      </Button>
     </div>
   </div>
 </template>

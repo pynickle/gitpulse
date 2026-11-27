@@ -79,7 +79,7 @@ onMounted(() => {
       <p>{{ t('releasesPage.error') }}</p>
       <p class="release-drawer-list__error-detail">{{ error }}</p>
       <button
-        class="button is-small is-danger is-outlined release-drawer-list__retry"
+        class="gp-btn gp-btn--small gp-btn--danger gp-btn--outlined release-drawer-list__retry"
         type="button"
         @click="loadPage(pagination.page)"
       >

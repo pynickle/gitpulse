@@ -263,15 +263,6 @@ describe('global SCSS architecture (#196)', () => {
     });
     expect(bulmaTokens).toEqual([]);
 
-    expect(collectTopLevelDecls(root, '.button').get('background-color')).toBe(
-      'var(--gitpulse-surface)'
-    );
-    expect(collectTopLevelDecls(root, '.button.is-ghost').get('background-color')).toBe(
-      'transparent'
-    );
-    expect(collectTopLevelDecls(root, '.button.is-primary').get('background-color')).toBe(
-      'var(--gitpulse-primary-solid)'
-    );
     expect(collectTopLevelDecls(root, '.tag.is-link.is-light').get('background-color')).toBe(
       'var(--gitpulse-link-soft)'
     );
@@ -299,7 +290,7 @@ describe('global SCSS architecture (#196)', () => {
     let darkPrimarySolidCount = 0;
     let baseLinkIndex = -1;
     let controlsBtnIndex = -1;
-    let buttonOverrideIndex = -1;
+    let overrideIndex = -1;
     let ruleIndex = 0;
 
     root.walkRules((rule) => {
@@ -324,10 +315,10 @@ describe('global SCSS architecture (#196)', () => {
       }
       if (
         rule.parent === root &&
-        rule.selector === '.button.is-primary' &&
-        buttonOverrideIndex === -1
+        rule.selector === '.tag.is-primary.is-light' &&
+        overrideIndex === -1
       ) {
-        buttonOverrideIndex = ruleIndex;
+        overrideIndex = ruleIndex;
       }
       ruleIndex += 1;
     });
@@ -337,7 +328,7 @@ describe('global SCSS architecture (#196)', () => {
     expect(darkPrimarySolidCount).toBe(1);
     expect(baseLinkIndex).toBeGreaterThanOrEqual(0);
     expect(controlsBtnIndex).toBeGreaterThan(baseLinkIndex);
-    expect(buttonOverrideIndex).toBeGreaterThan(controlsBtnIndex);
+    expect(overrideIndex).toBeGreaterThan(controlsBtnIndex);
   });
 
   test('leading underscore strictly separates zero-output partials from CSS-emitting sheets', () => {
@@ -585,7 +576,7 @@ describe('layered Bulma stopgap, in-house reset, and non-important helpers (#198
 
     expect(unlayeredSelectors.has('.gitpulse-floating-fab')).toBe(true);
     expect(unlayeredSelectors.has('.dashboard-shell')).toBe(true);
-    expect(unlayeredSelectors.has('.button.is-primary')).toBe(true);
+    expect(unlayeredSelectors.has('.gp-btn')).toBe(true);
     expect(unlayeredSelectors.has('.has-text-primary')).toBe(true);
     expect(unlayeredSelectors.has('body')).toBe(true);
   });
@@ -707,7 +698,7 @@ describe('layered Bulma stopgap, in-house reset, and non-important helpers (#198
     });
 
     // Whitelisted component modules
-    for (const activeClass of ['.button', '.tag', '.title', '.subtitle', '.icon', '.image']) {
+    for (const activeClass of ['.tag', '.title', '.subtitle', '.icon', '.image']) {
       expect(bulmaLayeredClasses.has(activeClass), `expected ${activeClass} in @layer bulma`).toBe(
         true
       );
@@ -761,7 +752,6 @@ describe('layered Bulma stopgap, in-house reset, and non-important helpers (#198
     expect(collectTopLevelDecls(root, '.has-background-grey-lighter').get('background-color')).toBe(
       'var(--gitpulse-surface-muted)'
     );
-    expect(collectTopLevelDecls(root, '.button.is-loading').get('color')).toBe('transparent');
   });
 
   test('audited UI list components explicitly opt into unstyled list markers', () => {
@@ -1202,5 +1192,102 @@ describe('Foundation Layer custom property migration and bridge removal (#199)',
     expect(collectTopLevelDecls(unavailableRoot, '.timeline-unavailable__icon').get('color')).toBe(
       'var(--gitpulse-text-subtle)'
     );
+  });
+});
+
+describe('Bulma button retirement and semantic Button primitive migration (#202)', () => {
+  test('compiled global CSS emits zero Bulma .button or .buttons rules', async () => {
+    const root = await getProcessedMainRoot();
+
+    const buttonRuleSelectors: string[] = [];
+    root.walkRules((rule) => {
+      for (const arm of rule.selector.split(',')) {
+        const normalized = arm.replace(/\s+/g, ' ').trim();
+        if (/\.(?:button|buttons)(?![a-zA-Z0-9_-])/.test(normalized)) {
+          buttonRuleSelectors.push(normalized);
+        }
+      }
+    });
+
+    expect(buttonRuleSelectors).toEqual([]);
+  });
+
+  test('bulma-overrides.scss emits zero .button rules and base.scss excludes .button from unselectable chrome', () => {
+    const overridesRoot = postcss.parse(compileScssFile('bulma-overrides.scss'));
+    const overrideButtonSelectors = collectSelectors(overridesRoot).filter((selector) =>
+      /\.(?:button|buttons)(?![a-zA-Z0-9_-])/.test(selector)
+    );
+    expect(overrideButtonSelectors).toEqual([]);
+
+    const baseRoot = postcss.parse(compileScssFile('base.scss'));
+    const baseSelectors = collectSelectors(baseRoot);
+    expect(baseSelectors.some((selector) => selector.includes('.gp-btn'))).toBe(true);
+    expect(
+      baseSelectors.filter((selector) => /\.(?:button|buttons)(?![a-zA-Z0-9_-])/.test(selector))
+    ).toEqual([]);
+  });
+
+  test('controls.scss keeps base .gp-btn hover/focus borders, transparent ghost borders, and filled loading text hiding', () => {
+    const root = postcss.parse(compileScssFile('controls.scss'));
+    expect(findUngatedHoverSelectors(root)).toEqual([]);
+
+    let hasBaseHoverBorder = false;
+    let hasGhostHoverTransparentBorder = false;
+    let hasFilledLoadingExclusion = false;
+    let hasLoadingRule = false;
+
+    root.walkRules((rule) => {
+      if (rule.selector.includes('.gp-btn:hover:not(:disabled')) {
+        rule.walkDecls('border-color', (decl) => {
+          if (decl.value === 'var(--gitpulse-border-strong)') {
+            hasBaseHoverBorder = true;
+          }
+        });
+      }
+      if (rule.selector.includes('.gp-btn--ghost:hover:not(:disabled')) {
+        rule.walkDecls('border-color', (decl) => {
+          if (decl.value === 'transparent') {
+            hasGhostHoverTransparentBorder = true;
+          }
+        });
+      }
+      if (
+        rule.selector.includes('.gp-btn--primary:not(.gp-btn--outlined)') &&
+        rule.selector.includes(':not(.gp-btn--loading)')
+      ) {
+        hasFilledLoadingExclusion = true;
+      }
+      if (rule.selector.includes('.gp-btn.gp-btn--loading')) {
+        rule.walkDecls('color', (decl) => {
+          if (decl.value === 'transparent') {
+            hasLoadingRule = true;
+          }
+        });
+      }
+    });
+
+    expect(hasBaseHoverBorder).toBe(true);
+    expect(hasGhostHoverTransparentBorder).toBe(true);
+    expect(hasFilledLoadingExclusion).toBe(true);
+    expect(hasLoadingRule).toBe(true);
+  });
+
+  test('migrated component stylesheets emit zero .button selectors and preserve ADR 0049 hover gating', () => {
+    const components = [
+      'components/dashboard/overlay/DashboardTopHeader.vue',
+      'components/dashboard/discussion/DiscussionCommentCard.vue',
+      'components/dashboard/issue/SubIssueList.vue',
+      'components/layouts/ChromeActions.vue',
+      'components/dashboard/pr/PRReviewWorkspace.vue',
+    ];
+
+    for (const component of components) {
+      const root = compileSfcStyles(component);
+      const buttonSelectors = collectSelectors(root).filter((selector) =>
+        /\.(?:button|buttons)(?![a-zA-Z0-9_-])/.test(selector)
+      );
+      expect(buttonSelectors, `${component} must not emit .button selectors`).toEqual([]);
+      expect(findUngatedHoverSelectors(root), `${component} hover gating`).toEqual([]);
+    }
   });
 });

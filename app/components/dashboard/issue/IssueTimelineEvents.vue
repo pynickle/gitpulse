@@ -89,10 +89,11 @@
       class="mt-4 is-flex is-justify-content-center"
     >
       <button
-        class="button is-light is-small"
+        class="gp-btn gp-btn--light gp-btn--small"
         type="button"
-        :class="{ 'is-loading': loadingMore }"
+        :class="{ 'gp-btn--loading': loadingMore }"
         :disabled="loadingMore"
+        :aria-busy="loadingMore || undefined"
         @click="emit('load-more')"
       >
         {{ loadingMore ? t('detailTimeline.loadingMore') : t('detailTimeline.loadMore') }}

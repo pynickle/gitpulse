@@ -170,7 +170,7 @@ const clearAll = () => {
 
           <footer class="release-timeline-filter-panel__footer">
             <button
-              class="button is-small"
+              class="gp-btn gp-btn--small"
               type="button"
               :disabled="!hasActiveFilter"
               @click="clearAll"

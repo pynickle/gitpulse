@@ -1,15 +1,15 @@
 <template>
   <div class="dashboard-top-header">
     <div class="dashboard-top-header__toolbar">
-      <div class="buttons dashboard-top-header__nav">
-        <button type="button" class="button is-light is-small" @click="$emit('back')">
+      <div class="gp-btn-group dashboard-top-header__nav">
+        <button type="button" class="gp-btn gp-btn--light gp-btn--small" @click="$emit('back')">
           <ArrowLeftIcon :size="18" class="mr-1" />
           {{ backLabel }}
         </button>
         <button
           type="button"
           v-if="showHomeButton"
-          class="button is-light is-small"
+          class="gp-btn gp-btn--light gp-btn--small"
           @click="$emit('home')"
         >
           <HouseIcon :size="18" class="mr-1" />
@@ -53,7 +53,7 @@
             <button
               v-if="showDetailSidebarToggle && !isDetailSidebarSheetViewport"
               type="button"
-              class="button is-light is-small dashboard-top-header__detail-sidebar-toggle"
+              class="gp-btn gp-btn--light gp-btn--small dashboard-top-header__detail-sidebar-toggle"
               :title="detailSidebarToggleLabel"
               :aria-label="detailSidebarToggleLabel"
               @click="$emit('toggle-detail-sidebar')"
@@ -213,7 +213,7 @@ const isDetailSummaryVisible = computed(() => {
   margin-bottom: 0;
 }
 
-.dashboard-top-header__nav .button {
+.dashboard-top-header__nav .gp-btn {
   display: inline-flex;
   align-items: center;
   margin-bottom: 0;

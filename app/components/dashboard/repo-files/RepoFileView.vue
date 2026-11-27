@@ -1153,7 +1153,7 @@ onActivated(() => {
             <p class="repo-file-view__binary-hint">{{ t('repoFileView.binaryFileHint') }}</p>
             <button
               type="button"
-              class="button is-small is-link is-light mt-3"
+              class="gp-btn gp-btn--small gp-btn--light mt-3"
               @click="downloadFile"
             >
               <DownloadIcon :size="14" aria-hidden="true" />

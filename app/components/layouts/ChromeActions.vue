@@ -22,7 +22,7 @@
     <div ref="menuRef" class="chrome-actions__more">
       <button
         type="button"
-        class="button is-light is-small chrome-actions__more-toggle"
+        class="gp-btn gp-btn--light gp-btn--small chrome-actions__more-toggle"
         :title="t('detailOverlay.moreActions')"
         :aria-label="t('detailOverlay.moreActions')"
         :aria-expanded="isMenuOpen"
@@ -232,19 +232,5 @@ onBeforeUnmount(() => {
   &:focus-visible {
     background-color: var(--chrome-actions-hover);
   }
-}
-
-/* The language switcher renders a Bulma dropdown; align its trigger with the
-   other inline controls so no bar grows a taller item. */
-.chrome-actions :deep(.dropdown),
-.chrome-actions :deep(.dropdown-trigger) {
-  display: inline-flex;
-  align-items: center;
-}
-
-.chrome-actions :deep(.dropdown-trigger .button) {
-  display: inline-flex;
-  align-items: center;
-  height: 2.25rem;
 }
 </style>

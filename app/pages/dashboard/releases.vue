@@ -214,7 +214,7 @@ watch(repoFullName, () => {
           <button
             type="button"
             v-if="repoTarget"
-            class="releases-page__repo button is-ghost is-small"
+            class="releases-page__repo gp-btn gp-btn--ghost gp-btn--small"
             :title="t('releasesPage.openRepo')"
             @click="handleRepoClick"
           >

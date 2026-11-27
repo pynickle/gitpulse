@@ -52,7 +52,7 @@ const { t } = useI18n();
         {{ error }}
       </p>
       <button
-        class="button is-danger is-light is-small mt-2"
+        class="gp-btn gp-btn--danger-soft gp-btn--small mt-2"
         type="button"
         @click="emit('load-more-comments')"
       >
@@ -95,10 +95,11 @@ const { t } = useI18n();
 
     <button
       v-if="hasNextPage"
-      class="button is-light discussion-comments__load-more"
+      class="gp-btn gp-btn--light discussion-comments__load-more"
       type="button"
-      :class="{ 'is-loading': loadingMore }"
+      :class="{ 'gp-btn--loading': loadingMore }"
       :disabled="loadingMore"
+      :aria-busy="loadingMore || undefined"
       @click="emit('load-more-comments')"
     >
       {{

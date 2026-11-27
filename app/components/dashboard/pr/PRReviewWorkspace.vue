@@ -446,7 +446,7 @@ watch(
     <div v-if="review.errorMessage.value && !hasFiles" class="pr-review-workspace__notice">
       <div class="gp-notice gp-notice--danger" role="alert">
         <p class="mb-3">{{ review.errorMessage.value }}</p>
-        <button class="button is-small is-danger" type="button" @click="review.retryLoad">
+        <button class="gp-btn gp-btn--small gp-btn--danger" type="button" @click="review.retryLoad">
           {{ t('prReview.retry') }}
         </button>
       </div>
@@ -454,7 +454,10 @@ watch(
 
     <div v-else-if="review.loading.value" class="pr-review-workspace__notice">
       <div class="is-flex is-align-items-center is-justify-content-center">
-        <span class="button is-loading is-light pr-review-workspace__loading-btn mr-2"></span>
+        <span
+          class="gp-btn gp-btn--loading gp-btn--light pr-review-workspace__loading-btn mr-2"
+          aria-hidden="true"
+        ></span>
         <span>{{ t('prReview.loadingFiles') }}</span>
       </div>
     </div>
@@ -875,17 +878,6 @@ watch(
   align-items: center;
   justify-content: center;
   padding: 2rem;
-}
-
-html.dark .pr-review-workspace__loading-btn {
-  color: var(--gitpulse-text-strong);
-  background-color: var(--gitpulse-surface);
-  border-color: var(--gitpulse-border);
-}
-
-html.dark .pr-review-workspace__loading-btn::after {
-  border-color: var(--gitpulse-text-strong);
-  border-right-color: transparent;
 }
 
 .pr-review-discard-dialog {

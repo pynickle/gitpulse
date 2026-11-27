@@ -11,6 +11,7 @@ import {
 import { shallowRef } from 'vue';
 
 import MarkdownComposer from '~/components/dashboard/composer/MarkdownComposer.vue';
+import Button from '~/components/ui/Button.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 import type { PRReviewDraftComment, PRReviewEvent } from '~/composables/usePRReview';
 
@@ -225,15 +226,15 @@ const toggleSection = (section: string) => {
         >
           <p class="is-size-7">{{ errorMessage }}</p>
         </div>
-        <button
-          class="button is-link is-fullwidth"
-          type="button"
-          :class="{ 'is-loading': submitting }"
-          :disabled="!canSubmit || submitting"
+        <Button
+          variant="link"
+          block
+          :loading="submitting"
+          :disabled="!canSubmit"
           @click="emit('submit')"
         >
           {{ t('prReview.submitReview') }}
-        </button>
+        </Button>
       </div>
     </div>
 

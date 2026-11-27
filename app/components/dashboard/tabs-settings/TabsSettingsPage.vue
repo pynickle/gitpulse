@@ -22,7 +22,7 @@ const { t, editorOpen, startNewTab, closeEditor } = model;
         <h1 class="settings-header__title">{{ t('dashboard.tabsSettings.pageTitle') }}</h1>
         <p class="settings-header__subtitle">{{ t('dashboard.tabsSettings.heroSubtitle') }}</p>
       </div>
-      <button class="button is-small new-view-btn" type="button" @click="startNewTab">
+      <button class="gp-btn gp-btn--small new-view-btn" type="button" @click="startNewTab">
         <PlusIcon :size="14" aria-hidden="true" />
         <span>{{ t('dashboard.tabsSettings.editorTitle') }}</span>
       </button>

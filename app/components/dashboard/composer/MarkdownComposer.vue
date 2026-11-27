@@ -432,7 +432,7 @@ defineExpose({
         <slot name="header-meta" />
         <button
           v-if="switchable"
-          class="button is-small is-light markdown-composer__layout-switch"
+          class="gp-btn gp-btn--small gp-btn--light markdown-composer__layout-switch"
           type="button"
           :aria-label="
             layout === 'split'

@@ -48,7 +48,7 @@
 
     <button
       v-if="!expanded && model.hiddenCount > 0"
-      class="button is-light is-small linked-pr-list__toggle"
+      class="gp-btn gp-btn--light gp-btn--small linked-pr-list__toggle"
       type="button"
       @click="expanded = true"
     >
@@ -56,10 +56,11 @@
     </button>
     <button
       v-else-if="expanded && hasNextPage"
-      class="button is-light is-small linked-pr-list__toggle"
+      class="gp-btn gp-btn--light gp-btn--small linked-pr-list__toggle"
       type="button"
       :disabled="loading"
-      :class="{ 'is-loading': loading }"
+      :class="{ 'gp-btn--loading': loading }"
+      :aria-busy="loading || undefined"
       @click="loadMore"
     >
       {{ t('dashboard.linkedPullRequests.loadMore') }}
