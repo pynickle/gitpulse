@@ -63,7 +63,7 @@ const skeletonCardCount = 20;
   </div>
 </template>
 
-<style scoped lang="scss" src="~/assets/scss/card.scss" />
+<style scoped lang="scss" src="~/assets/scss/dashboard-list-card.scss" />
 <style scoped lang="scss">
 .dashboard-loading-list {
   width: 100%;

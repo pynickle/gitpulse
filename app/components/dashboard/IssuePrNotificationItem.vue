@@ -223,8 +223,8 @@ const subjectVisual = computed(() => {
 });
 </script>
 
-<style scoped lang="scss" src="~/assets/scss/card.scss" />
-<style scoped lang="scss" src="~/assets/scss/notification-card.scss" />
+<style scoped lang="scss" src="~/assets/scss/dashboard-list-card.scss" />
+<style scoped lang="scss" src="./notification-card.scss" />
 <style scoped lang="scss">
 .issue-pr-notification-card__icon {
   position: relative;

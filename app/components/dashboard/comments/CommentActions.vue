@@ -326,7 +326,7 @@ const onKeydown = (event: KeyboardEvent) => {
 
 <style scoped lang="scss">
 @use '~/assets/scss/variables' as *;
-@use '~/assets/scss/detail-metadata-editor';
+@use '~/assets/scss/modal-shell';
 @use '~/assets/scss/pointer' as *;
 
 .comment-actions {
