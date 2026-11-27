@@ -272,10 +272,6 @@ describe('global SCSS architecture (#196)', () => {
     expect(collectTopLevelDecls(root, '.button.is-primary').get('background-color')).toBe(
       'var(--gitpulse-primary-solid)'
     );
-    expect(collectTopLevelDecls(root, '.tag.is-link.is-light').get('background-color')).toBe(
-      'var(--gitpulse-link-soft)'
-    );
-    expect(collectTopLevelDecls(root, '.tag.is-activity').get('font-weight')).toBe('bold');
     expect(collectTopLevelDecls(root, '.has-text-primary').get('color')).toBe(
       'var(--gitpulse-accent)'
     );
@@ -707,7 +703,7 @@ describe('layered Bulma stopgap, in-house reset, and non-important helpers (#198
     });
 
     // Whitelisted component modules
-    for (const activeClass of ['.button', '.tag', '.title', '.subtitle', '.icon', '.image']) {
+    for (const activeClass of ['.button']) {
       expect(bulmaLayeredClasses.has(activeClass), `expected ${activeClass} in @layer bulma`).toBe(
         true
       );
@@ -1201,6 +1197,186 @@ describe('Foundation Layer custom property migration and bridge removal (#199)',
     );
     expect(collectTopLevelDecls(unavailableRoot, '.timeline-unavailable__icon').get('color')).toBe(
       'var(--gitpulse-text-subtle)'
+    );
+  });
+});
+
+describe('Bulma tag, title, subtitle, icon, and image retirement (#203)', () => {
+  test('compiled global CSS emits zero rules for retired Bulma tag, title, subtitle, icon, and image modules', async () => {
+    const root = await getProcessedMainRoot();
+
+    const retiredRootSelectors = [
+      '.tag',
+      '.tags',
+      '.tag.is-activity',
+      '.tag.is-info.is-light',
+      '.tag.is-link.is-light',
+      '.tag.is-primary.is-light',
+      '.tag.is-black.is-light',
+      '.tag.is-success.is-light',
+      '.tag.is-danger.is-light',
+      '.tag.is-warning.is-light',
+      '.title',
+      '.title.is-3',
+      '.title.is-4',
+      '.title.is-5',
+      '.title.is-6',
+      '.subtitle',
+      '.subtitle.is-6',
+      '.subtitle.is-7',
+      '.icon',
+      '.icon.is-small',
+      '.icon-text',
+      '.image',
+      '.image.is-32x32',
+    ];
+
+    const emittedArms = new Set<string>();
+    root.walkRules((rule) => {
+      for (const arm of rule.selector.split(',')) {
+        emittedArms.add(arm.replace(/\s+/g, ' ').trim());
+      }
+    });
+
+    const unexpected = retiredRootSelectors.filter((sel) => emittedArms.has(sel));
+    expect(unexpected).toEqual([]);
+  });
+
+  test('bulma-overrides.scss emits zero rules for retired title, subtitle, and tag modules', () => {
+    const root = postcss.parse(compileScssFile('bulma-overrides.scss'));
+    const emittedArms = new Set<string>();
+    root.walkRules((rule) => {
+      for (const arm of rule.selector.split(',')) {
+        emittedArms.add(arm.replace(/\s+/g, ' ').trim());
+      }
+    });
+
+    for (const retired of [
+      '.title',
+      '.subtitle',
+      '.tag.is-light',
+      ".tag:not([class*='is-'])",
+      '.tag.is-activity',
+      '.tag.is-info.is-light',
+      '.tag.is-link.is-light',
+      '.tag.is-primary.is-light',
+      '.tag.is-black.is-light',
+      '.tag.is-success.is-light',
+      '.tag.is-danger.is-light',
+      '.tag.is-warning.is-light',
+    ]) {
+      expect(
+        emittedArms.has(retired),
+        `${retired} should be removed from bulma-overrides.scss`
+      ).toBe(false);
+    }
+
+    // Parallel #202 button overrides and #204/#205 helper overrides remain intact.
+    expect(emittedArms.has('.button')).toBe(true);
+    expect(emittedArms.has('.has-text-primary')).toBe(true);
+  });
+
+  test('base.scss removes retired .tag from $unselectable-chrome while keeping .gp-tag', () => {
+    const root = postcss.parse(compileScssFile('base.scss'));
+    const unselectableArms = new Set<string>();
+    root.walkRules((rule) => {
+      let hasUserSelectNone = false;
+      rule.walkDecls('user-select', (decl) => {
+        if (decl.value === 'none') {
+          hasUserSelectNone = true;
+        }
+      });
+      if (hasUserSelectNone) {
+        for (const arm of rule.selector.split(',')) {
+          unselectableArms.add(arm.trim());
+        }
+      }
+    });
+
+    expect(unselectableArms.has('.tag')).toBe(false);
+    expect(unselectableArms.has('.gp-tag')).toBe(true);
+  });
+
+  test('controls.scss styles interactive a.gp-tag links with ADR 0049 hover gating', () => {
+    const root = postcss.parse(compileScssFile('controls.scss'));
+    expect(findUngatedHoverSelectors(root)).toEqual([]);
+
+    const selectors = collectSelectors(root);
+    expect(selectors.some((selector) => selector.includes('a.gp-tag:hover'))).toBe(true);
+    expect(selectors.some((selector) => selector.includes('a.gp-tag:focus-visible'))).toBe(true);
+  });
+
+  test('migrated tag, typography, icon, and image components compile cleanly with scoped semantic styles', () => {
+    const migratedSfcs = [
+      'components/layouts/NavbarBrand.vue',
+      'components/auth/AuthGateway.vue',
+      'components/auth/AuthenticatedLandingCard.vue',
+      'components/auth/PersonalLockForm.vue',
+      'components/dashboard/GenericSearchItem.vue',
+      'components/dashboard/IssuePrNotificationItem.vue',
+      'components/dashboard/NotificationItem.vue',
+      'components/dashboard/RepoItem.vue',
+      'components/dashboard/discussion/DiscussionComments.vue',
+      'components/dashboard/discussion/DiscussionHeader.vue',
+      'components/dashboard/issue/IssueHeader.vue',
+      'components/dashboard/issue/IssueTimelineStateEvents.vue',
+      'components/dashboard/pr/PRHeader.vue',
+      'components/dashboard/pr/PRReviewDiffViewer.vue',
+      'components/dashboard/pr/PRReviewFileSidebar.vue',
+      'components/dashboard/pr/PRReviewSubmitBar.vue',
+      'components/dashboard/detail/ReleaseDetail.vue',
+      'components/dashboard/detail/RepoDetail.vue',
+      'components/dashboard/repo-files/RepoFileTree.vue',
+      'components/dashboard/tab-sidebar/TabSidebar.vue',
+      'components/dashboard/widgets/TabStats.vue',
+      'pages/open.vue',
+      'pages/dashboard/branches.vue',
+      'pages/dashboard/contributors.vue',
+      'pages/dashboard/package.vue',
+      'pages/dashboard/releases.vue',
+      'pages/dashboard/starred.vue',
+      'pages/dashboard/wiki.vue',
+    ];
+
+    for (const sfc of migratedSfcs) {
+      const root = compileSfcStyles(sfc);
+      expect(
+        collectBulmaCustomPropertyUsages(root),
+        `${sfc} must not emit --bulma-* custom properties`
+      ).toEqual([]);
+      expect(findUngatedHoverSelectors(root), `${sfc} hover gating`).toEqual([]);
+    }
+
+    const navbarBrandRoot = compileSfcStyles('components/layouts/NavbarBrand.vue');
+    expect(collectTopLevelDecls(navbarBrandRoot, '.navbar-brand-title').get('color')).toBe(
+      'var(--gitpulse-text-strong)'
+    );
+
+    const notificationCardRoot = postcss.parse(
+      compileScssAtPath('components/dashboard/notification-card.scss')
+    );
+    const avatarDecls = collectTopLevelDecls(notificationCardRoot, '.notification-card__avatar');
+    expect(avatarDecls.get('width')).toBe('32px');
+    expect(avatarDecls.get('height')).toBe('32px');
+
+    const issueHeaderSelectors = collectSelectors(
+      compileSfcStyles('components/dashboard/issue/IssueHeader.vue')
+    );
+    expect(issueHeaderSelectors.some((selector) => selector.includes('.gp-tag--activity'))).toBe(
+      true
+    );
+    expect(issueHeaderSelectors.some((selector) => selector.includes('.tag.is-activity'))).toBe(
+      false
+    );
+
+    const issueStateSelectors = collectSelectors(
+      compileSfcStyles('components/dashboard/issue/IssueTimelineStateEvents.vue')
+    );
+    expect(
+      issueStateSelectors.some((selector) => selector.includes('.gp-tag.issue-type-tag'))
+    ).toBe(true);
+    expect(issueStateSelectors.some((selector) => selector.includes('.tag.issue-type-tag'))).toBe(
+      false
     );
   });
 });

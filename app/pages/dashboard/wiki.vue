@@ -351,7 +351,7 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
     <div class="wiki-page">
       <div class="wiki-page__header">
         <div class="wiki-page__heading">
-          <h1 class="title is-5 mb-0 is-flex is-align-items-center">
+          <h1 class="wiki-page__title mb-0 is-flex is-align-items-center">
             <BookOpenIcon :size="18" class="mr-2" aria-hidden="true" />
             {{ t('wikiPage.heading') }}
           </h1>
@@ -532,6 +532,13 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
   flex-wrap: wrap;
   gap: 0.25rem 0.75rem;
   min-width: 0;
+}
+
+.wiki-page__title {
+  color: var(--gitpulse-text-strong);
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.125;
 }
 
 .wiki-page__repo {

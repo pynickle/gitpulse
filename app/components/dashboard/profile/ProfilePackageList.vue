@@ -141,7 +141,7 @@ const updatedLabel = (pkg: PackageSummary) => {
               aria-hidden="true"
             />
             <span class="profile-package-list__item-name" :title="pkg.name">{{ pkg.name }}</span>
-            <span v-if="visibilityLabel(pkg)" class="tag is-warning is-light">
+            <span v-if="visibilityLabel(pkg)" class="gp-tag gp-tag--warning">
               {{ visibilityLabel(pkg) }}
             </span>
           </div>
@@ -151,7 +151,7 @@ const updatedLabel = (pkg: PackageSummary) => {
           </p>
 
           <div class="profile-package-list__item-meta">
-            <span class="tag is-light">{{ t(`packages.types.${pkg.packageType}`) }}</span>
+            <span class="gp-tag">{{ t(`packages.types.${pkg.packageType}`) }}</span>
             <span v-if="typeof pkg.versionCount === 'number'">
               {{ t('packages.versionCount', { count: pkg.versionCount }, pkg.versionCount) }}
             </span>

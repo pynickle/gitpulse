@@ -669,7 +669,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
         <section class="repo-detail-header">
           <div class="repo-detail-header__title-row">
             <GitHubIcon :size="28" class="repo-detail-header__icon" />
-            <h1 class="title is-3 repo-detail-header__title">{{ repository.name }}</h1>
+            <h1 class="repo-detail-header__title">{{ repository.name }}</h1>
             <div class="repo-detail-header__actions">
               <button
                 type="button"
@@ -757,10 +757,12 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 
           <div class="repo-detail-header__identity">
             <div class="repo-detail-header__meta">
-              <span class="subtitle mb-0 is-6 has-text-weight-medium">{{ owner }}/{{ repo }}</span>
+              <span class="repo-detail-header__full-name mb-0 has-text-weight-medium"
+                >{{ owner }}/{{ repo }}</span
+              >
               <span
                 v-if="repository.language"
-                class="tag is-link is-light repo-detail-header__language"
+                class="gp-tag gp-tag--link repo-detail-header__language"
               >
                 <span
                   class="repo-detail-header__language-dot"
@@ -771,7 +773,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
               <span
                 v-for="badge in repoBadges"
                 :key="badge.label"
-                class="tag repo-detail-header__badge"
+                class="gp-tag repo-detail-header__badge"
               >
                 <component :is="badge.icon" :size="13" />
                 <span>{{ badge.label }}</span>
@@ -941,7 +943,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
               />
 
               <div class="repo-readme">
-                <h2 class="title is-5 repo-readme__title">
+                <h2 class="repo-readme__title">
                   <BookmarkIcon :size="18" />
                   <span>{{ copy.readme }}</span>
                 </h2>
@@ -1190,6 +1192,10 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 
 .repo-detail-header__title {
   margin-bottom: 0;
+  color: var(--gitpulse-text-strong);
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.125;
   overflow-wrap: anywhere;
   letter-spacing: 0;
 }
@@ -1343,6 +1349,12 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
   flex-wrap: wrap;
   gap: 0.45rem;
   min-width: 0;
+}
+
+.repo-detail-header__full-name {
+  color: var(--gitpulse-text-muted);
+  font-size: 1rem;
+  line-height: 1.25;
 }
 
 .repo-detail-header__language,
@@ -1672,6 +1684,8 @@ html.dark .repo-detail-section__chrome {
   margin-bottom: 1rem;
   color: var(--gitpulse-text-strong);
   font-size: 1.125rem;
+  font-weight: 800;
+  line-height: 1.125;
 }
 
 .repo-readme__loading {

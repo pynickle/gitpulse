@@ -118,19 +118,19 @@ usePageMeta(
           </div>
 
           <div class="detail-header-title">
-            <h1 class="title is-3 mb-0 header-title__text release-header__title">
+            <h1 class="mb-0 header-title__text release-header__title">
               {{ releaseTitle }}
             </h1>
           </div>
 
           <div class="release-header__meta">
-            <span v-if="release.draft" class="tag is-warning is-light">
+            <span v-if="release.draft" class="gp-tag gp-tag--warning">
               {{ t('releaseDetail.draft') }}
             </span>
-            <span v-if="release.prerelease" class="tag is-info is-light">
+            <span v-if="release.prerelease" class="gp-tag gp-tag--info">
               {{ t('releaseDetail.prerelease') }}
             </span>
-            <span v-if="release.target_commitish" class="tag release-header__branch">
+            <span v-if="release.target_commitish" class="gp-tag release-header__branch">
               <GitBranchIcon :size="13" aria-hidden="true" />
               <span>{{ release.target_commitish }}</span>
             </span>

@@ -13,7 +13,7 @@
 
     <!-- Tier 2: Full-width Title -->
     <div class="detail-header-title">
-      <h1 class="title is-3 mb-0 header-title__text">{{ issue?.title }}</h1>
+      <h1 class="mb-0 header-title__text">{{ issue?.title }}</h1>
     </div>
 
     <!-- Tier 3: Single-line Status Strip -->
@@ -214,7 +214,7 @@ const handleRepoClick = async () => {
 
   // A timeline pill keeps a bottom margin so wrapped rows of pills stay apart; this row
   // centres its pill instead, and that margin would lift the pill above the label.
-  :deep(.tag.is-activity) {
+  :deep(.gp-tag--activity) {
     margin-bottom: 0;
   }
 }

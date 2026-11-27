@@ -264,12 +264,12 @@ const handleHome = async () => {
               class="package-page__type-icon"
               aria-hidden="true"
             />
-            <h1 class="title is-4 mb-0 package-page__name">{{ detail.name }}</h1>
-            <span class="tag is-light">{{ t(`packages.types.${detail.packageType}`) }}</span>
+            <h1 class="mb-0 package-page__name">{{ detail.name }}</h1>
+            <span class="gp-tag">{{ t(`packages.types.${detail.packageType}`) }}</span>
             <span
               v-if="visibilityLabel"
-              class="tag is-light"
-              :class="detail.visibility === 'public' ? 'is-success' : 'is-warning'"
+              class="gp-tag"
+              :class="detail.visibility === 'public' ? 'gp-tag--success' : 'gp-tag--warning'"
             >
               {{ visibilityLabel }}
             </span>
@@ -328,7 +328,7 @@ const handleHome = async () => {
         </header>
 
         <section v-if="installCommand" class="package-page__install">
-          <h2 class="title is-6 mb-2 package-page__section-title">
+          <h2 class="mb-2 package-page__section-title">
             <TerminalIcon :size="15" aria-hidden="true" />
             {{ t('packageDetail.install') }}
           </h2>
@@ -339,7 +339,7 @@ const handleHome = async () => {
 
         <section class="package-page__versions">
           <div class="package-page__versions-header">
-            <h2 class="title is-6 mb-0 package-page__section-title">
+            <h2 class="mb-0 package-page__section-title">
               <TagIcon :size="15" aria-hidden="true" />
               {{ t('packageDetail.versions') }}
             </h2>
@@ -413,8 +413,8 @@ const handleHome = async () => {
                 <span
                   v-for="tag in versionSecondaryTags(version)"
                   :key="tag"
-                  class="tag is-light"
-                  :class="tag === 'latest' ? 'is-success' : 'is-info'"
+                  class="gp-tag"
+                  :class="tag === 'latest' ? 'gp-tag--success' : 'gp-tag--info'"
                 >
                   {{ tag }}
                 </span>
@@ -481,6 +481,10 @@ const handleHome = async () => {
 }
 
 .package-page__name {
+  color: var(--gitpulse-text-strong);
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.125;
   overflow-wrap: anywhere;
 }
 
@@ -532,6 +536,10 @@ const handleHome = async () => {
   display: flex;
   align-items: center;
   gap: 0.45rem;
+  color: var(--gitpulse-text-strong);
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.125;
 }
 
 .package-page__install-command {

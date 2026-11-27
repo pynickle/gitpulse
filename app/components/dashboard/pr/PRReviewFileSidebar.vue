@@ -206,7 +206,7 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
   >
     <div class="pr-review-file-sidebar__content">
       <div class="pr-review-file-sidebar__header">
-        <h2 class="title is-6 mb-1">{{ t('prReview.files') }}</h2>
+        <h2 class="pr-review-file-sidebar__title mb-1">{{ t('prReview.files') }}</h2>
         <div class="pr-review-file-sidebar__header-actions">
           <div
             class="pr-review-file-sidebar__view-toggle"
@@ -494,8 +494,11 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
   gap: 0.5rem;
 }
 
-.pr-review-file-sidebar__header .title {
+.pr-review-file-sidebar__title {
+  color: var(--gitpulse-text-strong);
   font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1.125;
 }
 
 .pr-review-file-sidebar__subheader {

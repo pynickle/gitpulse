@@ -8,7 +8,7 @@
       >
         <div>
           <p class="heading" :class="stat.colorClass">{{ stat.label }}</p>
-          <p class="title is-4">{{ stat.value }}</p>
+          <p class="tab-stats__value">{{ stat.value }}</p>
         </div>
       </div>
     </nav>
@@ -133,9 +133,11 @@ const displayStats = computed(() => {
     }
   }
 
-  .title {
+  .tab-stats__value {
     margin-bottom: 0;
+    font-size: 1.5rem;
     font-weight: 600;
+    line-height: 1.125;
     color: var(--gitpulse-text-strong);
   }
 }

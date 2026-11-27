@@ -76,7 +76,7 @@ const toggleSection = (section: string) => {
         <div class="pr-review-submit-bar__header-title">
           <MessageSquareIcon :size="16" aria-hidden="true" />
           <div>
-            <h2 class="title is-6 mb-0">{{ t('prReview.reviewPanel') }}</h2>
+            <h2 class="pr-review-submit-bar__title mb-0">{{ t('prReview.reviewPanel') }}</h2>
             <p class="is-size-7 has-text-grey mb-0">
               {{ t('prReview.pendingComments', { count: pendingCommentCount }) }}
             </p>
@@ -329,8 +329,11 @@ const toggleSection = (section: string) => {
   gap: 0.5rem;
 }
 
-.pr-review-submit-bar__header-title .title {
+.pr-review-submit-bar__title {
+  color: var(--gitpulse-text-strong);
   font-size: 0.88rem;
+  font-weight: 800;
+  line-height: 1.125;
 }
 
 .pr-review-submit-bar__collapse-button,

@@ -61,7 +61,7 @@ const navigateToItem = async (item: RepoContentItem) => {
 
 <template>
   <div class="repo-file-tree">
-    <h2 class="title is-5 repo-file-tree__title">
+    <h2 class="repo-file-tree__title">
       <FolderIcon :size="18" />
       <span>{{ t('repoDetail.files') }}</span>
     </h2>
@@ -112,6 +112,8 @@ const navigateToItem = async (item: RepoContentItem) => {
   margin-bottom: 1rem;
   color: var(--gitpulse-text-strong);
   font-size: 1.125rem;
+  font-weight: 800;
+  line-height: 1.125;
 }
 
 .repo-file-tree__loading {

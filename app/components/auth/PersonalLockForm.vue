@@ -4,8 +4,10 @@
       <div class="personal-lock-form__logo mb-3">
         <LockKeyholeIcon :size="48" class="has-text-primary" />
       </div>
-      <h2 class="title is-4 mb-2">{{ t('auth.personalModeTitle') }}</h2>
-      <p class="subtitle is-6 has-text-grey mb-0">{{ t('auth.personalModeSubtitle') }}</p>
+      <h2 class="personal-lock-form__title mb-2">{{ t('auth.personalModeTitle') }}</h2>
+      <p class="personal-lock-form__subtitle has-text-grey mb-0">
+        {{ t('auth.personalModeSubtitle') }}
+      </p>
     </div>
 
     <div class="personal-lock-form__content">
@@ -120,6 +122,20 @@ const handleUnlock = async () => {
   border-radius: 50%;
   background: var(--gitpulse-accent-soft);
   color: var(--gitpulse-accent);
+}
+
+.personal-lock-form__title {
+  color: var(--gitpulse-text-strong);
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.125;
+}
+
+.personal-lock-form__subtitle {
+  color: var(--gitpulse-text-muted);
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.25;
 }
 
 .personal-lock-form__label {

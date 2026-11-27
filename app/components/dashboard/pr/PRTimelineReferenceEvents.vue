@@ -4,7 +4,7 @@
     <a
       href="#"
       @click.prevent="switchToIssueOrPR(item.source)"
-      class="tag is-activity ml-1 is-info is-light"
+      class="gp-tag gp-tag--activity gp-tag--info ml-1"
     >
       {{ item.source?.title || '#' + item.source?.number }}
     </a>
@@ -17,11 +17,11 @@
       :href="item.commit.commitUrl"
       target="_blank"
       rel="noopener"
-      class="tag is-activity ml-1 is-light is-family-monospace"
+      class="gp-tag gp-tag--activity ml-1 is-family-monospace"
     >
       {{ item.commit?.oid?.slice(0, 7) || t('prReview.commitFallbackRef') }}
     </a>
-    <span v-else class="tag is-activity ml-1 is-light is-family-monospace">
+    <span v-else class="gp-tag gp-tag--activity ml-1 is-family-monospace">
       {{ item.commit?.oid?.slice(0, 7) || t('prReview.commitFallbackRef') }}
     </span>
   </template>
@@ -31,7 +31,7 @@
     <a
       href="#"
       @click.prevent="switchToIssueOrPR(item.duplicate)"
-      class="tag is-activity ml-1 is-info is-light"
+      class="gp-tag gp-tag--activity gp-tag--info ml-1"
     >
       {{ item.duplicate?.title }} #{{ item.duplicate?.number }}
     </a>
@@ -42,7 +42,7 @@
     <a
       href="#"
       @click.prevent="switchToIssueOrPR(item.duplicate)"
-      class="tag is-activity ml-1 is-info is-light"
+      class="gp-tag gp-tag--activity gp-tag--info ml-1"
     >
       {{ item.duplicate?.title }} #{{ item.duplicate?.number }}
     </a>
@@ -72,7 +72,7 @@
     <a
       href="#"
       @click.prevent="switchToIssueOrPR(item.parent)"
-      class="tag is-activity ml-1 is-info is-light"
+      class="gp-tag gp-tag--activity gp-tag--info ml-1"
     >
       {{ item.parent?.title }} #{{ item.parent?.number }}
     </a>

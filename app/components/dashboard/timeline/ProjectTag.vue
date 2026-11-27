@@ -4,11 +4,11 @@
     :href="project.url"
     target="_blank"
     rel="noopener"
-    class="tag is-activity ml-1 is-link is-light"
+    class="gp-tag gp-tag--activity gp-tag--link ml-1"
   >
     {{ project.title }}
   </a>
-  <span v-else class="tag is-activity ml-1 is-link is-light">{{
+  <span v-else class="gp-tag gp-tag--activity gp-tag--link ml-1">{{
     project?.title || fallbackTitle
   }}</span>
 </template>

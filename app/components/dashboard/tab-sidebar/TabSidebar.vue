@@ -51,7 +51,7 @@
                   :aria-current="activeTabId === tab.id ? 'page' : undefined"
                   @click="emit('tab-select', tab.id)"
                 >
-                  <span class="icon is-small tab-sidebar__tab-icon">
+                  <span class="tab-sidebar__tab-icon">
                     <component :is="tab.icon" :size="15" />
                   </span>
                   <span class="tab-sidebar__tab-text">
@@ -441,6 +441,7 @@ const displayGroups = computed<DisplayTabSidebarGroup[]>(() => {
   align-items: center;
   justify-content: center;
   width: 16px;
+  height: 16px;
   color: var(--gitpulse-text-subtle);
 }
 

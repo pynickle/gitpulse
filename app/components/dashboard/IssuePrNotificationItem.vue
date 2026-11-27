@@ -5,7 +5,7 @@
     <div class="dashboard-list-card__body p-3">
       <div class="dashboard-list-card__main-row notification-card__main-row">
         <div class="dashboard-list-card__icon">
-          <figure class="image is-32x32 issue-pr-notification-card__icon">
+          <figure class="notification-card__avatar">
             <GitHubAvatar
               :src="card.actorAvatarUrl"
               :alt="card.actorLogin"
@@ -33,7 +33,7 @@
           <div class="is-flex is-align-items-flex-start">
             <div class="dashboard-list-card__text-stack">
               <p
-                class="title is-6 mb-1 dashboard-list-card__subject"
+                class="mb-1 dashboard-list-card__subject"
                 :class="{ 'dashboard-list-card__subject--with-conflict': card.hasConflicts }"
               >
                 <span class="dashboard-list-card__subject-text">{{ card.title }}</span>
@@ -59,7 +59,7 @@
                 </span>
               </div>
 
-              <p class="subtitle is-7 has-text-grey mb-0 dashboard-list-card__meta">
+              <p class="has-text-grey mb-0 dashboard-list-card__meta">
                 <span v-if="card.number" class="notification-card__number">
                   #{{ card.number }}
                 </span>
@@ -225,8 +225,3 @@ const subjectVisual = computed(() => {
 
 <style scoped lang="scss" src="~/assets/scss/dashboard-list-card.scss" />
 <style scoped lang="scss" src="./notification-card.scss" />
-<style scoped lang="scss">
-.issue-pr-notification-card__icon {
-  position: relative;
-}
-</style>

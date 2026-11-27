@@ -2,8 +2,8 @@
   <div class="auth-gateway">
     <div class="auth-gateway__header mb-4">
       <p class="auth-gateway__eyebrow mb-2">{{ modeLabel }}</p>
-      <h2 class="title is-4 mb-2">{{ t('landing.authCardTitle') }}</h2>
-      <p class="subtitle is-6 has-text-grey mb-0">{{ t('landing.authCardSubtitle') }}</p>
+      <h2 class="auth-gateway__title mb-2">{{ t('landing.authCardTitle') }}</h2>
+      <p class="auth-gateway__subtitle has-text-grey mb-0">{{ t('landing.authCardSubtitle') }}</p>
     </div>
 
     <div class="auth-gateway__content">
@@ -177,6 +177,20 @@ const handlePatSubmit = async () => {
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--gitpulse-accent);
+}
+
+.auth-gateway__title {
+  color: var(--gitpulse-text-strong);
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.125;
+}
+
+.auth-gateway__subtitle {
+  color: var(--gitpulse-text-muted);
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.25;
 }
 
 .auth-gateway__divider {

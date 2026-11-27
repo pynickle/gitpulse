@@ -636,10 +636,28 @@
   border: 1px solid var(--gitpulse-border);
   border-radius: var(--gitpulse-radius-sm);
   background-color: var(--gitpulse-surface-muted);
-  color: var(--gitpulse-text-strong);
+  color: var(--gp-tag-color, var(--gitpulse-text-strong));
   font-size: 0.75rem;
   line-height: 1.5;
   white-space: nowrap;
+}
+
+a.gp-tag {
+  color: var(--gp-tag-color, var(--gitpulse-text-strong));
+  text-decoration: none;
+
+  @include hover-only {
+    &:hover {
+      color: var(--gp-tag-color, var(--gitpulse-text-strong));
+      text-decoration: underline;
+    }
+  }
+
+  &:focus-visible {
+    color: var(--gp-tag-color, var(--gitpulse-text-strong));
+    outline: 2px solid var(--gitpulse-focus-ring);
+    outline-offset: 2px;
+  }
 }
 
 .gp-tag--small {
@@ -655,43 +673,57 @@
 }
 
 .gp-tag--primary {
+  --gp-tag-color: var(--gitpulse-accent);
+
   border-color: color-mix(in srgb, var(--gitpulse-primary-solid) 24%, transparent);
   background-color: var(--gitpulse-accent-soft);
-  color: var(--gitpulse-accent);
+  color: var(--gp-tag-color);
 }
 
 .gp-tag--link {
+  --gp-tag-color: var(--gitpulse-link);
+
   border-color: color-mix(in srgb, var(--gitpulse-link) 24%, transparent);
   background-color: var(--gitpulse-link-soft);
-  color: var(--gitpulse-link);
+  color: var(--gp-tag-color);
 }
 
 .gp-tag--info {
+  --gp-tag-color: var(--gitpulse-info);
+
   border-color: color-mix(in srgb, var(--gitpulse-info) 22%, transparent);
   background-color: var(--gitpulse-info-soft);
-  color: var(--gitpulse-info);
+  color: var(--gp-tag-color);
 }
 
 .gp-tag--success {
+  --gp-tag-color: var(--gitpulse-success);
+
   border-color: color-mix(in srgb, var(--gitpulse-success) 24%, transparent);
   background-color: var(--gitpulse-success-soft);
-  color: var(--gitpulse-success);
+  color: var(--gp-tag-color);
 }
 
 .gp-tag--warning {
+  --gp-tag-color: var(--gitpulse-warning);
+
   border-color: color-mix(in srgb, var(--gitpulse-warning) 28%, transparent);
   background-color: var(--gitpulse-warning-soft);
-  color: var(--gitpulse-warning);
+  color: var(--gp-tag-color);
 }
 
 .gp-tag--danger {
+  --gp-tag-color: var(--gitpulse-danger);
+
   border-color: color-mix(in srgb, var(--gitpulse-danger) 24%, transparent);
   background-color: var(--gitpulse-danger-soft);
-  color: var(--gitpulse-danger);
+  color: var(--gp-tag-color);
 }
 
 .gp-tag--raised {
+  --gp-tag-color: var(--gitpulse-text-strong);
+
   border-color: var(--gitpulse-border);
   background-color: var(--gitpulse-surface-raised);
-  color: var(--gitpulse-text-strong);
+  color: var(--gp-tag-color);
 }

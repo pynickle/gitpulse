@@ -37,7 +37,7 @@ const { t } = useI18n();
 
 <template>
   <section class="discussion-comments">
-    <h2 class="title is-5 discussion-comments__heading">
+    <h2 class="discussion-comments__heading">
       <MessageSquareIcon :size="20" />
       {{ t('discussionDetail.commentCount', { count: totalCount }) }}
     </h2>
@@ -122,6 +122,10 @@ const { t } = useI18n();
   align-items: center;
   gap: 0.5rem;
   margin-bottom: 0;
+  color: var(--gitpulse-text-strong);
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.125;
 }
 
 .discussion-comments__error {

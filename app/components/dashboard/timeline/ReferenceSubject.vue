@@ -3,9 +3,9 @@
     v-if="canNavigate"
     href="#"
     @click.prevent="handleClick"
-    class="tags reference-subject is-inline ml-1"
+    class="gp-tags gp-tags--addons gp-tags--inline reference-subject ml-1"
   >
-    <span class="tag is-activity is-danger is-light">
+    <span class="gp-tag gp-tag--activity gp-tag--danger">
       <span v-if="crossRepository && refSubject?.repository?.nameWithOwner" class="mr-1">
         {{ refSubject.repository.nameWithOwner }}
       </span>
@@ -13,16 +13,16 @@
       #{{ refSubject?.number ?? '?' }}
     </span>
 
-    <span class="tag is-activity is-link is-light">
+    <span class="gp-tag gp-tag--activity gp-tag--link">
       {{ refSubject?.title || t('timeline.referenceUnavailable') }}
     </span>
   </a>
 
-  <span v-else class="tags reference-subject is-inline ml-1">
-    <span class="tag is-activity is-danger is-light">
+  <span v-else class="gp-tags gp-tags--addons gp-tags--inline reference-subject ml-1">
+    <span class="gp-tag gp-tag--activity gp-tag--danger">
       {{ formatReferenceType(resolvedResourceType) }} #{{ refSubject?.number ?? '?' }}
     </span>
-    <span class="tag is-activity is-link is-light">
+    <span class="gp-tag gp-tag--activity gp-tag--link">
       {{ refSubject?.title || t('timeline.referenceUnavailable') }}
     </span>
   </span>
@@ -95,19 +95,3 @@ const switchToPullRequest = (owner: string, repo: string, pullNumber: number) =>
   emit('switch-pull-request', owner, repo, pullNumber);
 };
 </script>
-
-<style scoped lang="scss">
-.reference-subject {
-  gap: 0;
-
-  > .tag:not(:first-child) {
-    border-start-start-radius: 0;
-    border-end-start-radius: 0;
-  }
-
-  > .tag:not(:last-child) {
-    border-start-end-radius: 0;
-    border-end-end-radius: 0;
-  }
-}
-</style>

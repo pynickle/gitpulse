@@ -9,7 +9,7 @@
     <div class="dashboard-list-card__body p-3">
       <div class="dashboard-list-card__main-row notification-card__main-row">
         <div class="dashboard-list-card__icon">
-          <figure class="image is-32x32">
+          <figure class="notification-card__avatar">
             <Transition name="notification-avatar" mode="out-in">
               <GitHubAvatar
                 v-if="avatarSrc"
@@ -65,7 +65,7 @@
           <div class="notification-card__content-frame">
             <div class="dashboard-list-card__text-stack notification-card__text-stack">
               <p
-                class="title is-6 mb-1 dashboard-list-card__subject"
+                class="mb-1 dashboard-list-card__subject"
                 :class="{
                   'dashboard-list-card__subject--with-conflict': showPullRequestConflict,
                 }"
@@ -104,7 +104,7 @@
                 <span>{{ t('dashboard.notificationSubjectEnrichment.itemError') }}</span>
               </p>
 
-              <p class="subtitle is-7 has-text-grey mb-0 dashboard-list-card__meta">
+              <p class="has-text-grey mb-0 dashboard-list-card__meta">
                 <span v-if="showSubjectNumber" class="notification-card__number">
                   #{{ subjectNumber }}
                 </span>

@@ -39,7 +39,7 @@ watch(
       <p>{{ t('launch.opening') }}</p>
     </div>
     <div v-else class="open-page__error">
-      <h1 class="title is-4">{{ t('launch.unsupportedTitle') }}</h1>
+      <h1 class="open-page__title">{{ t('launch.unsupportedTitle') }}</h1>
       <p class="mb-5">{{ t('launch.unsupportedDescription') }}</p>
       <NuxtLinkLocale class="button is-primary" :to="localePath('/dashboard')">
         {{ t('error.cta.dashboard') }}
@@ -59,5 +59,13 @@ watch(
 .open-page__error {
   max-width: 36rem;
   text-align: center;
+}
+
+.open-page__title {
+  margin-bottom: 1.5rem;
+  color: var(--gitpulse-text-strong);
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.125;
 }
 </style>
