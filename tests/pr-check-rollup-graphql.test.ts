@@ -9,16 +9,14 @@ mock.module('#shared/utils/pr-checks', () => prChecks);
 mock.module('#shared/utils/pull-request-conflicts', () => pullRequestConflicts);
 
 const {
-  PULL_REQUEST_CHECK_ROLLUP_QUERY,
   PR_CHECK_ROLLUP_NODE_FIELDS,
   attachPullRequestCheckRollups,
   fetchCommitCheckRollups,
-  fetchPullRequestCheckRollup,
   mapPullRequestCheckRollup,
 } = await import('../server/utils/pr-check-rollup-graphql-utils');
 
 describe('Check Rollup GraphQL mapping', () => {
-  test('maps a CheckRun rollup into the near-raw rollup shape', () => {
+  test('maps a CheckRun rollup into the near-raw rollup shape with presentation fields', () => {
     expect(
       mapPullRequestCheckRollup({
         state: 'FAILURE',
@@ -31,13 +29,22 @@ describe('Check Rollup GraphQL mapping', () => {
               status: 'COMPLETED',
               conclusion: 'SUCCESS',
               detailsUrl: 'https://github.com/acme/widgets/runs/1',
-              checkSuite: { app: { name: 'GitHub Actions' } },
+              title: 'Build passed cleanly',
+              startedAt: '2026-11-27T08:00:00Z',
+              completedAt: '2026-11-27T08:01:36Z',
+              checkSuite: {
+                app: {
+                  name: 'GitHub Actions',
+                  logoUrl: 'https://avatars.githubusercontent.com/in/15368',
+                },
+              },
             },
             {
               __typename: 'CheckRun',
               name: 'test',
               status: 'IN_PROGRESS',
               conclusion: null,
+              startedAt: '2026-11-27T08:02:00Z',
               checkSuite: { app: { name: 'GitHub Actions' } },
             },
           ],
@@ -54,7 +61,18 @@ describe('Check Rollup GraphQL mapping', () => {
             status: 'COMPLETED',
             conclusion: 'SUCCESS',
             detailsUrl: 'https://github.com/acme/widgets/runs/1',
-            checkSuite: { app: { name: 'GitHub Actions' } },
+            title: 'Build passed cleanly',
+            startedAt: '2026-11-27T08:00:00Z',
+            completedAt: '2026-11-27T08:01:36Z',
+            description: null,
+            avatarUrl: null,
+            createdAt: null,
+            checkSuite: {
+              app: {
+                name: 'GitHub Actions',
+                logoUrl: 'https://avatars.githubusercontent.com/in/15368',
+              },
+            },
             creator: null,
           },
           {
@@ -63,7 +81,13 @@ describe('Check Rollup GraphQL mapping', () => {
             status: 'IN_PROGRESS',
             conclusion: null,
             detailsUrl: null,
-            checkSuite: { app: { name: 'GitHub Actions' } },
+            title: null,
+            startedAt: '2026-11-27T08:02:00Z',
+            completedAt: null,
+            description: null,
+            avatarUrl: null,
+            createdAt: null,
+            checkSuite: { app: { name: 'GitHub Actions', logoUrl: null } },
             creator: null,
           },
         ],
@@ -84,19 +108,28 @@ describe('Check Rollup GraphQL mapping', () => {
             context: 'legacy/ci',
             state: 'SUCCESS',
             targetUrl: 'https://ci.example/legacy',
+            description: 'All legacy checks green',
+            avatarUrl: 'https://avatars.githubusercontent.com/u/123',
+            createdAt: '2026-11-27T07:50:00Z',
             creator: { login: 'old-bot' },
           },
         ],
       },
     });
 
-    expect(rollup.contexts?.nodes).toEqual([
+    expect(rollup?.contexts?.nodes).toEqual([
       {
         __typename: 'StatusContext',
         name: 'legacy/ci',
         conclusion: 'SUCCESS',
         status: null,
         detailsUrl: 'https://ci.example/legacy',
+        title: null,
+        startedAt: null,
+        completedAt: null,
+        description: 'All legacy checks green',
+        avatarUrl: 'https://avatars.githubusercontent.com/u/123',
+        createdAt: '2026-11-27T07:50:00Z',
         checkSuite: null,
         creator: { login: 'old-bot' },
       },
@@ -119,13 +152,21 @@ describe('Check Rollup GraphQL mapping', () => {
     expect(rollup?.contexts?.nodes).toHaveLength(1);
   });
 
-  test('asks for the rollup contexts capped at 100 and never for isRequired', () => {
+  test('asks for lightweight presentation fields capped at 100 and never for isRequired or workflowRun', () => {
     // `CheckRun.isRequired` cannot be requested inside a rollup query: GitHub
-    // answers UNPROCESSABLE and blanks every CheckRun node.
+    // answers UNPROCESSABLE and blanks every CheckRun node. `workflowRun` is
+    // omitted to keep 50-PR batch queries well within complexity limits.
     expect(PR_CHECK_ROLLUP_NODE_FIELDS).toContain('statusCheckRollup');
     expect(PR_CHECK_ROLLUP_NODE_FIELDS).toContain('contexts(first: 100)');
+    expect(PR_CHECK_ROLLUP_NODE_FIELDS).toContain('logoUrl');
+    expect(PR_CHECK_ROLLUP_NODE_FIELDS).toContain('startedAt');
+    expect(PR_CHECK_ROLLUP_NODE_FIELDS).toContain('completedAt');
+    expect(PR_CHECK_ROLLUP_NODE_FIELDS).toContain('title');
+    expect(PR_CHECK_ROLLUP_NODE_FIELDS).toContain('avatarUrl');
+    expect(PR_CHECK_ROLLUP_NODE_FIELDS).toContain('description');
+    expect(PR_CHECK_ROLLUP_NODE_FIELDS).toContain('createdAt');
     expect(PR_CHECK_ROLLUP_NODE_FIELDS).not.toContain('isRequired');
-    expect(PULL_REQUEST_CHECK_ROLLUP_QUERY).toContain('node(id: $id)');
+    expect(PR_CHECK_ROLLUP_NODE_FIELDS).not.toContain('workflowRun');
   });
 });
 
@@ -302,64 +343,6 @@ describe('attach Check Rollups to Search items', () => {
 
     expect(Object.keys(variables)).toEqual(['owner0', 'repo0', 'number0']);
     expect(variables).toMatchObject({ owner0: 'acme', repo0: 'widgets', number0: 4 });
-  });
-});
-
-describe('fetch one pull request Check Rollup', () => {
-  test('resolves the rollup behind the pull request node id', async () => {
-    const rollup = { state: 'SUCCESS', contexts: { totalCount: 1, nodes: [] } };
-    let id: unknown;
-    const octokit = {
-      graphql: async (_query: string, variables: Record<string, unknown>) => {
-        id = variables.id;
-        return { node: { statusCheckRollup: rollup } };
-      },
-    };
-
-    expect(await fetchPullRequestCheckRollup(octokit, 'PR_abc')).toEqual(rollup);
-    expect(id).toBe('PR_abc');
-  });
-
-  test('returns null without calling GitHub when there is no node id', async () => {
-    let called = false;
-    const octokit = {
-      graphql: async () => {
-        called = true;
-        return {};
-      },
-    };
-
-    expect(await fetchPullRequestCheckRollup(octokit, null)).toBeNull();
-    expect(called).toBe(false);
-  });
-
-  test('keeps the rollup from a partially failed GraphQL response', async () => {
-    const rollup = { state: 'FAILURE', contexts: { totalCount: 2, nodes: [] } };
-    const octokit = {
-      graphql: async () => {
-        const error = new Error('GraphQL partial') as Error & { data: unknown };
-        error.data = { node: { statusCheckRollup: rollup } };
-        throw error;
-      },
-    };
-
-    expect(await fetchPullRequestCheckRollup(octokit, 'PR_abc')).toEqual(rollup);
-  });
-
-  test('degrades to null so a rollup error never breaks the PR detail surface', async () => {
-    const octokit = {
-      graphql: async () => {
-        throw new Error('GraphQL 500');
-      },
-    };
-    const originalConsoleWarn = console.warn;
-    console.warn = () => {};
-
-    try {
-      expect(await fetchPullRequestCheckRollup(octokit, 'PR_abc')).toBeNull();
-    } finally {
-      console.warn = originalConsoleWarn;
-    }
   });
 });
 

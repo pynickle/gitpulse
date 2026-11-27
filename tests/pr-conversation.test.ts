@@ -22,6 +22,7 @@ import { resolvePullRequestBranchRef } from '../app/utils/resolvePullRequestBran
 import enMessages from '../i18n/locales/en.json';
 import * as prChecks from '../shared/utils/pr-checks';
 import * as prReviewWorkspacePresentation from '../shared/utils/pr-review-workspace-presentation';
+import * as prStack from '../shared/utils/pr-stack';
 import { compileVue } from './helpers/compile-vue';
 import { githubProfileLinkModules } from './helpers/github-profile-link';
 import { interpolateTranslation } from './helpers/translation';
@@ -140,10 +141,18 @@ const PickerModal = await compileVue('app/components/dashboard/PickerModal.vue',
   '~/components/ui/ScrollArea.vue': { default: slotStub },
 });
 
+const StackLayerList = await compileVue('app/components/dashboard/pr/PRStackLayerList.vue', {
+  '@lucide/vue': new Proxy({}, { get: () => icon }) as unknown,
+  'vue-i18n': i18n,
+  '#shared/utils/pr-stack': prStack,
+});
+
 const StackDetail = await compileVue('app/components/dashboard/pr/PRStackDetail.vue', {
   '@lucide/vue': new Proxy({}, { get: () => icon }) as unknown,
   'vue-i18n': i18n,
+  '#shared/utils/pr-stack': prStack,
   '~/components/dashboard/PickerModal.vue': { default: PickerModal },
+  '~/components/dashboard/pr/PRStackLayerList.vue': { default: StackLayerList },
 });
 
 const StackChip = await compileVue('app/components/dashboard/pr/PRStackChip.vue', {
@@ -194,7 +203,9 @@ const MergeBox = await compileVue(
     '@lucide/vue': new Proxy({}, { get: () => icon }) as unknown,
     'vue-i18n': i18n,
     '#shared/utils/pr-checks': prChecks,
+    '#shared/utils/pr-stack': prStack,
     '~/components/dashboard/pr/CheckListRows.vue': { default: slotStub },
+    '~/components/dashboard/pr/PRStackLayerList.vue': { default: StackLayerList },
     '~/components/dashboard/pr/PRStackRebaseDialog.vue': { default: StackRebaseDialog },
     '~/components/ui/GitHubAvatar.vue': { default: slotStub },
     '~/components/ui/ScrollArea.vue': { default: slotStub },
@@ -215,8 +226,14 @@ const MergeBox = await compileVue(
 
 const stackLayers = [
   { number: 101, title: 'Add the model', state: 'merged' as const, headSha: 'head-101' },
-  { number: 102, title: 'Add the API', state: 'open' as const, headSha: 'head-102' },
-  { number: 103, title: 'Add the screen', state: 'draft' as const, headSha: 'head-103' },
+  { number: 102, title: 'Add the API', state: 'open' as const, headSha: 'head-102', behindBy: 0 },
+  {
+    number: 103,
+    title: 'Add the screen',
+    state: 'draft' as const,
+    headSha: 'head-103',
+    behindBy: 2,
+  },
   { number: 104, title: 'Add the notes', state: 'closed' as const, headSha: 'head-104' },
 ].map((layer) => ({ ...layer, baseRef: 'main', baseSha: 'old-base' }));
 
@@ -431,24 +448,26 @@ describe('Stack Merge', () => {
 
     const dialog = root.ownerDocument.querySelector('[role="dialog"]');
     expect(dialog?.textContent).toContain('main');
+    expect(dialog?.querySelector('.pr-stack-detail__history')?.textContent?.trim()).toBe('Linear');
     expect([...dialog!.querySelectorAll('.pr-stack-detail__layer')].map(layerText)).toEqual([
-      '#101 Add the model Open',
-      '#102 Add the API Open Current',
-      '#103 Add the screen Draft',
-      '#104 Add the notes Closed',
+      'Add the model Layer 1 #101 Open',
+      'Add the API Layer 2 #102 Open Current',
+      'Add the screen Layer 3 #103 Draft Behind 2',
+      'Add the notes Layer 4 #104 Closed',
     ]);
     dialog?.querySelector<HTMLElement>('[aria-label="Close"]')?.click();
     await nextTick();
 
     expect(root.textContent).toContain('No reviews required');
     expect(root.textContent).toContain('Some checks were not successful');
-    expect(root.textContent).toContain('This branch has no conflicts with the base branch');
-    expect(root.textContent).toContain('This branch is 2 commits behind main (1234567).');
+    expect(root.textContent).toContain('Ready to merge');
+    // Multi-active stack hides the separate Branch Currency row; the Stack row owns sync state.
+    expect(root.querySelector('.merge-box__currency')).toBeNull();
     expect(root.querySelector('.merge-box__update')).toBeNull();
 
     await openStackConfirmation(root);
 
-    expect(layerTexts(root)).toEqual(['#101 Add the model Open', '#102 Add the API Open']);
+    expect(layerTexts(root)).toEqual(['Add the model #101 Open', 'Add the API #102 Open']);
     expect(root.querySelector('.merge-box__commit-form')).toBeNull();
     expect(store.stackMerges).toEqual([]);
     expect(store.merges).toEqual([]);
@@ -476,7 +495,7 @@ describe('Stack Merge', () => {
 
     await openStackConfirmation(root);
 
-    expect(layerTexts(root)).toEqual(['#102 Add the API Open']);
+    expect(layerTexts(root)).toEqual(['Add the API #102 Open']);
     const form = root.querySelector<HTMLFormElement>('.merge-box__commit-form');
     const title = form?.querySelector<HTMLInputElement>('.merge-box__commit-input');
     const message = form?.querySelector<HTMLTextAreaElement>('.merge-box__commit-textarea');
@@ -653,9 +672,7 @@ describe('Stack Merge', () => {
     // Closing the dialog leaves the error visible in the Merge Box
     dialog?.dispatchEvent(new dom.window.Event('close'));
     await settle();
-    expect(root.querySelector('.merge-box__actions [role="alert"]')?.textContent).toContain(
-      'Rebase conflict'
-    );
+    expect(root.querySelector('[role="alert"]')?.textContent).toContain('Rebase conflict');
   });
 
   test('offers no Stack Rebase when the history is unknown, then offers Stack Merge once it is linear', async () => {
@@ -697,20 +714,17 @@ describe('Stack Merge', () => {
     expect(root.textContent).toContain('Stack Rebase is switched off on this deployment.');
   });
 
-  test('keeps Rebase stack visible but disabled when the server has no Git', () => {
+  test('explains inline on the Stack row when the server has no Git instead of rendering a disabled Rebase stack button', () => {
     const root = mountConversation({
       pullRequest: layerPullRequest('not-linear'),
       behindBy: 2,
       git: { available: false, reason: 'git_missing' },
     });
 
-    const trigger = stackRebaseControl(root);
-    expect(trigger).not.toBeNull();
-    expect(trigger?.hasAttribute('disabled')).toBe(true);
-    expect(trigger?.getAttribute('title')).toBe(
-      'This server has no Git, so it cannot rebase a Stack.'
+    expect(stackRebaseControl(root)).toBeNull();
+    expect(root.textContent).toContain(
+      'This server has no Git, so it cannot rebase a Stack. Rebase the Stack locally.'
     );
-    expect(root.textContent).toContain('This server has no Git, so it cannot rebase a Stack.');
   });
 
   test('offers Rebase stack on a deployment whose server has Git', () => {
@@ -926,11 +940,17 @@ describe('stack detail', () => {
     const dialog = root.ownerDocument.querySelector('[role="dialog"]');
     expect(dialog).not.toBeNull();
     expect(dialog?.textContent).toContain('main');
+    expect(dialog?.querySelector('.pr-stack-detail__history')?.textContent?.trim()).toBe('Linear');
+    expect(
+      [...dialog!.querySelectorAll('.pr-stack-detail__node')].map((el) =>
+        el.getAttribute('data-state')
+      )
+    ).toEqual(['merged', 'open', 'draft', 'closed']);
     expect([...dialog!.querySelectorAll('.pr-stack-detail__layer')].map(layerText)).toEqual([
-      '#101 Add the model Merged',
-      '#102 Add the API Open Current',
-      '#103 Add the screen Draft',
-      '#104 Add the notes Closed',
+      'Add the model Layer 1 #101 Merged',
+      'Add the API Layer 2 #102 Open Current',
+      'Add the screen Layer 3 #103 Draft Behind 2',
+      'Add the notes Layer 4 #104 Closed',
     ]);
 
     const current = dialog?.querySelector<HTMLElement>('[aria-current="true"]');
@@ -942,9 +962,9 @@ describe('stack detail', () => {
       .map(layerText)
       .filter(Boolean);
     expect(actionable).toEqual([
-      '#101 Add the model Merged',
-      '#103 Add the screen Draft',
-      '#104 Add the notes Closed',
+      'Add the model Layer 1 #101 Merged',
+      'Add the screen Layer 3 #103 Draft Behind 2',
+      'Add the notes Layer 4 #104 Closed',
     ]);
     expect(dialog?.textContent).not.toContain('Stack Merge');
     expect(dialog?.textContent).not.toContain('Stack Rebase');
@@ -1001,15 +1021,15 @@ describe('stack detail', () => {
     const currentLayerText = () =>
       layerText(dom.document.querySelector('[role="dialog"] [aria-current="true"]')!);
 
-    expect(currentLayerText()).toContain('#103 Add the screen Draft Current');
+    expect(currentLayerText()).toContain('Add the screen Layer 3 #103 Draft Current Behind 2');
 
     currentPullNumber.value = 999;
     await nextTick();
-    expect(currentLayerText()).toContain('#101 Add the model Merged Current');
+    expect(currentLayerText()).toContain('Add the model Layer 1 #101 Merged Current');
 
     currentPullNumber.value = undefined;
     await nextTick();
-    expect(currentLayerText()).toContain('#101 Add the model Merged Current');
+    expect(currentLayerText()).toContain('Add the model Layer 1 #101 Merged Current');
   });
 
   test('closes the open Stack Detail dialog when stack becomes null', async () => {

@@ -87,18 +87,22 @@
         </div>
       </div>
 
-      <!-- Open -->
+      <!-- Open: Two-Zone Merge Box (Status Checklist Zone + Dedicated Merge Footer) -->
       <div v-else class="merge-box__open">
+        <!-- Row 1: Review -->
         <div class="merge-box__row" :class="`merge-box__row--${reviewRow.tone}`">
           <span class="merge-box__row-icon">
             <component :is="reviewRow.icon" :size="13" />
           </span>
           <div class="merge-box__row-body">
             <p class="merge-box__row-title">{{ reviewRow.title }}</p>
-            <p v-if="reviewRow.detail" class="merge-box__row-detail">{{ reviewRow.detail }}</p>
+            <p v-for="(detail, idx) in reviewRow.details" :key="idx" class="merge-box__row-detail">
+              {{ detail }}
+            </p>
           </div>
         </div>
 
+        <!-- Row 2: Checks -->
         <template v-if="checksRow">
           <button
             type="button"
@@ -106,7 +110,7 @@
             :class="`merge-box__row--${checksRow.tone}`"
             :aria-expanded="checksExpanded"
             :aria-label="t('prReview.mergeBox.toggleChecks')"
-            @click="checksExpanded = !checksExpanded"
+            @click="toggleChecks"
           >
             <span class="merge-box__row-icon">
               <component :is="checksRow.icon" :size="13" />
@@ -122,14 +126,93 @@
             />
           </button>
           <Transition name="expand">
-            <ScrollArea v-if="checksExpanded" class="merge-box__check-list">
-              <!-- A truncated rollup already says so on the checks row itself. -->
+            <div v-if="checksExpanded" class="merge-box__check-list" tabindex="0">
               <CheckListRows :groups="checksView.groups" />
-            </ScrollArea>
+            </div>
           </Transition>
         </template>
 
-        <div class="merge-box__row merge-box__currency" :class="`merge-box__row--${currencyTone}`">
+        <!-- Row 3: Stack (whenever this PR is a Layer) -->
+        <template v-if="stack && stackRow">
+          <div
+            class="merge-box__row merge-box__stack-row"
+            :class="`merge-box__row--${stackRow.tone}`"
+          >
+            <button
+              type="button"
+              class="merge-box__stack-toggle"
+              :aria-expanded="stackExpanded"
+              :aria-label="t('prReview.mergeBox.stackToggle')"
+              @click="stackExpanded = !stackExpanded"
+            >
+              <span class="merge-box__row-icon">
+                <component :is="stackRow.icon" :size="13" />
+              </span>
+              <span class="merge-box__row-body">
+                <span class="merge-box__row-title">{{ stackRow.title }}</span>
+                <span v-if="stackRow.detail" class="merge-box__row-detail">{{
+                  stackRow.detail
+                }}</span>
+              </span>
+              <ChevronDownIcon
+                v-if="stack.layers.length > 0"
+                :size="14"
+                class="merge-box__chevron"
+                :class="{ 'merge-box__chevron--open': stackExpanded }"
+              />
+            </button>
+
+            <div v-if="showStackRebase" class="merge-box__stack-action">
+              <button
+                type="button"
+                class="merge-box__secondary-btn merge-box__rebase-stack-btn"
+                :disabled="stackRebaseDisabled"
+                aria-haspopup="dialog"
+                @click="openStackRebase"
+              >
+                <GitBranchIcon :size="13" aria-hidden="true" />
+                <span>{{ t('prReview.stackRebase.title') }}</span>
+              </button>
+            </div>
+          </div>
+
+          <div
+            v-if="stackRebaseError"
+            class="merge-box__row-alert merge-box__note merge-box__note--danger"
+            role="alert"
+          >
+            <CircleExclamationPointIcon :size="14" />
+            <span>{{ stackRebaseError }}</span>
+          </div>
+
+          <Transition name="expand">
+            <div v-if="stackExpanded && stack.layers.length > 0" class="merge-box__stack-drawer">
+              <PRStackLayerList
+                :stack="stack"
+                :current-pull-number="pullNumber"
+                @select="emit('selectLayer', $event)"
+              />
+            </div>
+          </Transition>
+
+          <PRStackRebaseDialog
+            v-if="stackRebaseOpen"
+            :key="`${owner}/${repo}/${pullNumber}`"
+            :owner="owner"
+            :repo="repo"
+            :pull-number="pullNumber"
+            :stack="stack"
+            @close="stackRebaseOpen = false"
+            @settled="refreshAfterStackRebase"
+          />
+        </template>
+
+        <!-- Row 4: Branch Currency (non-Stack PRs and sole remaining active Layers only) -->
+        <div
+          v-if="!isMultiActiveStack"
+          class="merge-box__row merge-box__currency"
+          :class="`merge-box__row--${currencyTone}`"
+        >
           <span class="merge-box__row-icon">
             <component :is="currencyIcon" :size="13" />
           </span>
@@ -146,7 +229,7 @@
             <div ref="updateControlsRef" class="merge-box__merge-controls">
               <button
                 type="button"
-                class="merge-box__merge-btn"
+                class="merge-box__merge-btn merge-box__merge-btn--secondary"
                 :class="{
                   'merge-box__merge-btn--confirm': updateConfirming,
                   'merge-box__merge-btn--standalone': !updateConfirming && !rebaseUpdateAllowed,
@@ -156,14 +239,18 @@
                 :aria-busy="updating || undefined"
                 @click="onBranchUpdateClick"
               >
-                <span v-if="updating" class="merge-box__spinner" aria-hidden="true" />
-                <GitMergeIcon v-else :size="14" />
+                <span
+                  v-if="updating"
+                  class="merge-box__spinner merge-box__spinner--branch"
+                  aria-hidden="true"
+                />
+                <GitMergeIcon v-else :size="13" />
                 <span>{{ branchUpdateButtonLabel }}</span>
               </button>
               <button
                 v-if="!updateConfirming && rebaseUpdateAllowed"
                 type="button"
-                class="merge-box__method-toggle"
+                class="merge-box__method-toggle merge-box__method-toggle--secondary"
                 :disabled="branchUpdateDisabled"
                 :aria-label="t('prReview.mergeBox.selectUpdateMethod')"
                 :aria-expanded="updateMenuOpen"
@@ -214,69 +301,48 @@
           </div>
         </div>
 
+        <!-- Row 5: Mergeability & Deduplicated Uncovered Blockers -->
         <div class="merge-box__row" :class="`merge-box__row--${mergeabilityRow.tone}`">
           <span class="merge-box__row-icon">
             <component :is="mergeabilityRow.icon" :size="13" />
           </span>
           <div class="merge-box__row-body">
             <p class="merge-box__row-title">{{ mergeabilityRow.title }}</p>
+            <ul v-if="uncoveredBlockerMessages.length" class="merge-box__blockers">
+              <li
+                v-for="(message, idx) in uncoveredBlockerMessages"
+                :key="idx"
+                class="merge-box__blocker"
+              >
+                {{ message }}
+              </li>
+            </ul>
           </div>
         </div>
 
-        <div v-if="showStackRebase || showMergeActions" class="merge-box__actions">
-          <template v-if="showStackRebase">
-            <div class="merge-box__merge-controls">
-              <button
-                type="button"
-                class="merge-box__rebase-stack-btn"
-                :disabled="stackRebaseDisabled"
-                aria-haspopup="dialog"
-                :title="stackRebaseBlockedReason || undefined"
-                :aria-describedby="stackRebaseBlockedReason ? stackRebaseReasonId : undefined"
-                @click="openStackRebase"
-              >
-                <GitBranchIcon :size="14" aria-hidden="true" />
-                {{ t('prReview.stackRebase.title') }}
-              </button>
-            </div>
-            <p
-              v-if="stackRebaseBlockedReason"
-              :id="stackRebaseReasonId"
-              class="merge-box__blocked-reason"
-            >
-              {{ stackRebaseBlockedReason }}
-            </p>
-          </template>
-          <div v-if="stackRebaseError" class="merge-box__note merge-box__note--danger" role="alert">
-            <CircleExclamationPointIcon :size="14" />
-            <span>{{ stackRebaseError }}</span>
-          </div>
-          <PRStackRebaseDialog
-            v-if="stack && stackRebaseOpen"
-            :key="`${owner}/${repo}/${pullNumber}`"
-            :owner="owner"
-            :repo="repo"
-            :pull-number="pullNumber"
-            :stack="stack"
-            @close="stackRebaseOpen = false"
-            @settled="refreshAfterStackRebase"
-          />
-
+        <!-- Zone 2: Dedicated Merge Footer -->
+        <div v-if="showMergeActions || automationBadgeLabel" class="merge-box__actions">
           <template v-if="showMergeActions">
             <p class="is-sr-only" role="status" aria-live="polite">
               {{ loadingCommitDefaults ? t('prReview.mergeBox.loadingCommitDefaults') : '' }}
             </p>
-            <ul v-if="confirming && landingLayers.length" class="merge-box__stack-layers">
+
+            <ul
+              v-if="confirming && isMultiActiveStack && landingLayers.length"
+              class="merge-box__stack-layers"
+            >
               <li v-for="layer in landingLayers" :key="layer.number" class="merge-box__stack-layer">
-                <span class="merge-box__stack-layer-number">#{{ layer.number }}</span
-                >{{ stackLayerGap
-                }}<span class="merge-box__stack-layer-title">{{ layer.title }}</span
-                >{{ stackLayerGap
-                }}<span class="merge-box__stack-layer-state" :data-state="layer.state">{{
-                  layerStateLabel(layer.state)
-                }}</span>
+                <span class="merge-box__stack-layer-title">{{ layer.title }}</span>{{ stackLayerGap
+                }}<span class="merge-box__stack-layer-meta">
+                  <span class="merge-box__stack-layer-number">#{{ layer.number }}</span
+                  >{{ stackLayerGap
+                  }}<span class="merge-box__stack-layer-state" :data-state="layer.state">{{
+                    layerStateLabel(layer.state)
+                  }}</span>
+                </span>
               </li>
             </ul>
+
             <div v-if="stackMergeStatusLabel" class="merge-box__stack-status" role="status">
               <p class="merge-box__stack-outcome">
                 {{ stackMergeStatusLabel }}
@@ -291,6 +357,7 @@
                 {{ t('prReview.mergeBox.checkStackMergeStatus') }}
               </button>
             </div>
+
             <div
               v-if="activeMergeAlert"
               class="merge-box__note merge-box__note--danger"
@@ -299,75 +366,81 @@
               <CircleExclamationPointIcon :size="14" />
               <span>{{ activeMergeAlert }}</span>
             </div>
-            <div
-              v-if="!stackMergeHolding && !showCommitForm"
-              ref="mergeControlsRef"
-              class="merge-box__merge-controls"
-            >
-              <button
-                type="button"
-                class="merge-box__merge-btn"
-                :class="{
-                  'merge-box__merge-btn--confirm': confirming,
-                  'merge-box__merge-btn--standalone': !confirming && !showMethodMenu,
-                  'merge-box__merge-btn--busy': mergeButtonBusy,
-                }"
-                :disabled="mergeDisabled"
-                :aria-busy="mergeButtonBusy || undefined"
-                :title="mergeBlockedReason || undefined"
-                :aria-describedby="mergeBlockedReason ? mergeReasonId : undefined"
-                @click="onMergeClick"
-              >
-                <span v-if="mergeButtonBusy" class="merge-box__spinner" aria-hidden="true" />
-                <GitMergeIcon v-else :size="14" />
-                <span>{{ mergeButtonLabel }}</span>
-              </button>
-              <button
-                v-if="!confirming && showMethodMenu"
-                type="button"
-                class="merge-box__method-toggle"
-                :disabled="mergeDisabled"
-                :aria-label="t('prReview.mergeBox.selectMethod')"
-                :aria-expanded="dropdownOpen"
-                @click="dropdownOpen = !dropdownOpen"
-              >
-                <ChevronDownIcon :size="14" />
-              </button>
-              <button
-                v-else-if="confirming"
-                type="button"
-                class="merge-box__cancel-btn"
-                :disabled="merging"
-                @click="cancelConfirm"
-              >
-                {{ t('prReview.mergeBox.cancel') }}
-              </button>
-              <div v-if="dropdownOpen" class="merge-box__method-menu" role="menu">
+
+            <div v-if="!stackMergeHolding && !showCommitForm" class="merge-box__footer-row">
+              <div ref="mergeControlsRef" class="merge-box__merge-controls">
                 <button
-                  v-for="method in mergeMethods"
-                  :key="method"
                   type="button"
-                  class="merge-box__method-option"
-                  role="menuitemradio"
-                  :aria-checked="method === selectedMethod"
-                  @click="selectMergeMethod(method)"
+                  class="merge-box__merge-btn"
+                  :class="{
+                    'merge-box__merge-btn--confirm': confirming,
+                    'merge-box__merge-btn--standalone': !confirming && !showMethodMenu,
+                    'merge-box__merge-btn--busy': mergeButtonBusy,
+                  }"
+                  :disabled="mergeDisabled"
+                  :aria-busy="mergeButtonBusy || undefined"
+                  :title="mergeBlockedReason || undefined"
+                  :aria-describedby="
+                    !automationBadgeLabel && mergeBlockedReason ? mergeReasonId : undefined
+                  "
+                  @click="onMergeClick"
                 >
-                  <CheckIcon
-                    :size="12"
-                    class="merge-box__method-check"
-                    :class="{ 'merge-box__method-check--hidden': method !== selectedMethod }"
-                  />
-                  <span>{{ methodLabel(method) }}</span>
+                  <span v-if="mergeButtonBusy" class="merge-box__spinner" aria-hidden="true" />
+                  <GitMergeIcon v-else :size="14" />
+                  <span>{{ mergeButtonLabel }}</span>
                 </button>
+                <button
+                  v-if="!confirming && showMethodMenu"
+                  type="button"
+                  class="merge-box__method-toggle"
+                  :disabled="mergeDisabled"
+                  :aria-label="t('prReview.mergeBox.selectMethod')"
+                  :aria-expanded="dropdownOpen"
+                  @click="dropdownOpen = !dropdownOpen"
+                >
+                  <ChevronDownIcon :size="14" />
+                </button>
+                <button
+                  v-else-if="confirming"
+                  type="button"
+                  class="merge-box__cancel-btn"
+                  :disabled="merging"
+                  @click="cancelConfirm"
+                >
+                  {{ t('prReview.mergeBox.cancel') }}
+                </button>
+                <div v-if="dropdownOpen" class="merge-box__method-menu" role="menu">
+                  <button
+                    v-for="method in mergeMethods"
+                    :key="method"
+                    type="button"
+                    class="merge-box__method-option"
+                    role="menuitemradio"
+                    :aria-checked="method === selectedMethod"
+                    @click="selectMergeMethod(method)"
+                  >
+                    <CheckIcon
+                      :size="12"
+                      class="merge-box__method-check"
+                      :class="{ 'merge-box__method-check--hidden': method !== selectedMethod }"
+                    />
+                    <span>{{ methodLabel(method) }}</span>
+                  </button>
+                </div>
               </div>
+
+              <span v-if="automationBadgeLabel" class="merge-box__automation-pill">
+                <ClockIcon :size="12" aria-hidden="true" />
+                <span>{{ automationBadgeLabel }}</span>
+              </span>
+              <p
+                v-else-if="mergeBlockedReason"
+                :id="mergeReasonId"
+                class="merge-box__blocked-reason"
+              >
+                {{ mergeBlockedReason }}
+              </p>
             </div>
-            <p
-              v-if="!stackMergeHolding && !showCommitForm && mergeBlockedReason"
-              :id="mergeReasonId"
-              class="merge-box__blocked-reason"
-            >
-              {{ mergeBlockedReason }}
-            </p>
 
             <form
               v-else-if="!stackMergeHolding && showCommitForm"
@@ -421,6 +494,13 @@
               </div>
             </form>
           </template>
+
+          <div v-else-if="automationBadgeLabel" class="merge-box__footer-row">
+            <span class="merge-box__automation-pill">
+              <ClockIcon :size="12" aria-hidden="true" />
+              <span>{{ automationBadgeLabel }}</span>
+            </span>
+          </div>
         </div>
       </div>
 
@@ -470,6 +550,7 @@ import {
   ClockIcon,
   GitMergeIcon,
   GitPullRequestClosedIcon,
+  LayersIcon,
   RotateCcwIcon,
   TrashIcon,
   XIcon,
@@ -477,22 +558,20 @@ import {
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, useId, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import type { PRMergeBlocker, PRMergeMethod, PRMergeStatus } from '#shared/types/pr-merge';
 import type {
   GitAvailability,
   PullRequestStack,
   PullRequestStackLayerState,
 } from '#shared/types/pulls';
-import { CHECK_ROLLUP_CONTEXT_LIMIT, toPullRequestChecksView } from '#shared/utils/pr-checks';
+import { formatCheckBreakdownSummary, toPullRequestChecksView } from '#shared/utils/pr-checks';
+import { findCurrentStackLayerIndex, isSoleActiveStackLayer } from '#shared/utils/pr-stack';
 import CheckListRows from '~/components/dashboard/pr/CheckListRows.vue';
+import PRStackLayerList from '~/components/dashboard/pr/PRStackLayerList.vue';
 import PRStackRebaseDialog from '~/components/dashboard/pr/PRStackRebaseDialog.vue';
 import GitHubAvatar from '~/components/ui/GitHubAvatar.vue';
 import GitHubProfileLink from '~/components/ui/GitHubProfileLink.vue';
-import ScrollArea from '~/components/ui/ScrollArea.vue';
-import type {
-  PRMergeMethod,
-  PRMergeStatus,
-  PRStackMergeOutcome,
-} from '~/composables/usePRMergeStatus';
+import type { PRStackMergeOutcome } from '~/composables/usePRMergeStatus';
 
 const {
   owner,
@@ -518,6 +597,7 @@ const emit = defineEmits<{
   merged: [];
   headBranchUpdated: [];
   branchUpdated: [];
+  selectLayer: [pullNumber: number];
 }>();
 
 const { t, locale } = useI18n();
@@ -565,6 +645,8 @@ let identityVersion = 0;
 const loadingCommitDefaults = shallowRef(false);
 const branchAction = shallowRef<'delete' | 'restore' | null>(null);
 const checksExpanded = shallowRef(false);
+const checksUserToggled = shallowRef(false);
+const stackExpanded = shallowRef(false);
 const commitTitle = shallowRef('');
 const commitMessage = shallowRef('');
 const stackMergePhase = shallowRef<PRStackMergeOutcome | null>(null);
@@ -581,13 +663,12 @@ const updateControlsRef = ref<HTMLElement | null>(null);
 const commitTitleId = useId();
 const commitMessageId = useId();
 const mergeReasonId = useId();
-const stackRebaseReasonId = useId();
 
 const status = computed(() => mergeStatus.value);
 const showSkeleton = computed(() => loading.value && !status.value);
 const showError = computed(() => Boolean(error.value) && !status.value);
 
-/** The repository's own list, or every method when the settings could not be read. */
+/** The repository's own list (intersected with branch rulesets), or every method when unreadable. */
 const mergeMethods = computed<PRMergeMethod[]>(
   () => status.value?.allowedMergeMethods ?? ALL_MERGE_METHODS
 );
@@ -595,7 +676,7 @@ const mergeMethods = computed<PRMergeMethod[]>(
 /** GitHub hides the method picker when there is nothing to choose between. */
 const showMethodMenu = computed(() => mergeMethods.value.length > 1);
 
-/** A method the repository disables can never stay selected. */
+/** A method the repository or branch ruleset disables can never stay selected. */
 watch(mergeMethods, (methods) => {
   if (!methods.includes(selectedMethod.value)) {
     selectedMethod.value = methods[0] ?? 'merge';
@@ -638,6 +719,17 @@ const headBranchActionLabel = computed(() => {
   return t('prReview.mergeBox.deleteBranch');
 });
 
+/**
+ * Sole remaining active Layer targeting the Trunk directly regains standard
+ * Branch Currency, Branch Update, and single-PR merge (ADR 0056).
+ */
+const isSoleActiveLayer = computed(() =>
+  isSoleActiveStackLayer(stack, pullNumber, status.value?.baseRef)
+);
+
+/** True when active inter-layer dependencies require Stack Rebase / Stack Merge semantics. */
+const isMultiActiveStack = computed(() => Boolean(stack && !isSoleActiveLayer.value));
+
 type RowTone = 'success' | 'danger' | 'warning' | 'muted';
 
 interface MergeBoxRow {
@@ -647,10 +739,16 @@ interface MergeBoxRow {
   detail?: string;
 }
 
-const reviewRow = computed<MergeBoxRow>(() => {
+const reviewRow = computed<{
+  tone: RowTone;
+  icon: typeof CheckIcon;
+  title: string;
+  details: string[];
+}>(() => {
   const current = status.value;
   const approved = current?.reviewSummary.approved ?? 0;
   const changesRequested = current?.reviewSummary.changesRequested ?? 0;
+  const req = current?.reviewRequirements;
 
   switch (current?.reviewDecision) {
     case 'approved':
@@ -658,26 +756,53 @@ const reviewRow = computed<MergeBoxRow>(() => {
         tone: 'success',
         icon: CheckIcon,
         title: t('prReview.mergeBox.reviewApproved'),
-        detail: t('prReview.mergeBox.reviewApprovedCount', { count: approved }),
+        details:
+          approved > 0 ? [t('prReview.mergeBox.reviewApprovedCount', { count: approved })] : [],
       };
     case 'changes_requested':
       return {
         tone: 'danger',
         icon: XIcon,
         title: t('prReview.mergeBox.reviewChangesRequested'),
-        detail: t('prReview.mergeBox.reviewChangesRequestedCount', { count: changesRequested }),
+        details:
+          changesRequested > 0
+            ? [t('prReview.mergeBox.reviewChangesRequestedCount', { count: changesRequested })]
+            : [],
       };
-    case 'review_required':
+    case 'review_required': {
+      const details: string[] = [];
+      if (req && req.requiredApprovingReviewCount > 0) {
+        details.push(
+          req.requiredApprovingReviewCount === 1
+            ? t('prReview.mergeBox.reviewApprovalsRequiredOne', {
+                current: req.qualifyingApprovalCount,
+                required: req.requiredApprovingReviewCount,
+              })
+            : t('prReview.mergeBox.reviewApprovalsRequiredMany', {
+                current: req.qualifyingApprovalCount,
+                required: req.requiredApprovingReviewCount,
+              })
+        );
+      }
+      if (req?.requireCodeOwnerReview) {
+        details.push(t('prReview.mergeBox.reviewCodeOwnerRequired'));
+      }
+      if (req?.requireLastPushApproval) {
+        details.push(t('prReview.mergeBox.reviewLastPushRequired'));
+      }
       return {
         tone: 'warning',
         icon: ClockIcon,
         title: t('prReview.mergeBox.reviewRequired'),
+        details,
       };
+    }
     default:
       return {
         tone: 'muted',
         icon: CheckIcon,
         title: t('prReview.mergeBox.reviewNone'),
+        details: [],
       };
   }
 });
@@ -685,29 +810,40 @@ const reviewRow = computed<MergeBoxRow>(() => {
 /** The same Check Rollup view model the Check Status Chip reads. */
 const checksView = computed(() => toPullRequestChecksView(status.value?.checkRollup));
 
+const toggleChecks = () => {
+  checksUserToggled.value = true;
+  checksExpanded.value = !checksExpanded.value;
+};
+
+const syncChecksDefaultExpanded = () => {
+  if (!checksUserToggled.value) {
+    checksExpanded.value = checksView.value.isVisible && checksView.value.tone === 'danger';
+  }
+};
+
+// Auto-expand Checks when failing; keep collapsed when passing/pending unless user toggled.
+watch(
+  () => [checksView.value.isVisible, checksView.value.tone] as const,
+  () => {
+    syncChecksDefaultExpanded();
+  },
+  { immediate: true }
+);
+
 const checksRow = computed<MergeBoxRow | null>(() => {
   if (!checksView.value.isVisible) {
     return null;
   }
 
-  const { tone, passedCount, totalCount } = checksView.value;
-  const counts = {
-    passed: passedCount ?? 0,
-    failed: totalCount - (passedCount ?? 0),
-    total: totalCount,
-  };
+  const { tone } = checksView.value;
+  const detail = formatCheckBreakdownSummary(checksView.value, t);
 
   if (tone === 'danger') {
     return {
       tone: 'danger',
       icon: getCheckStatusToneIcon('danger'),
       title: t('prReview.mergeBox.checksFailed'),
-      detail: checksView.value.isTruncated
-        ? t('dashboard.checks.overLimit', {
-            total: totalCount,
-            limit: CHECK_ROLLUP_CONTEXT_LIMIT,
-          })
-        : t('prReview.mergeBox.checksFailedCount', counts),
+      detail,
     };
   }
 
@@ -716,12 +852,7 @@ const checksRow = computed<MergeBoxRow | null>(() => {
       tone: 'warning',
       icon: getCheckStatusToneIcon('warning'),
       title: t('prReview.mergeBox.checksPending'),
-      detail: checksView.value.isTruncated
-        ? t('dashboard.checks.overLimit', {
-            total: totalCount,
-            limit: CHECK_ROLLUP_CONTEXT_LIMIT,
-          })
-        : t('prReview.mergeBox.checksPendingCount', counts),
+      detail,
     };
   }
 
@@ -729,12 +860,7 @@ const checksRow = computed<MergeBoxRow | null>(() => {
     tone: 'success',
     icon: getCheckStatusToneIcon('success'),
     title: t('prReview.mergeBox.checksPassed'),
-    detail: checksView.value.isTruncated
-      ? t('dashboard.checks.overLimit', {
-          total: totalCount,
-          limit: CHECK_ROLLUP_CONTEXT_LIMIT,
-        })
-      : t('prReview.mergeBox.checksPassedCount', counts),
+    detail,
   };
 });
 
@@ -796,6 +922,70 @@ const behindCount = computed(() => {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 });
 
+const formatBlockerMessage = (blocker: PRMergeBlocker): string => {
+  switch (blocker.code) {
+    case 'unresolved_conversations': {
+      const count = blocker.count ?? 1;
+      return count === 1
+        ? t('prReview.mergeBox.blocker_unresolved_conversationsOne')
+        : t('prReview.mergeBox.blocker_unresolved_conversationsMany', { count });
+    }
+    case 'unsigned_commits': {
+      const count = blocker.count ?? 1;
+      return count === 1
+        ? t('prReview.mergeBox.blocker_unsigned_commitsOne')
+        : t('prReview.mergeBox.blocker_unsigned_commitsMany', { count });
+    }
+    case 'linear_history_required':
+      return t('prReview.mergeBox.blocker_linear_history_required');
+    case 'strict_branch_currency':
+      return t('prReview.mergeBox.blocker_strict_branch_currency');
+    case 'conflicts':
+      return t('prReview.mergeBox.blocker_conflicts');
+    case 'locked':
+      return t('prReview.mergeBox.blocker_locked');
+    case 'required_status_checks':
+      return t('prReview.mergeBox.blocker_required_status_checks');
+    case 'ruleset_or_protection_blocked':
+      return t('prReview.mergeBox.blocker_ruleset_or_protection_blocked');
+    default:
+      return '';
+  }
+};
+
+/**
+ * Only blockers not already owned by Review, Checks, Stack, Branch Currency,
+ * or the Mergeability headline itself.
+ */
+const uncoveredBlockerMessages = computed(() => {
+  const current = status.value;
+  if (!current?.mergeBlockers?.length || current.draft) return [];
+
+  return current.mergeBlockers
+    .filter((blocker) => {
+      if (blocker.code === 'draft') return false;
+      if (blocker.code === 'conflicts' && current.mergeableState === 'dirty') return false;
+      if (
+        blocker.code === 'strict_branch_currency' &&
+        (current.mergeableState === 'behind' ||
+          (!isMultiActiveStack.value && (behindCount.value ?? 0) > 0) ||
+          (isMultiActiveStack.value && stack?.history === 'not-linear'))
+      ) {
+        return false;
+      }
+      if (
+        blocker.code === 'required_status_checks' &&
+        checksView.value.isVisible &&
+        (checksView.value.tone === 'danger' || checksView.value.tone === 'warning')
+      ) {
+        return false;
+      }
+      return true;
+    })
+    .map((blocker) => formatBlockerMessage(blocker))
+    .filter(Boolean);
+});
+
 const currencyTone = computed(() => {
   if (behindCount.value === null) return 'muted';
   return behindCount.value > 0 ? 'warning' : 'success';
@@ -839,7 +1029,7 @@ const branchMergeabilityKnown = computed(() => {
 
 const showBranchUpdate = computed(
   () =>
-    !stack &&
+    !isMultiActiveStack.value &&
     behindCount.value !== null &&
     behindCount.value > 0 &&
     Boolean(status.value?.viewerCanWriteHead) &&
@@ -852,19 +1042,13 @@ const gitUnavailableReason = computed(() => {
   return current && !current.available ? current.reason : null;
 });
 
-/**
- * A switched-off deployment does not offer the action at all, disabled or otherwise.
- * Neither does a box that has not been told what the deployment can do: an action
- * that cannot open its dialog is not a refusal the reader can act on.
- */
-const stackRebaseHidden = computed(() => !git || gitUnavailableReason.value === 'disabled');
-
 const isTerminalLayerState = (state: PullRequestStackLayerState): state is 'merged' | 'closed' =>
   state === 'merged' || state === 'closed';
 
 /** The stack's own shape allows a whole-stack rebase, before this deployment is considered. */
 const stackRebaseOffered = computed(() =>
   Boolean(
+    isMultiActiveStack.value &&
     status.value?.viewerCanMerge &&
     stack?.history === 'not-linear' &&
     stack.number &&
@@ -873,25 +1057,17 @@ const stackRebaseOffered = computed(() =>
   )
 );
 
-const showStackRebase = computed(() => stackRebaseOffered.value && !stackRebaseHidden.value);
-
 /**
- * Why Stack Rebase cannot run. Null when it can. The code is the contract: the
- * text is looked up here, so the server never ships a sentence to translate.
+ * Only render the inline secondary `Rebase stack` action when Git is actually
+ * available; when Git is missing or disabled, the Stack row's subtitle explains
+ * that inline instead of drawing a disabled button in the footer.
  */
-const stackRebaseBlockedCode = computed<StackBlockedCode | null>(() => {
-  if (!stack) return null;
-  const reason = gitUnavailableReason.value;
-  if (reason === 'disabled') return 'stack_rebase_disabled';
-  if (reason === 'git_missing') return 'git_missing';
-  return null;
-});
+const showStackRebase = computed(() => stackRebaseOffered.value && Boolean(git?.available));
 
-/** Unmerged Layers from the first through this one. Empty when this pull request is not a Layer. */
+/** Unmerged Layers from the first through this one. Empty when not a multi-active Stack. */
 const landingLayers = computed(() => {
-  if (!stack || !stack.layers.length) return [];
-  const byNumber = stack.layers.findIndex((layer) => layer.number === pullNumber);
-  const index = byNumber >= 0 ? byNumber : Math.min(stack.place, stack.layers.length) - 1;
+  if (!isMultiActiveStack.value || !stack || !stack.layers.length) return [];
+  const index = findCurrentStackLayerIndex(stack, pullNumber);
   if (index < 0) return [];
   return stack.layers.slice(0, index + 1).filter((layer) => layer.state !== 'merged');
 });
@@ -904,7 +1080,7 @@ const hasUnmergeableLowerLayer = computed(() =>
 
 /** Why this Layer cannot be merged yet. Null when the merge button may be used. */
 const stackMergeBlockedCode = computed<StackBlockedCode | null>(() => {
-  if (!stack) return null;
+  if (!isMultiActiveStack.value || !stack) return null;
   if (stack.history === 'unknown') return 'stack_history_unknown';
   if (stack.history === 'not-linear') {
     return gitUnavailableReason.value === 'disabled' ? 'stack_rebase_disabled' : 'stack_not_linear';
@@ -913,20 +1089,70 @@ const stackMergeBlockedCode = computed<StackBlockedCode | null>(() => {
   return null;
 });
 
+const stackRow = computed<MergeBoxRow | null>(() => {
+  if (!stack) return null;
+  const title = t('prReview.mergeBox.stackRowTitle', {
+    place: stack.place,
+    count: stack.count,
+    trunk: stack.trunk,
+  });
+
+  if (isSoleActiveLayer.value) {
+    return {
+      tone: 'muted',
+      icon: LayersIcon,
+      title,
+      detail: t('prReview.mergeBox.stackStatusSoleActive', { trunk: stack.trunk }),
+    };
+  }
+
+  if (stack.history === 'not-linear') {
+    const detail =
+      gitUnavailableReason.value === 'git_missing'
+        ? t('prReview.mergeBox.unavailableReason_git_missing')
+        : gitUnavailableReason.value === 'disabled'
+          ? t('prReview.mergeBox.unavailableReason_stack_rebase_disabled')
+          : t('prReview.mergeBox.stackStatusNotLinear');
+    return {
+      tone: 'warning',
+      icon: LayersIcon,
+      title,
+      detail,
+    };
+  }
+
+  if (stack.history === 'unknown') {
+    return {
+      tone: 'muted',
+      icon: ClockIcon,
+      title,
+      detail: t('prReview.mergeBox.unavailableReason_stack_history_unknown'),
+    };
+  }
+
+  if (hasUnmergeableLowerLayer.value) {
+    return {
+      tone: 'warning',
+      icon: CircleExclamationPointIcon,
+      title,
+      detail: t('prReview.mergeBox.stackStatusLowerBlocked'),
+    };
+  }
+
+  return {
+    tone: 'success',
+    icon: LayersIcon,
+    title,
+    detail: t('prReview.mergeBox.stackStatusLinear'),
+  };
+});
+
 const stackRebaseDisabled = computed(
-  () =>
-    showStackRebase.value &&
-    (stackRebaseBlockedCode.value !== null ||
-      refreshingAfterStackRebase.value ||
-      Boolean(error.value))
+  () => showStackRebase.value && (refreshingAfterStackRebase.value || Boolean(error.value))
 );
 
 const reasonText = (code: StackBlockedCode | null) =>
   code ? t(`prReview.mergeBox.unavailableReason_${code}`) : '';
-
-const stackRebaseBlockedReason = computed(() =>
-  stackRebaseDisabled.value ? reasonText(stackRebaseBlockedCode.value) : ''
-);
 
 const STACK_REBASE_REFRESH_TIMEOUT_MS = 5000;
 let stackRebaseRefreshTimer: ReturnType<typeof setTimeout> | null = null;
@@ -981,6 +1207,24 @@ const showMergeActions = computed(() => {
   const current = status.value;
   if (!current?.viewerCanMerge || current.draft) return false;
   return true;
+});
+
+/** Read-only Auto-merge or Merge Queue status indicator shown in the Merge Footer. */
+const automationBadgeLabel = computed(() => {
+  const current = status.value;
+  if (!current) return '';
+  if (current.mergeQueue?.inMergeQueue) {
+    return current.mergeQueue.position != null
+      ? t('prReview.mergeBox.inMergeQueuePosition', { position: current.mergeQueue.position })
+      : t('prReview.mergeBox.inMergeQueue');
+  }
+  if (current.autoMergeState?.enabled || current.autoMerge) {
+    const method = current.autoMergeState?.mergeMethod;
+    return method
+      ? t('prReview.mergeBox.autoMergeEnabledWithMethod', { method: methodLabel(method) })
+      : t('prReview.mergeBox.autoMergeEnabled');
+  }
+  return '';
 });
 
 /** A running Stack Merge is the merge button's spinner; only an outcome needs a line. */
@@ -1041,9 +1285,6 @@ const mergeDisabled = computed(() => {
     return true;
   }
 
-  // A Layer is landed with its whole Stack in order, so a Stack whose history is
-  // not linear has nothing to land here: the box used to hide the button for this,
-  // and now it stays on screen to say why.
   if (stackMergeBlockedCode.value) {
     return true;
   }
@@ -1054,13 +1295,24 @@ const mergeDisabled = computed(() => {
     return true;
   }
 
-  return current.mergeableState === 'dirty' || current.mergeableState === 'blocked';
+  return (
+    current.mergeableState === 'dirty' ||
+    current.mergeableState === 'blocked' ||
+    current.mergeableState === 'behind'
+  );
 });
 
-/** Only the Stack's own state is explained here; GitHub's mergeability has its own row. */
-const mergeBlockedReason = computed(() =>
-  mergeDisabled.value ? reasonText(stackMergeBlockedCode.value) : ''
-);
+/** Concise inline hint beside a disabled Merge button. */
+const mergeBlockedReason = computed(() => {
+  if (!mergeDisabled.value) return '';
+  if (stackMergeBlockedCode.value) {
+    return reasonText(stackMergeBlockedCode.value);
+  }
+  if (status.value?.mergeableState === 'behind') {
+    return t('prReview.mergeBox.mergeBehindHint');
+  }
+  return '';
+});
 
 const methodLabel = (method: PRMergeMethod) => {
   switch (method) {
@@ -1255,7 +1507,7 @@ const performMerge = async () => {
   // Only a field the reader changed is sent. An untouched field keeps GitHub's own
   // default, which is the text we would otherwise have to reproduce byte for byte.
   // More than one Layer keeps each Layer's own Default Commit Message.
-  const includeCommitText = !stack || landingLayers.value.length === 1;
+  const includeCommitText = !isMultiActiveStack.value || landingLayers.value.length === 1;
   const title =
     includeCommitText && showCommitForm.value && commitTitle.value !== prefillTitle.value
       ? commitTitle.value.trim()
@@ -1273,7 +1525,7 @@ const performMerge = async () => {
   const version = identityVersion;
   merging.value = true;
   try {
-    if (stack) {
+    if (isMultiActiveStack.value && stack) {
       if (stack.history !== 'linear') return;
 
       stackMergePhase.value = 'in-progress';
@@ -1457,7 +1709,9 @@ const resetMergeBoxState = () => {
   updating.value = false;
   updateMethod.value = 'merge';
   suppressMergeabilityPoll = false;
+  checksUserToggled.value = false;
   checksExpanded.value = false;
+  stackExpanded.value = false;
   branchAction.value = null;
   stopMergeabilityPolling();
   mergeabilityPollAttempts = 0;
@@ -1475,6 +1729,7 @@ watch(
     // Fetching anyway would race the answer the reader is about to be given.
     if (initialStatus) {
       setMergeStatus(initialStatus);
+      syncChecksDefaultExpanded();
     } else if (owner && repo && pullNumber) {
       void fetchMergeStatus(owner, repo, pullNumber);
     }
@@ -1594,6 +1849,12 @@ watch(
   margin-bottom: 0;
 }
 
+.merge-box__row-alert {
+  margin: 0;
+  border-radius: 0;
+  border-bottom: 1px solid var(--gitpulse-border);
+}
+
 .merge-box__note {
   display: flex;
   align-items: center;
@@ -1618,26 +1879,31 @@ watch(
 }
 
 .merge-box__retry-btn,
-.merge-box__check-status-btn {
+.merge-box__check-status-btn,
+.merge-box__secondary-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   flex-shrink: 0;
-  height: 26px;
+  height: 28px;
   padding: 0 10px;
   font-size: 12px;
   font-weight: 600;
   line-height: 1;
-  color: var(--gitpulse-text);
+  color: var(--bulma-text-strong, var(--gitpulse-text-strong, var(--gitpulse-text)));
   background: var(--gitpulse-surface);
   border: 1px solid var(--gitpulse-border);
   border-radius: 6px;
   cursor: pointer;
+  white-space: nowrap;
   transition:
-    color 0.2s ease,
-    background-color 0.2s ease,
-    border-color 0.2s ease;
+    color 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease;
 
   @include hover-only {
     &:hover:not(:disabled) {
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
       background: var(--gitpulse-surface-hover);
       border-color: var(--gitpulse-border-strong);
     }
@@ -1828,6 +2094,11 @@ watch(
     }
   }
 
+  &:focus-visible {
+    outline: 2px solid var(--gitpulse-focus-ring, var(--gitpulse-accent));
+    outline-offset: 2px;
+  }
+
   &:disabled {
     opacity: 0.55;
     cursor: not-allowed;
@@ -1848,16 +2119,18 @@ watch(
   }
 }
 
-/* ── Open state rows ── */
+/* ── Open state rows (Zone 1: Status Checklist) ── */
 .merge-box__open {
   display: flex;
   flex-direction: column;
 }
 
 .merge-box__currency {
+  flex-wrap: wrap;
+
   .merge-box__row-title {
     flex: 1;
-    min-width: 0;
+    min-width: 180px;
   }
 }
 
@@ -1875,23 +2148,76 @@ watch(
   align-items: center;
   gap: 12px;
   width: 100%;
-  padding: 12px 20px;
+  padding: 12px 16px;
   border: 0;
   border-bottom: 1px solid var(--gitpulse-border);
   background: transparent;
   text-align: left;
 
+  &:last-child {
+    border-bottom: 0;
+  }
+
   &--toggle {
     cursor: pointer;
     font: inherit;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.15s ease;
 
     @include hover-only {
       &:hover {
         background: var(--gitpulse-surface-hover);
       }
     }
+
+    &:focus-visible {
+      outline: 2px solid var(--gitpulse-focus-ring, var(--gitpulse-accent));
+      outline-offset: -2px;
+    }
   }
+}
+
+.merge-box__stack-row {
+  padding: 0;
+  gap: 0;
+}
+
+.merge-box__stack-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  padding: 12px 16px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+
+  @include hover-only {
+    &:hover {
+      background: var(--gitpulse-surface-hover);
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--gitpulse-focus-ring, var(--gitpulse-accent));
+    outline-offset: -2px;
+  }
+}
+
+.merge-box__stack-action {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 8px 16px 8px 0;
+}
+
+.merge-box__stack-drawer {
+  padding: 10px 16px 12px;
+  background: var(--gitpulse-surface-muted);
+  border-bottom: 1px solid var(--gitpulse-border);
 }
 
 .merge-box__row-icon {
@@ -1927,7 +2253,7 @@ watch(
 .merge-box__row-body {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
   min-width: 0;
   flex: 1;
 }
@@ -1947,6 +2273,22 @@ watch(
   color: var(--gitpulse-text-muted);
 }
 
+.merge-box__blockers {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--gitpulse-text-muted);
+}
+
+.merge-box__blocker {
+  margin: 0;
+}
+
 .merge-box__chevron {
   flex-shrink: 0;
   color: var(--gitpulse-text-muted);
@@ -1957,47 +2299,26 @@ watch(
   }
 }
 
-/* ── Checks list ── */
+/* ── Checks list (native vertical scroll container so max-height never clips) ── */
 .merge-box__check-list {
   margin: 0;
-  max-height: 240px;
-
-  padding: 0 20px 10px;
+  max-height: 320px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--gitpulse-scrollbar-thumb) transparent;
+  padding: 2px 16px 10px;
   background: var(--gitpulse-surface-muted);
   border-bottom: 1px solid var(--gitpulse-border);
 
-  :deep(.check-list__row) {
-    gap: 12px;
-    font-size: 12px;
-  }
-
-  :deep(.check-list__name) {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
-  }
-
-  :deep(.check-list__name--link) {
-    text-decoration: none;
-    transition: color 0.2s ease;
-  }
-
-  @include hover-only {
-    :deep(.check-list__name--link:hover) {
-      color: var(--gitpulse-accent);
-      text-decoration: underline;
-    }
-  }
-
-  :deep(.check-list__app) {
-    margin-left: auto;
-    flex-shrink: 0;
-    font-size: 11px;
+  &:focus-visible {
+    outline: 2px solid var(--gitpulse-focus-ring, var(--gitpulse-accent));
+    outline-offset: -2px;
   }
 }
 
-/* ── Merge actions ── */
+/* ── Zone 2: Dedicated Merge Footer ── */
 .merge-box__actions {
   display: flex;
   flex-direction: column;
@@ -2007,16 +2328,22 @@ watch(
   border-radius: 0 0 12px 12px;
 }
 
+.merge-box__footer-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .merge-box__merge-controls {
   position: relative;
   display: flex;
   align-items: stretch;
   gap: 0;
+  flex-shrink: 0;
 }
 
-/* The Stack Rebase action sits in the same row as a merge, so it shares the shell. */
-.merge-box__merge-btn,
-.merge-box__rebase-stack-btn {
+.merge-box__merge-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -2028,10 +2355,12 @@ watch(
   color: #ffffff;
   background: var(--gitpulse-success-solid);
   border: 1px solid var(--gitpulse-success-solid);
+  border-radius: 6px 0 0 6px;
   cursor: pointer;
+  white-space: nowrap;
   transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease;
+    background-color 0.15s ease,
+    border-color 0.15s ease;
 
   @include hover-only {
     &:hover:not(:disabled) {
@@ -2040,7 +2369,11 @@ watch(
     }
   }
 
-  &:focus-visible,
+  &:focus-visible {
+    outline: 2px solid var(--gitpulse-focus-ring, var(--gitpulse-accent));
+    outline-offset: 2px;
+  }
+
   &:active:not(:disabled) {
     background: var(--gitpulse-success-solid-hover);
     border-color: var(--gitpulse-success-solid-hover);
@@ -2050,29 +2383,25 @@ watch(
     opacity: 0.55;
     cursor: not-allowed;
   }
-}
 
-.merge-box__merge-btn {
-  /* The left half of the split button; a Stack Rebase action stands alone. */
-  border-radius: 6px 0 0 6px;
-}
+  /* Secondary inline remediation style used by Branch Update on its owning row. */
+  &--secondary {
+    height: 28px;
+    color: var(--bulma-text-strong, var(--gitpulse-text-strong, var(--gitpulse-text)));
+    background: var(--gitpulse-surface);
+    border-color: var(--gitpulse-border);
 
-.merge-box__rebase-stack-btn {
-  border-radius: 6px;
-  background: var(--gitpulse-primary-solid);
-  border-color: var(--gitpulse-primary-solid);
-
-  @include hover-only {
-    &:hover:not(:disabled) {
-      background: var(--gitpulse-primary-solid-hover);
-      border-color: var(--gitpulse-primary-solid-hover);
+    @include hover-only {
+      &:hover:not(:disabled) {
+        background: var(--gitpulse-surface-hover);
+        border-color: var(--gitpulse-border-strong);
+      }
     }
-  }
 
-  &:focus-visible,
-  &:active:not(:disabled) {
-    background: var(--gitpulse-primary-solid-hover);
-    border-color: var(--gitpulse-primary-solid-hover);
+    &:active:not(:disabled) {
+      background: var(--gitpulse-surface);
+      border-color: var(--gitpulse-border);
+    }
   }
 }
 
@@ -2081,6 +2410,22 @@ watch(
   font-size: 12px;
   line-height: 1.4;
   color: var(--gitpulse-text-muted);
+  flex: 1;
+  min-width: 180px;
+}
+
+.merge-box__automation-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border: 1px solid var(--gitpulse-border);
+  border-radius: 999px;
+  background: var(--gitpulse-surface);
+  color: var(--gitpulse-text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.2;
 }
 
 .merge-box__stack-status {
@@ -2114,8 +2459,8 @@ watch(
   border-radius: 0 6px 6px 0;
   cursor: pointer;
   transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease;
+    background-color 0.15s ease,
+    border-color 0.15s ease;
 
   @include hover-only {
     &:hover:not(:disabled) {
@@ -2123,7 +2468,11 @@ watch(
     }
   }
 
-  &:focus-visible,
+  &:focus-visible {
+    outline: 2px solid var(--gitpulse-focus-ring, var(--gitpulse-accent));
+    outline-offset: 2px;
+  }
+
   &:active:not(:disabled) {
     background: var(--gitpulse-success-solid-hover);
   }
@@ -2135,6 +2484,27 @@ watch(
 
   svg {
     display: block;
+  }
+
+  &--secondary {
+    height: 28px;
+    color: var(--gitpulse-text-muted);
+    background: var(--gitpulse-surface);
+    border-color: var(--gitpulse-border);
+    border-left-width: 0;
+
+    @include hover-only {
+      &:hover:not(:disabled) {
+        color: var(--bulma-text-strong, var(--gitpulse-text-strong, var(--gitpulse-text)));
+        background: var(--gitpulse-surface-hover);
+        border-color: var(--gitpulse-border-strong);
+      }
+    }
+
+    &:active:not(:disabled) {
+      background: var(--gitpulse-surface);
+      border-color: var(--gitpulse-border);
+    }
   }
 }
 
@@ -2150,8 +2520,8 @@ watch(
   border-radius: 6px;
   cursor: pointer;
   transition:
-    color 0.2s ease,
-    border-color 0.2s ease;
+    color 0.15s ease,
+    border-color 0.15s ease;
 
   @include hover-only {
     &:hover:not(:disabled) {
@@ -2161,8 +2531,8 @@ watch(
   }
 
   &:focus-visible {
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
-    border-color: var(--gitpulse-border-strong);
+    outline: 2px solid var(--gitpulse-focus-ring, var(--gitpulse-accent));
+    outline-offset: 2px;
   }
 
   &:disabled {
@@ -2199,12 +2569,17 @@ watch(
   border-radius: 6px;
   text-align: left;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.15s ease;
 
   @include hover-only {
     &:hover {
       background: var(--gitpulse-surface-hover);
     }
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--gitpulse-focus-ring, var(--gitpulse-accent));
+    outline-offset: -2px;
   }
 }
 
@@ -2279,7 +2654,7 @@ watch(
 .merge-box__stack-layers {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -2287,12 +2662,28 @@ watch(
 
 .merge-box__stack-layer {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
+  flex-direction: column;
+  gap: 3px;
   min-width: 0;
+  padding: 7px 10px;
+  background: var(--gitpulse-surface);
+  border: 1px solid var(--gitpulse-border);
+  border-radius: 8px;
   font-size: 12px;
-  line-height: 1.4;
+  line-height: 1.35;
   color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+}
+
+.merge-box__stack-layer-title {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.merge-box__stack-layer-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .merge-box__stack-layer-number {
@@ -2302,30 +2693,28 @@ watch(
   color: var(--gitpulse-text-subtle);
 }
 
-.merge-box__stack-layer-title {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .merge-box__stack-layer-state {
   flex-shrink: 0;
-  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--gitpulse-surface-muted);
+  font-size: 10.5px;
   font-weight: 600;
   color: var(--gitpulse-text-muted);
 
   &[data-state='open'] {
-    color: var(--gitpulse-success-solid);
+    background: var(--gitpulse-success-soft);
+    color: var(--gitpulse-success);
   }
 
   &[data-state='merged'] {
-    color: var(--gitpulse-info);
+    background: var(--gitpulse-purple-soft);
+    color: var(--gitpulse-purple);
   }
 
   &[data-state='closed'] {
-    color: var(--gitpulse-danger-solid);
+    background: var(--gitpulse-danger-soft);
+    color: var(--gitpulse-danger);
   }
 }
 
@@ -2369,7 +2758,7 @@ watch(
 
 .expand-enter-active,
 .expand-leave-active {
-  max-height: 240px;
+  max-height: 320px;
   transition:
     opacity 0.15s ease,
     transform 0.2s ease,

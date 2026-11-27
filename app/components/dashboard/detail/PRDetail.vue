@@ -108,6 +108,7 @@
               @head-branch-updated="handlePullRequestHeadBranchUpdated"
               @branch-updated="handlePullRequestBranchUpdated"
               @merged="handlePullRequestMerged"
+              @select-layer="switchToPullRequest(repoOwner, repoName, $event)"
             />
           </div>
 

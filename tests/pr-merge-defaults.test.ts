@@ -76,6 +76,22 @@ describe('repository merge settings', () => {
   test('unreadable repository settings fall back to offering every method', () => {
     expect(resolveAllowedMergeMethods(null)).toEqual(['merge', 'squash', 'rebase']);
   });
+
+  test('intersects repository allowed methods with target branch ruleset allowed_merge_methods in canonical order', () => {
+    expect(resolveAllowedMergeMethods(defaultSettings, ['squash'])).toEqual(['squash']);
+    expect(resolveAllowedMergeMethods(defaultSettings, ['rebase', 'merge'])).toEqual([
+      'merge',
+      'rebase',
+    ]);
+    expect(
+      resolveAllowedMergeMethods(mapRepositoryMergeSettings({ allow_merge_commit: false }), [
+        'merge',
+        'squash',
+      ])
+    ).toEqual(['squash']);
+    expect(resolveAllowedMergeMethods(null, ['squash'])).toEqual(['squash']);
+    expect(resolveAllowedMergeMethods(defaultSettings, [])).toEqual(['merge', 'squash', 'rebase']);
+  });
 });
 
 describe('merge commit default message', () => {

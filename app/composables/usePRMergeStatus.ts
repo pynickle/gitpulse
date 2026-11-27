@@ -1,54 +1,7 @@
 import { onScopeDispose, shallowRef } from 'vue';
 
-import type { PullRequestCheckRollup } from '#shared/types/pr-checks';
+import type { PRMergeMethod, PRMergeStatus } from '#shared/types/pr-merge';
 import type { PullRequestHeadBranchState, StackMergeOutcome } from '#shared/types/pulls';
-
-export type PRState = 'open' | 'closed' | 'merged';
-export type PRReviewDecision = 'approved' | 'changes_requested' | 'review_required' | 'none';
-export type PRMergeMethod = 'merge' | 'squash' | 'rebase';
-
-export interface PRMergedBy {
-  login: string;
-  avatarUrl: string;
-  htmlUrl: string;
-}
-
-export interface PRReviewSummary {
-  approved: number;
-  changesRequested: number;
-}
-
-export interface PRMergeStatus {
-  state: PRState;
-  merged: boolean;
-  mergedAt: string | null;
-  mergedBy: PRMergedBy | null;
-  mergeCommitSha: string | null;
-  mergeableState: string | null;
-  mergeable: boolean | null;
-  autoMerge: boolean;
-  draft: boolean;
-  reviewDecision: PRReviewDecision;
-  reviewSummary: PRReviewSummary;
-  /** GitHub's own Check Rollup. Null when GitHub reports none. */
-  checkRollup: PullRequestCheckRollup | null;
-  headSha: string | null;
-  headBranch: PullRequestHeadBranchState | null;
-  viewerCanMerge: boolean;
-  /**
-   * Commits on the base ref that are absent from the head.
-   * Null when that comparison could not be read. Zero is current, including a head that is only ahead.
-   */
-  behindBy: number | null;
-  /** The pull request's base ref, the ref currency is measured against. */
-  baseRef: string;
-  /** The pull request's base tip, not the merge base. */
-  baseSha: string | null;
-  /** The viewer can write the head repository, or can edit files on this pull request. */
-  viewerCanWriteHead: boolean;
-  /** The merge methods the repository allows, in the order the box offers them. */
-  allowedMergeMethods?: PRMergeMethod[];
-}
 
 export type PRBranchUpdateMethod = 'merge' | 'rebase';
 

@@ -15,7 +15,7 @@ import { readPullRequestMergeability } from '#shared/utils/pull-request-conflict
  * requested inside a rollup query — GitHub answers UNPROCESSABLE and blanks every
  * CheckRun node.
  */
-export const PR_CHECK_ROLLUP_NODE_FIELDS = `statusCheckRollup { state contexts(first: ${CHECK_ROLLUP_CONTEXT_LIMIT}) { totalCount nodes { __typename ... on CheckRun { name status conclusion detailsUrl checkSuite { app { name } } } ... on StatusContext { context state targetUrl creator { login } } } } }`;
+export const PR_CHECK_ROLLUP_NODE_FIELDS = `statusCheckRollup { state contexts(first: ${CHECK_ROLLUP_CONTEXT_LIMIT}) { totalCount nodes { __typename ... on CheckRun { name status conclusion detailsUrl title startedAt completedAt checkSuite { app { name logoUrl } } } ... on StatusContext { context state targetUrl description avatarUrl createdAt creator { login } } } } }`;
 
 interface GraphQLCheckRunNode {
   __typename?: string | null;
@@ -23,7 +23,10 @@ interface GraphQLCheckRunNode {
   status?: string | null;
   conclusion?: string | null;
   detailsUrl?: string | null;
-  checkSuite?: { app?: { name?: string | null } | null } | null;
+  title?: string | null;
+  startedAt?: string | null;
+  completedAt?: string | null;
+  checkSuite?: { app?: { name?: string | null; logoUrl?: string | null } | null } | null;
 }
 
 interface GraphQLStatusContextNode {
@@ -31,6 +34,9 @@ interface GraphQLStatusContextNode {
   context?: string | null;
   state?: string | null;
   targetUrl?: string | null;
+  description?: string | null;
+  avatarUrl?: string | null;
+  createdAt?: string | null;
   creator?: { login?: string | null } | null;
 }
 
@@ -98,6 +104,18 @@ const toContextNode = (node: GraphQLStatusCheckContextNode | null): CheckRollupC
   if (!node) return null;
 
   const isStatusContext = node.__typename === 'StatusContext';
+  const checkSuite = isStatusContext
+    ? null
+    : node.checkSuite
+      ? {
+          app: node.checkSuite.app
+            ? {
+                name: nonEmptyString(node.checkSuite.app.name),
+                logoUrl: nonEmptyString(node.checkSuite.app.logoUrl),
+              }
+            : null,
+        }
+      : null;
 
   return {
     __typename: nonEmptyString(node.__typename),
@@ -106,7 +124,13 @@ const toContextNode = (node: GraphQLStatusCheckContextNode | null): CheckRollupC
     conclusion: nonEmptyString(isStatusContext ? node.state : node.conclusion),
     status: isStatusContext ? null : nonEmptyString(node.status),
     detailsUrl: nonEmptyString(isStatusContext ? node.targetUrl : node.detailsUrl),
-    checkSuite: isStatusContext ? null : (node.checkSuite ?? null),
+    title: isStatusContext ? null : nonEmptyString(node.title),
+    startedAt: isStatusContext ? null : nonEmptyString(node.startedAt),
+    completedAt: isStatusContext ? null : nonEmptyString(node.completedAt),
+    description: isStatusContext ? nonEmptyString(node.description) : null,
+    avatarUrl: isStatusContext ? nonEmptyString(node.avatarUrl) : null,
+    createdAt: isStatusContext ? nonEmptyString(node.createdAt) : null,
+    checkSuite,
     creator: isStatusContext ? (node.creator ?? null) : null,
   };
 };
@@ -127,12 +151,6 @@ export function mapPullRequestCheckRollup(
   return { state: nonEmptyString(rollup.state), contexts };
 }
 
-export const PULL_REQUEST_CHECK_ROLLUP_QUERY = `
-  query PullRequestCheckRollup($id: ID!) {
-    node(id: $id) { ... on PullRequest { ${PR_CHECK_ROLLUP_NODE_FIELDS} } }
-  }
-`;
-
 const COMMIT_CHECK_ROLLUP_CHUNK = 50;
 
 interface GraphQLCommitCheckRollupNode {
@@ -141,37 +159,6 @@ interface GraphQLCommitCheckRollupNode {
 
 interface GraphQLCommitCheckRollupResult {
   repository?: Record<string, GraphQLCommitCheckRollupNode | null> | null;
-}
-
-interface GraphQLNodeResult {
-  node?: { statusCheckRollup?: GraphQLStatusCheckRollup | null } | null;
-}
-
-/**
- * Reads one pull request's Check Rollup for the PR Review Workspace, which has
- * the REST pull request but no rollup. Resolves to `null` on failure so a rollup
- * error never blanks the detail surface.
- */
-export async function fetchPullRequestCheckRollup(
-  octokit: CheckRollupGraphQLClient | Octokit,
-  nodeId: string | null
-): Promise<PullRequestCheckRollup | null> {
-  if (!nodeId) return null;
-
-  try {
-    const payload = await octokit.graphql<GraphQLNodeResult>(PULL_REQUEST_CHECK_ROLLUP_QUERY, {
-      id: nodeId,
-    });
-    return mapPullRequestCheckRollup(payload.node?.statusCheckRollup);
-  } catch (error: unknown) {
-    const partial = getPartialGraphQLData<GraphQLNodeResult>(error);
-    if (!partial) {
-      console.warn('Failed to fetch the pull request Check Rollup:', error);
-      return null;
-    }
-
-    return mapPullRequestCheckRollup(partial.node?.statusCheckRollup);
-  }
 }
 
 /**

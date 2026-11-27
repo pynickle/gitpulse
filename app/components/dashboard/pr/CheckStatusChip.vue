@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 
 import type { PullRequestCheckRollup } from '#shared/types/pr-checks';
-import { CHECK_ROLLUP_CONTEXT_LIMIT, toPullRequestChecksView } from '#shared/utils/pr-checks';
+import { formatCheckBreakdownSummary, toPullRequestChecksView } from '#shared/utils/pr-checks';
 
 const { rollup } = defineProps<{
   /** The Check Rollup attached to the card. A rollup with no contexts shows nothing. */
@@ -24,29 +24,7 @@ const countLabel = computed(() => {
 });
 
 /** The spoken description of the rollup, without the fraction the chip paints. */
-const checkSummary = computed(() => {
-  const { passedCount, totalCount, tone, isTruncated } = view.value;
-
-  if (isTruncated) {
-    return t('dashboard.checks.overLimit', {
-      total: totalCount,
-      limit: CHECK_ROLLUP_CONTEXT_LIMIT,
-    });
-  }
-
-  if (tone === 'danger') {
-    return t('dashboard.checks.chipFailed', {
-      failed: totalCount - (passedCount ?? 0),
-      total: totalCount,
-    });
-  }
-
-  if (tone === 'warning') {
-    return t('dashboard.checks.chipPending', { passed: passedCount ?? 0, total: totalCount });
-  }
-
-  return t('dashboard.checks.chipPassed', { passed: passedCount ?? 0, total: totalCount });
-});
+const checkSummary = computed(() => formatCheckBreakdownSummary(view.value, t));
 
 /**
  * The name a screen reader announces. It leads with the fraction on screen, because a

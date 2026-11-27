@@ -5,6 +5,7 @@ import { defineComponent, h, nextTick, ref, shallowRef, type Component } from 'v
 import { getFetchErrorMessage } from '../app/utils/getFetchErrorMessage';
 import enLocale from '../i18n/locales/en.json';
 import * as prChecks from '../shared/utils/pr-checks';
+import * as prStack from '../shared/utils/pr-stack';
 import { compileVue } from './helpers/compile-vue';
 import { githubProfileLinkModules } from './helpers/github-profile-link';
 import { interpolateTranslation } from './helpers/translation';
@@ -178,6 +179,22 @@ function createMergeStatusStore({ holdDefaults = false } = {}) {
 let store: ReturnType<typeof createMergeStatusStore>;
 let dom: ReturnType<typeof createVueDom>;
 
+const CheckListRows = await compileVue(
+  'app/components/dashboard/pr/CheckListRows.vue',
+  {
+    '@lucide/vue': new Proxy({}, { get: () => icon }) as unknown,
+    '#shared/utils/pr-checks': prChecks,
+    'vue-i18n': { useI18n: () => ({ t, locale: ref('en') }) },
+    '~/composables/useRelativeTimeNow': { useRelativeTimeNow: () => shallowRef(0) },
+    '~/utils/formatDurationFromNow': { formatDurationFromNow: () => '9 hours ago' },
+  },
+  {
+    useI18n: 'vue-i18n',
+    useRelativeTimeNow: '~/composables/useRelativeTimeNow',
+    formatDurationFromNow: '~/utils/formatDurationFromNow',
+  }
+);
+
 const StackRebaseDialog = await compileVue(
   'app/components/dashboard/pr/PRStackRebaseDialog.vue',
   {
@@ -188,6 +205,12 @@ const StackRebaseDialog = await compileVue(
   { getFetchErrorMessage: '~/utils/getFetchErrorMessage' }
 );
 
+const StackLayerList = await compileVue('app/components/dashboard/pr/PRStackLayerList.vue', {
+  '@lucide/vue': new Proxy({}, { get: () => icon }) as unknown,
+  'vue-i18n': { useI18n: () => ({ t, locale: ref('en') }) },
+  '#shared/utils/pr-stack': prStack,
+});
+
 const MergeBox = await compileVue(
   'app/components/dashboard/pr/PRMergeBox.vue',
   {
@@ -195,7 +218,9 @@ const MergeBox = await compileVue(
     '@lucide/vue': new Proxy({}, { get: () => icon }) as unknown,
     'vue-i18n': { useI18n: () => ({ t, locale: ref('en') }) },
     '#shared/utils/pr-checks': prChecks,
-    '~/components/dashboard/pr/CheckListRows.vue': { default: slotStub },
+    '#shared/utils/pr-stack': prStack,
+    '~/components/dashboard/pr/CheckListRows.vue': { default: CheckListRows },
+    '~/components/dashboard/pr/PRStackLayerList.vue': { default: StackLayerList },
     '~/components/dashboard/pr/PRStackRebaseDialog.vue': { default: StackRebaseDialog },
     '~/components/ui/GitHubAvatar.vue': { default: slotStub },
     '~/components/ui/ScrollArea.vue': { default: slotStub },
@@ -272,7 +297,7 @@ const settle = async () => {
 };
 
 async function openCommitForm(root: HTMLElement) {
-  click(root.querySelector('.merge-box__merge-btn'));
+  click(root.querySelector('.merge-box__actions .merge-box__merge-btn'));
   await settle();
   return root.querySelector<HTMLFormElement>('.merge-box__commit-form');
 }
@@ -494,11 +519,12 @@ describe('PRMergeBox Git capability', () => {
   const rebaseButton = (root: HTMLElement) => root.querySelector('.merge-box__rebase-stack-btn');
   const mergeButton = (root: HTMLElement) => root.querySelector('.merge-box__merge-btn');
 
-  test('offers Stack Rebase beside a disabled merge in a single actions footer with visible inline reason', () => {
+  test('offers Stack Rebase inline on the Stack row while keeping only the disabled merge in the footer', () => {
     const root = mountLayer(notLinearStack(), { available: true });
 
     expect(root.querySelectorAll('.merge-box__actions')).toHaveLength(1);
-    expect(rebaseButton(root)).not.toBeNull();
+    expect(root.querySelector('.merge-box__stack-row .merge-box__rebase-stack-btn')).not.toBeNull();
+    expect(root.querySelector('.merge-box__actions .merge-box__rebase-stack-btn')).toBeNull();
     expect(rebaseButton(root)?.hasAttribute('disabled')).toBe(false);
     // The merge button stays on screen and says why it cannot be used visibly inline.
     expect(mergeButton(root)?.hasAttribute('disabled')).toBe(true);
@@ -522,15 +548,13 @@ describe('PRMergeBox Git capability', () => {
     );
   });
 
-  test('keeps Stack Rebase on screen but disabled when the server has no Git', () => {
+  test('explains inline on the Stack row when the server has no Git instead of showing a disabled Rebase stack button', () => {
     const root = mountLayer(notLinearStack(), { available: false, reason: 'git_missing' });
 
-    expect(rebaseButton(root)?.hasAttribute('disabled')).toBe(true);
-    // A disabled control is not a dead end: the reason is readable inline without hovering.
-    const reasons = [...root.querySelectorAll('.merge-box__blocked-reason')];
-    expect(reasons.length).toBeGreaterThanOrEqual(1);
-    expect(reasons.every((el) => !el.classList.contains('is-sr-only'))).toBe(true);
-    expect(root.textContent).toContain('This server has no Git, so it cannot rebase a Stack.');
+    expect(rebaseButton(root)).toBeNull();
+    expect(root.querySelector('.merge-box__stack-row')?.textContent).toContain(
+      'This server has no Git, so it cannot rebase a Stack. Rebase the Stack locally.'
+    );
     expect(mergeButton(root)?.hasAttribute('disabled')).toBe(true);
   });
 
@@ -1622,7 +1646,7 @@ describe('PRMergeBox regression suite', () => {
     const listedLayers = [...root.querySelectorAll('.merge-box__stack-layer')].map((el) =>
       el.textContent?.replace(/\s+/g, ' ').trim()
     );
-    expect(listedLayers).toEqual(['#102 Add the API Open']);
+    expect(listedLayers).toEqual(['Add the API #102 Open']);
 
     // If Layer 1 is draft, Layer 2 is blocked with visible inline reason
     stack.value = linearStack('draft');
@@ -1714,7 +1738,7 @@ describe('PRMergeBox regression suite', () => {
     await settle();
 
     expect(root.querySelector('dialog.stack-rebase')).toBeNull();
-    const persistedAlert = root.querySelector('.merge-box__actions [role="alert"]');
+    const persistedAlert = root.querySelector('[role="alert"]');
     expect(persistedAlert?.textContent?.trim()).toBe('Conflict in api.ts');
 
     // Re-opening clears persisted error; succeeding disables button until stack prop updates
@@ -1727,7 +1751,7 @@ describe('PRMergeBox regression suite', () => {
     };
     click(rebaseBtn());
     await settle();
-    expect(root.querySelector('.merge-box__actions [role="alert"]')).toBeNull();
+    expect(root.querySelector('[role="alert"]')).toBeNull();
 
     const reopenedDialog = root.querySelector<HTMLDialogElement>('dialog.stack-rebase');
     click(reopenedDialog?.querySelector<HTMLButtonElement>('.stack-rebase__btn--primary') ?? null);
@@ -1776,5 +1800,248 @@ describe('PRMergeBox regression suite', () => {
     refreshVersion.value += 1;
     await settle();
     expect(fetchCalls).toBe(2);
+  });
+});
+
+describe('PRMergeBox redesigned checklist, checks, stack, and footer', () => {
+  test('renders review requirement progress and deduplicated uncovered mergeability blockers', () => {
+    const { root } = mountCurrency(
+      openStatus({
+        mergeableState: 'blocked',
+        reviewDecision: 'review_required',
+        reviewRequirements: {
+          requiredApprovingReviewCount: 2,
+          qualifyingApprovalCount: 0,
+          requireCodeOwnerReview: true,
+          requireLastPushApproval: false,
+          requiredReviewThreadResolution: true,
+        },
+        behindBy: 3,
+        mergeBlockers: [
+          { code: 'unresolved_conversations', count: 2 },
+          { code: 'unsigned_commits', count: 1 },
+          { code: 'strict_branch_currency' },
+        ],
+      })
+    );
+
+    expect(root.textContent).toContain(
+      'At least 2 approving reviews are required by reviewers with write access (0/2)'
+    );
+    expect(root.textContent).toContain('Code owner review is required');
+    const blockers = [...root.querySelectorAll('.merge-box__blocker')].map((el) =>
+      el.textContent?.trim()
+    );
+    // Strict branch currency is already covered by the Branch Currency row above.
+    expect(blockers).toEqual([
+      '2 unresolved conversations must be resolved',
+      '1 commit lacks a verified signature',
+    ]);
+  });
+
+  test('renders check breakdown summary, auto-expands on failure, stays collapsed on pass, and lists skipped checks inside the scrollable container', async () => {
+    const mixedPassingRollup = {
+      state: 'SUCCESS',
+      contexts: {
+        totalCount: 10,
+        nodes: [
+          ...Array.from({ length: 9 }, (_, index) => ({
+            __typename: 'CheckRun',
+            name: `CI job ${index + 1}`,
+            status: 'COMPLETED',
+            conclusion: 'SUCCESS',
+            startedAt: '2026-11-27T08:00:00Z',
+            completedAt: '2026-11-27T08:01:36Z',
+            checkSuite: {
+              app: { name: 'GitHub Actions', logoUrl: 'https://avatars.example/actions.png' },
+            },
+          })),
+          {
+            __typename: 'CheckRun',
+            name: 'Sourcery review',
+            status: 'COMPLETED',
+            conclusion: 'SKIPPED',
+            title: '⏭️ Auto re-review limit reached',
+            startedAt: '2026-11-27T08:00:00Z',
+            completedAt: '2026-11-27T08:00:00Z',
+            checkSuite: {
+              app: { name: 'Sourcery', logoUrl: 'https://avatars.example/sourcery.png' },
+            },
+          },
+        ],
+      },
+    };
+
+    const { root } = mountCurrency(openStatus({ checkRollup: mixedPassingRollup }));
+    expect(root.textContent).toContain('9 successful, 1 skipped');
+    expect(root.querySelector('.merge-box__check-list')).toBeNull();
+
+    click(root.querySelector('.merge-box__row--toggle'));
+    await settle();
+
+    const list = root.querySelector('.merge-box__check-list');
+    expect(list).not.toBeNull();
+    expect(list?.querySelectorAll('.check-list__row')).toHaveLength(10);
+    expect(list?.textContent).toContain('Sourcery review');
+    expect(list?.textContent).toContain('⏭️ Auto re-review limit reached');
+    expect(list?.textContent).toContain('Successful in 1m 36s');
+    expect(list?.querySelector('.check-list__app')).toBeNull();
+    expect(list?.querySelector('img.check-list__avatar-img')?.getAttribute('title')).toBe(
+      'GitHub Actions'
+    );
+
+    // Failing checks auto-expand by default.
+    const { root: failRoot } = mountCurrency(openStatus({ checkRollup: failedChecks }));
+    expect(failRoot.querySelector('.merge-box__check-list')).not.toBeNull();
+    expect(failRoot.textContent).toContain('1 failed');
+  });
+
+  test('disables Merge when mergeableState is behind and surfaces read-only Auto-merge and Merge Queue status', () => {
+    const { root } = mountCurrency(
+      openStatus({
+        mergeableState: 'behind',
+        mergeable: true,
+        behindBy: 2,
+      })
+    );
+    expect(
+      root.querySelector('.merge-box__actions .merge-box__merge-btn')?.hasAttribute('disabled')
+    ).toBe(true);
+    expect(root.textContent).toContain('Update the branch before merging.');
+
+    const { root: autoMergeRoot } = mountCurrency(
+      openStatus({
+        viewerCanMerge: false,
+        autoMerge: true,
+        autoMergeState: { enabled: true, mergeMethod: 'squash' },
+      })
+    );
+    expect(autoMergeRoot.textContent).toContain('Auto-merge enabled (Squash and merge)');
+
+    const { root: queueRoot } = mountCurrency(
+      openStatus({
+        viewerCanMerge: false,
+        mergeQueue: { inMergeQueue: true, state: 'QUEUED', position: 2, enabled: true },
+      })
+    );
+    expect(queueRoot.textContent).toContain('In merge queue (#2)');
+  });
+
+  test('renders collapsible Stack row with click-to-navigate, hides Branch Currency for multi-active stacks, and unlocks Branch Update + single-PR merge for a sole remaining active Layer', async () => {
+    store = createMergeStatusStore();
+    dom = createVueDom({ useI18n: () => ({ t, locale: ref('en') }) });
+    const selectedLayers: number[] = [];
+
+    const multiActiveStack = {
+      number: 106,
+      trunk: 'main',
+      count: 2,
+      place: 2,
+      history: 'not-linear' as const,
+      layers: [
+        {
+          number: 101,
+          title: 'Add the model',
+          state: 'open' as const,
+          baseRef: 'main',
+          headSha: 'h1',
+          behindBy: 0,
+        },
+        {
+          number: 102,
+          title: 'Add the API',
+          state: 'open' as const,
+          baseRef: 'feat/model',
+          headSha: 'h2',
+          behindBy: 2,
+        },
+      ],
+    };
+
+    const MultiHarness = defineComponent({
+      setup: () => () =>
+        h(MergeBox as Component, {
+          owner: 'octo',
+          repo: 'app',
+          pullNumber: 102,
+          initialStatus: openStatus({ behindBy: 2 }),
+          stack: multiActiveStack,
+          git: { available: true },
+          onSelectLayer: (num: number) => selectedLayers.push(num),
+        }),
+    });
+    const multiRoot = dom.mount(MultiHarness).root;
+
+    // Multi-active stack owns sync status and hides redundant Branch Currency row.
+    expect(multiRoot.querySelector('.merge-box__currency')).toBeNull();
+    expect(multiRoot.querySelector('.merge-box__stack-row')?.textContent).toContain(
+      'Stack · Layer 2 of 2 (on main)'
+    );
+
+    click(multiRoot.querySelector('.merge-box__stack-toggle'));
+    await settle();
+    const drawerButtons = [...multiRoot.querySelectorAll('.merge-box__stack-drawer button')];
+    expect(drawerButtons).toHaveLength(1);
+    expect(multiRoot.querySelector('.merge-box__stack-drawer')?.textContent).toContain('Behind 2');
+    click(drawerButtons[0] ?? null);
+    await settle();
+    expect(selectedLayers).toEqual([101]);
+
+    // Sole remaining active Layer targeting Trunk directly regains Branch Currency, Branch Update, and single-PR merge.
+    const soleActiveStack = {
+      number: 9,
+      trunk: 'dev',
+      count: 2,
+      place: 2,
+      history: 'not-linear' as const,
+      layers: [
+        { number: 3848, title: 'Merged layer 1', state: 'merged' as const, baseRef: 'dev' },
+        {
+          number: 3853,
+          title: 'Sole active layer 2',
+          state: 'open' as const,
+          baseRef: 'dev',
+          headSha: 'h3853',
+          behindBy: 2,
+        },
+      ],
+    };
+    const soleStore = createMergeStatusStore();
+    store = soleStore;
+    const SoleHarness = defineComponent({
+      setup: () => () =>
+        h(MergeBox as Component, {
+          owner: 'PCL-Community',
+          repo: 'PCL-CE',
+          pullNumber: 3853,
+          initialStatus: openStatus({
+            baseRef: 'dev',
+            behindBy: 2,
+            allowedMergeMethods: ['squash'],
+          }),
+          stack: soleActiveStack,
+          git: { available: false, reason: 'git_missing' },
+        }),
+    });
+    const soleRoot = dom.mount(SoleHarness).root;
+
+    expect(soleRoot.querySelector('.merge-box__stack-row')?.textContent).toContain(
+      'Only active layer · targets dev directly'
+    );
+    expect(soleRoot.querySelector('.merge-box__rebase-stack-btn')).toBeNull();
+    expect(soleRoot.querySelector('.merge-box__currency')).not.toBeNull();
+    expect(updateButton(soleRoot)?.textContent?.trim()).toBe('Update branch');
+    const soleMergeBtn = soleRoot.querySelector<HTMLButtonElement>(
+      '.merge-box__actions .merge-box__merge-btn'
+    );
+    expect(soleMergeBtn?.textContent?.trim()).toBe('Squash and merge');
+    expect(soleMergeBtn?.hasAttribute('disabled')).toBe(false);
+
+    // Confirming merge on a sole remaining active Layer uses standard single-PR merge.
+    const form = await openCommitForm(soleRoot);
+    expect(form).not.toBeNull();
+    form?.dispatchEvent(new dom.window.Event('submit'));
+    await settle();
+    expect(soleStore.merges).toEqual([{ method: 'squash' }]);
   });
 });

@@ -232,7 +232,7 @@ The control on a Layer that shows this pull request's place in its Stack and ope
 _Avoid_: stack badge, stack icon, stack label
 
 **Stack Detail**:
-The modal opened from a Stack Chip that lists the Stack's Trunk and its Layers, from the first Layer to the top. The current Layer is marked, choosing another Layer opens that pull request, and the modal does not land or rebase the Stack.
+The modal opened from a Stack Chip that lists the Stack's Trunk, its linearity, and its Layers from the first Layer to the top, showing each Layer's state and whether an active Layer is behind its base. The current Layer is marked, choosing another Layer opens that pull request, and the modal does not land or rebase the Stack.
 _Avoid_: stack map, stack popover, stack panel
 
 **Stack Merge**:
@@ -282,7 +282,7 @@ An approval submitted directly from a pull request's Detail Overlay without ente
 _Avoid_: one-click approve, rubber stamp, instant approve
 
 **Merge Box**:
-The part of a pull request's conversation that states whether it can be merged and performs the merge. A Layer is landed with a Stack Merge or restored with a Stack Rebase and is not offered a Branch Update, while any other pull request is offered only the repository's Merge Methods, its commit title and message, its Branch Currency, and a Branch Update.
+The part of a pull request's conversation that states whether it can be merged, surfaces its blocking requirements, and performs the merge. A Layer in a Stack exposes its Stack's state inside the box; while active Layers still depend on one another it lands with a Stack Merge or restores with a Stack Rebase and is not offered a Branch Update, whereas a sole remaining active Layer targeting the Trunk directly — like any non-Stack pull request — is offered its Merge Method Availability, its commit title and message, its Branch Currency, and a Branch Update.
 _Avoid_: merge panel, merge card, merge widget
 
 **Branch Currency**:
@@ -298,7 +298,7 @@ One of the three ways GitHub can land a pull request: a merge commit, a squash, 
 _Avoid_: merge type, merge option, merge strategy
 
 **Merge Method Availability**:
-Which Merge Methods one repository's settings allow. A repository always allows at least one, and a pull request's Merge Box never offers a method outside it.
+Which Merge Methods both the repository's settings and the target branch's rulesets allow. A repository always allows at least one, and a pull request's Merge Box never offers a method outside the resulting set.
 _Avoid_: merge permissions, merge settings when naming the list itself
 
 **Default Commit Message**:

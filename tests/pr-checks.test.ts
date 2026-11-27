@@ -46,6 +46,10 @@ describe('Check Rollup presentation view', () => {
       tone: 'success',
       passedCount: null,
       failedCount: null,
+      pendingCount: null,
+      successCount: null,
+      neutralCount: null,
+      skippedCount: null,
       totalCount: 0,
       isTruncated: false,
       summaryKind: 'passed',
@@ -57,7 +61,7 @@ describe('Check Rollup presentation view', () => {
     expect(toPullRequestChecksView({ state: 'PENDING', contexts: null }).isVisible).toBe(false);
   });
 
-  test('counts success, neutral, and skipped as passed', () => {
+  test('counts success, neutral, and skipped as passed while exposing per-outcome breakdown counts', () => {
     // GitHub reports a skipped job as Success and does not block a merge on a
     // neutral conclusion, so all three count toward the passed numerator.
     const view = toPullRequestChecksView(
@@ -69,11 +73,47 @@ describe('Check Rollup presentation view', () => {
       ])
     );
 
-    expect(view).toMatchObject({ isVisible: true, tone: 'success', passedCount: 4, totalCount: 4 });
+    expect(view).toMatchObject({
+      isVisible: true,
+      tone: 'success',
+      passedCount: 4,
+      failedCount: 0,
+      pendingCount: 0,
+      successCount: 2,
+      neutralCount: 1,
+      skippedCount: 1,
+      totalCount: 4,
+    });
     expect(view.groups.map((group) => group.kind)).toEqual(['success', 'neutral', 'skipped']);
     expect(view.groups[0]?.checks).toEqual([
-      { key: 'build:0', name: 'build', appName: null, detailsUrl: null },
-      { key: 'lint:1', name: 'lint', appName: null, detailsUrl: null },
+      {
+        key: 'build:0',
+        name: 'build',
+        appName: null,
+        appLogoUrl: null,
+        detailsUrl: null,
+        status: 'COMPLETED',
+        conclusion: 'SUCCESS',
+        startedAt: null,
+        completedAt: null,
+        createdAt: null,
+        summary: null,
+        durationSeconds: null,
+      },
+      {
+        key: 'lint:1',
+        name: 'lint',
+        appName: null,
+        appLogoUrl: null,
+        detailsUrl: null,
+        status: 'COMPLETED',
+        conclusion: 'SUCCESS',
+        startedAt: null,
+        completedAt: null,
+        createdAt: null,
+        summary: null,
+        durationSeconds: null,
+      },
     ]);
   });
 
@@ -294,20 +334,32 @@ describe('Check Rollup presentation view', () => {
     ]);
   });
 
-  test('reads the app behind a check for links and legacy statuses', () => {
+  test('reads the app, avatar, duration, and summary behind a check for CheckRuns and legacy statuses', () => {
     const view = toPullRequestChecksView(
       rollup('FAILURE', [
-        checkRun(
-          'build',
-          'FAILURE',
-          'COMPLETED',
-          'GitHub Actions',
-          'https://github.com/acme/run/1'
-        ),
+        {
+          __typename: 'CheckRun',
+          name: 'build',
+          conclusion: 'FAILURE',
+          status: 'COMPLETED',
+          detailsUrl: 'https://github.com/acme/run/1',
+          startedAt: '2026-11-27T08:00:00Z',
+          completedAt: '2026-11-27T08:01:36Z',
+          title: 'Build failed on step 3',
+          checkSuite: {
+            app: {
+              name: 'GitHub Actions',
+              logoUrl: 'https://avatars.githubusercontent.com/in/15368',
+            },
+          },
+        },
         {
           __typename: 'StatusContext',
           name: 'legacy',
           conclusion: 'FAILURE',
+          description: 'Lint violations found',
+          avatarUrl: 'https://avatars.githubusercontent.com/u/99',
+          createdAt: '2026-11-27T07:30:00Z',
           creator: { login: 'old-bot' },
         },
       ])
@@ -318,10 +370,58 @@ describe('Check Rollup presentation view', () => {
         key: 'build:0',
         name: 'build',
         appName: 'GitHub Actions',
+        appLogoUrl: 'https://avatars.githubusercontent.com/in/15368',
         detailsUrl: 'https://github.com/acme/run/1',
+        status: 'COMPLETED',
+        conclusion: 'FAILURE',
+        startedAt: '2026-11-27T08:00:00Z',
+        completedAt: '2026-11-27T08:01:36Z',
+        createdAt: null,
+        summary: 'Build failed on step 3',
+        durationSeconds: 96,
       },
-      { key: 'legacy:1', name: 'legacy', appName: 'old-bot', detailsUrl: null },
+      {
+        key: 'legacy:1',
+        name: 'legacy',
+        appName: 'old-bot',
+        appLogoUrl: 'https://avatars.githubusercontent.com/u/99',
+        detailsUrl: null,
+        status: null,
+        conclusion: 'FAILURE',
+        startedAt: null,
+        completedAt: null,
+        createdAt: '2026-11-27T07:30:00Z',
+        summary: 'Lint violations found',
+        durationSeconds: null,
+      },
     ]);
+  });
+
+  test('treats zero-length or invalid check timestamps as null duration', () => {
+    const view = toPullRequestChecksView(
+      rollup('SUCCESS', [
+        {
+          __typename: 'CheckRun',
+          name: 'Sourcery review',
+          conclusion: 'SKIPPED',
+          status: 'COMPLETED',
+          startedAt: '2026-11-27T08:00:00Z',
+          completedAt: '2026-11-27T08:00:00Z',
+          title: '⏭️ Auto re-review limit reached',
+          checkSuite: { app: { name: 'Sourcery', logoUrl: 'https://sourcery.ai/logo.png' } },
+        },
+      ])
+    );
+
+    expect(view.skippedCount).toBe(1);
+    expect(view.successCount).toBe(0);
+    expect(view.groups[0]?.checks[0]).toMatchObject({
+      name: 'Sourcery review',
+      appName: 'Sourcery',
+      appLogoUrl: 'https://sourcery.ai/logo.png',
+      summary: '⏭️ Auto re-review limit reached',
+      durationSeconds: null,
+    });
   });
 
   test('drops unnamed contexts instead of rendering a blank row', () => {

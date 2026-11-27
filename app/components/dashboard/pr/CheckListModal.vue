@@ -3,7 +3,7 @@ import { XIcon } from '@lucide/vue';
 import { computed, onBeforeUnmount, shallowRef, watchPostEffect } from 'vue';
 
 import type { CheckStatusTone, PullRequestChecksView } from '#shared/types/pr-checks';
-import { CHECK_ROLLUP_CONTEXT_LIMIT } from '#shared/utils/pr-checks';
+import { CHECK_ROLLUP_CONTEXT_LIMIT, formatCheckBreakdownSummary } from '#shared/utils/pr-checks';
 import CheckListRows from '~/components/dashboard/pr/CheckListRows.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 
@@ -22,29 +22,7 @@ const { t } = useI18n();
 const dialogRef = shallowRef<HTMLDialogElement | null>(null);
 let unmounting = false;
 
-const summary = computed(() => {
-  const { summaryKind, passedCount, failedCount, totalCount, isTruncated } = view;
-  const counts = { passed: passedCount ?? 0, failed: failedCount ?? 0, total: totalCount };
-
-  // A truncated rollup cannot report a fraction, so the fallback names the total
-  // instead of inventing one from the contexts that were fetched.
-  if (isTruncated) {
-    return t('dashboard.checks.overLimit', {
-      total: totalCount,
-      limit: CHECK_ROLLUP_CONTEXT_LIMIT,
-    });
-  }
-
-  if (summaryKind === 'failed') {
-    return t('dashboard.checks.summaryFailed', counts);
-  }
-
-  if (summaryKind === 'pending') {
-    return t('dashboard.checks.summaryPending', counts);
-  }
-
-  return t('dashboard.checks.summaryPassed', counts);
-});
+const summary = computed(() => formatCheckBreakdownSummary(view, t));
 
 const summaryTone = computed<CheckStatusTone>(() =>
   view.summaryKind === 'failed' ? 'danger' : view.summaryKind === 'pending' ? 'warning' : 'success'

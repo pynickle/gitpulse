@@ -19,9 +19,13 @@ const CheckStatusChip = await compileVue(
 );
 
 const messages: Record<string, string> = {
-  'dashboard.checks.chipPassed': '{passed} of {total} checks passed',
-  'dashboard.checks.chipFailed': '{failed} of {total} checks failed',
   'dashboard.checks.overLimit': 'More than {limit} checks, {total} total',
+  'dashboard.checks.count_failure': '{count} failed',
+  'dashboard.checks.count_pending': '{count} in progress',
+  'dashboard.checks.count_success': '{count} successful',
+  'dashboard.checks.count_neutral': '{count} neutral',
+  'dashboard.checks.count_skipped': '{count} skipped',
+  'dashboard.checks.countSeparator': ', ',
 };
 
 const t = (key: string, params?: Record<string, unknown>) =>
@@ -76,6 +80,29 @@ describe('CheckStatusChip', () => {
     const visible = chip?.textContent?.trim() ?? '';
     expect(visible).toBe('130');
     expect(chip?.getAttribute('aria-label')).toContain(visible);
+  });
+
+  test('keeps the non-blocking fraction visible while breaking out skipped checks in title and aria-label', () => {
+    const mixedRollup = {
+      state: 'SUCCESS',
+      contexts: {
+        totalCount: 10,
+        nodes: [
+          ...Array.from({ length: 9 }, (_, index) => ({
+            name: `job-${index}`,
+            conclusion: 'SUCCESS',
+            status: 'COMPLETED',
+          })),
+          { name: 'Sourcery review', conclusion: 'SKIPPED', status: 'COMPLETED' },
+        ],
+      },
+    };
+    const chip = mountChip(mixedRollup).querySelector('.check-status-chip');
+
+    expect(chip?.textContent?.trim()).toBe('10/10');
+    expect(chip?.classList.contains('check-status-chip--success')).toBe(true);
+    expect(chip?.getAttribute('title')).toBe('9 successful, 1 skipped');
+    expect(chip?.getAttribute('aria-label')).toBe('10/10 — 9 successful, 1 skipped');
   });
 
   test('renders nothing for a pull request with no checks', () => {

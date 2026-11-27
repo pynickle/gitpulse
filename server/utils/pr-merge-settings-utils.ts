@@ -7,7 +7,7 @@
  * settings carries.
  */
 
-export type PRMergeMethod = 'merge' | 'squash' | 'rebase';
+import type { PRMergeMethod } from '#shared/types/pr-merge';
 
 export type PRMergeCommitTitle = 'PR_TITLE' | 'MERGE_MESSAGE';
 export type PRMergeCommitMessage = 'BLANK' | 'PR_TITLE' | 'PR_BODY';
@@ -80,16 +80,34 @@ const isMethodAllowed = (settings: RepositoryMergeSettings, method: PRMergeMetho
 };
 
 /**
- * Which merge methods the box may offer. Unreadable settings offer every method:
- * GitHub remains the authority on whether a merge may proceed, and it rejects a
- * disabled method with its own message.
+ * Which merge methods the box may offer, intersecting repository settings with
+ * target branch ruleset `allowed_merge_methods` (when present and non-empty).
+ * Unreadable settings offer every method: GitHub remains the authority on
+ * whether a merge may proceed, and it rejects a disabled method with its own message.
  */
 export function resolveAllowedMergeMethods(
-  settings: RepositoryMergeSettings | null
+  settings: RepositoryMergeSettings | null,
+  branchAllowedMethods?: readonly PRMergeMethod[] | null
 ): PRMergeMethod[] {
-  if (!settings) return [...PR_MERGE_METHOD_ORDER];
-
-  const allowed = PR_MERGE_METHOD_ORDER.filter((method) => isMethodAllowed(settings, method));
+  const repoAllowed = settings
+    ? PR_MERGE_METHOD_ORDER.filter((method) => isMethodAllowed(settings, method))
+    : [...PR_MERGE_METHOD_ORDER];
   // GitHub requires at least one method, so an empty list means the payload lied.
-  return allowed.length > 0 ? allowed : [...PR_MERGE_METHOD_ORDER];
+  const baseAllowed = repoAllowed.length > 0 ? repoAllowed : [...PR_MERGE_METHOD_ORDER];
+
+  if (!branchAllowedMethods || branchAllowedMethods.length === 0) {
+    return baseAllowed;
+  }
+
+  const branchSet = new Set<PRMergeMethod>(
+    branchAllowedMethods.filter((method): method is PRMergeMethod =>
+      PR_MERGE_METHOD_ORDER.includes(method)
+    )
+  );
+  if (branchSet.size === 0) {
+    return baseAllowed;
+  }
+
+  const intersected = baseAllowed.filter((method) => branchSet.has(method));
+  return intersected.length > 0 ? intersected : baseAllowed;
 }

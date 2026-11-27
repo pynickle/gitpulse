@@ -91,6 +91,21 @@ const toOutcomeGroup = (context: CheckRollupContext): CheckOutcomeGroup => {
 const toCheckAppName = (context: CheckRollupContext): string | null =>
   nonEmptyString(context.checkSuite?.app?.name) ?? nonEmptyString(context.creator?.login);
 
+const toCheckAppLogoUrl = (context: CheckRollupContext): string | null =>
+  nonEmptyString(context.checkSuite?.app?.logoUrl) ?? nonEmptyString(context.avatarUrl);
+
+const toCheckSummary = (context: CheckRollupContext): string | null =>
+  nonEmptyString(context.title) ?? nonEmptyString(context.description);
+
+const toDurationSeconds = (startedAt: string | null, completedAt: string | null): number | null => {
+  if (!startedAt || !completedAt) return null;
+  const start = Date.parse(startedAt);
+  const end = Date.parse(completedAt);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return null;
+  const seconds = Math.round((end - start) / 1000);
+  return seconds > 0 ? seconds : null;
+};
+
 const toGroupedChecks = (nodes: CheckRollupContext[]) => {
   const groups = new Map<CheckOutcomeGroup, PullRequestChecksView['groups'][number]['checks']>();
 
@@ -99,12 +114,22 @@ const toGroupedChecks = (nodes: CheckRollupContext[]) => {
     if (!name) return;
 
     const outcome = toOutcomeGroup(node);
+    const startedAt = nonEmptyString(node.startedAt);
+    const completedAt = nonEmptyString(node.completedAt);
     const group = groups.get(outcome) ?? [];
     group.push({
       key: `${name}:${index}`,
       name,
       appName: toCheckAppName(node),
+      appLogoUrl: toCheckAppLogoUrl(node),
       detailsUrl: nonEmptyString(node.detailsUrl),
+      status: nonEmptyString(node.status),
+      conclusion: nonEmptyString(node.conclusion),
+      startedAt,
+      completedAt,
+      createdAt: nonEmptyString(node.createdAt),
+      summary: toCheckSummary(node),
+      durationSeconds: toDurationSeconds(startedAt, completedAt),
     });
     groups.set(outcome, group);
   });
@@ -157,22 +182,28 @@ export function toPullRequestChecksView(
   const totalCount = Math.max(parsedNodes.length, rolledUpTotal);
   const isTruncated = rolledUpTotal > parsedNodes.length;
   const groupOf = (kind: CheckOutcomeGroup) => groups.find((group) => group.kind === kind);
-  // No fraction when the list is truncated or empty: the chip shows a tone and a
-  // total, or nothing at all.
+  // No fraction or per-outcome count when the list is truncated or empty: the
+  // chip shows a tone and a total, or nothing at all.
+  const canCount = !isTruncated && totalCount > 0;
+  const successCount = canCount ? (groupOf('success')?.checks.length ?? 0) : null;
+  const neutralCount = canCount ? (groupOf('neutral')?.checks.length ?? 0) : null;
+  const skippedCount = canCount ? (groupOf('skipped')?.checks.length ?? 0) : null;
+  const failedCount = canCount ? (groupOf('failure')?.checks.length ?? 0) : null;
+  const pendingCount = canCount ? (groupOf('pending')?.checks.length ?? 0) : null;
   const passedCount =
-    isTruncated || totalCount === 0
-      ? null
-      : (groupOf('success')?.checks.length ?? 0) +
-        (groupOf('neutral')?.checks.length ?? 0) +
-        (groupOf('skipped')?.checks.length ?? 0);
-  const failedCount =
-    isTruncated || totalCount === 0 ? null : (groupOf('failure')?.checks.length ?? 0);
+    canCount && successCount !== null && neutralCount !== null && skippedCount !== null
+      ? successCount + neutralCount + skippedCount
+      : null;
 
   return {
     isVisible: totalCount > 0,
     tone,
     passedCount,
     failedCount,
+    pendingCount,
+    successCount,
+    neutralCount,
+    skippedCount,
     totalCount,
     isTruncated,
     summaryKind: tone === 'danger' ? 'failed' : tone === 'warning' ? 'pending' : 'passed',
@@ -189,4 +220,74 @@ export function readPullRequestCheckRollup(value: unknown): PullRequestCheckRoll
 
   const rollup = value.checkRollup;
   return isRecord(rollup) ? (rollup as PullRequestCheckRollup) : null;
+}
+
+type TranslateFn = (key: string, params?: Record<string, unknown>) => string;
+
+/**
+ * Formats a compact non-zero duration (e.g. `42s`, `1m 36s`, `1h 5m`).
+ * Returns an empty string for non-positive or non-finite values.
+ */
+export function formatCompactCheckDuration(seconds: number, t: TranslateFn): string {
+  if (!Number.isFinite(seconds) || seconds <= 0) return '';
+  const totalSeconds = Math.max(1, Math.round(seconds));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const secs = totalSeconds % 60;
+
+  if (hours > 0) {
+    return minutes > 0
+      ? t('dashboard.checks.durationHoursMinutes', { h: hours, m: minutes })
+      : t('dashboard.checks.durationHours', { h: hours });
+  }
+  if (minutes > 0) {
+    return secs > 0
+      ? t('dashboard.checks.durationMinutesSeconds', { m: minutes, s: secs })
+      : t('dashboard.checks.durationMinutes', { m: minutes });
+  }
+  return t('dashboard.checks.durationSeconds', { s: secs });
+}
+
+/**
+ * Formats the non-zero outcome breakdown summary shared by the Check Status Chip
+ * tooltip/accessible name, Check List Modal header, and Merge Box Checks row.
+ * Falls back to `overLimit` when truncated so no surface invents a fraction.
+ */
+export function formatCheckBreakdownSummary(view: PullRequestChecksView, t: TranslateFn): string {
+  if (view.isTruncated) {
+    return t('dashboard.checks.overLimit', {
+      total: view.totalCount,
+      limit: CHECK_ROLLUP_CONTEXT_LIMIT,
+    });
+  }
+
+  const parts: string[] = [];
+  if (view.failedCount) {
+    parts.push(t('dashboard.checks.count_failure', { count: view.failedCount }));
+  }
+  if (view.pendingCount) {
+    parts.push(t('dashboard.checks.count_pending', { count: view.pendingCount }));
+  }
+  if (view.successCount) {
+    parts.push(t('dashboard.checks.count_success', { count: view.successCount }));
+  }
+  if (view.neutralCount) {
+    parts.push(t('dashboard.checks.count_neutral', { count: view.neutralCount }));
+  }
+  if (view.skippedCount) {
+    parts.push(t('dashboard.checks.count_skipped', { count: view.skippedCount }));
+  }
+
+  if (parts.length > 0) {
+    return parts.join(t('dashboard.checks.countSeparator'));
+  }
+
+  const counts = {
+    passed: view.passedCount ?? 0,
+    failed: view.failedCount ?? 0,
+    total: view.totalCount,
+  };
+  if (view.summaryKind === 'failed') return t('dashboard.checks.summaryFailed', counts);
+  if (view.summaryKind === 'pending') return t('dashboard.checks.summaryPending', counts);
+  return t('dashboard.checks.summaryPassed', counts);
 }

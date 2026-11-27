@@ -1,7 +1,7 @@
 import { afterEach, expect, test } from 'bun:test';
 
 import { renderToString } from '@vue/server-renderer';
-import { createSSRApp, defineComponent, h, nextTick } from 'vue';
+import { createSSRApp, defineComponent, h, nextTick, ref, shallowRef } from 'vue';
 
 import * as checks from '../shared/utils/pr-checks';
 import { compileVue } from './helpers/compile-vue';
@@ -9,11 +9,21 @@ import { ScrollArea } from './helpers/scroll-area';
 import { createVueDom } from './helpers/vue-dom';
 
 const icon = defineComponent({ setup: () => () => h('svg') });
-const i18n = { useI18n: () => ({ t: (key: string) => key }) };
+const i18n = { useI18n: () => ({ t: (key: string) => key, locale: ref('en') }) };
 const CheckListRows = await compileVue(
   'app/components/dashboard/pr/CheckListRows.vue',
-  { 'test/i18n': i18n },
-  { useI18n: 'test/i18n' }
+  {
+    '@lucide/vue': new Proxy({}, { get: () => icon }) as unknown,
+    '#shared/utils/pr-checks': checks,
+    'test/i18n': i18n,
+    'test/relative-time': { useRelativeTimeNow: () => shallowRef(0) },
+    'test/duration': { formatDurationFromNow: () => '1 hour ago' },
+  },
+  {
+    useI18n: 'test/i18n',
+    useRelativeTimeNow: 'test/relative-time',
+    formatDurationFromNow: 'test/duration',
+  }
 );
 const CheckListModal = await compileVue(
   'app/components/dashboard/pr/CheckListModal.vue',

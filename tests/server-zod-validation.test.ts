@@ -19,7 +19,9 @@ const releaseFollowsTypes = await import('../shared/types/release-follows');
 const userSettingsTypes = await import('../shared/types/user-settings');
 const userSettingsUtils = await import('../shared/utils/user-settings');
 const githubPagination = await import('../server/utils/github-pagination');
+const githubGraphqlUtils = await import('../server/utils/github-graphql-utils');
 const zodValidationUtils = await import('../server/utils/zod-validation-utils');
+const prChecks = await import('../shared/utils/pr-checks');
 
 mock.module('#shared/utils/reactions', () => reactions);
 mock.module('#shared/utils/copilot-review', () => import('../shared/utils/copilot-review'));
@@ -28,14 +30,17 @@ mock.module('#shared/types/tab-groups', () => tabGroupTypes);
 mock.module('#shared/types/release-follows', () => releaseFollowsTypes);
 mock.module('#shared/types/user-settings', () => userSettingsTypes);
 mock.module('#shared/utils/user-settings', () => userSettingsUtils);
+mock.module('#shared/utils/pr-checks', () => prChecks);
 mock.module('#server/utils/github-pagination', () => githubPagination);
+mock.module('#server/utils/github-graphql-utils', () => githubGraphqlUtils);
 mock.module('#server/utils/github-timeline-utils', () => ({
   fetchPaginatedArray: async () => [],
   fetchPRReviewMetadata: async () => new Map(),
 }));
 mock.module('#server/utils/zod-validation-utils', () => zodValidationUtils);
 mock.module('#server/utils/pr-check-rollup-graphql-utils', () => ({
-  fetchPullRequestCheckRollup: async () => null,
+  PR_CHECK_ROLLUP_NODE_FIELDS: '',
+  mapPullRequestCheckRollup: () => null,
 }));
 
 const { normalizeReactionMutationBody } = await import('../server/utils/github-reaction-utils');

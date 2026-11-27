@@ -15,6 +15,8 @@ mock.module('#server/utils/pr-merge-status-utils', () => ({
 }));
 
 const { fetchPullRequestStack } = await import('../server/utils/pr-stack-utils');
+const { isSoleActiveStackLayer, hasMultiActiveStackDependencies } =
+  await import('../shared/utils/pr-stack');
 
 describe('fetchPullRequestStack', () => {
   test('returns null when membership is null or undefined', async () => {
@@ -85,6 +87,7 @@ describe('fetchPullRequestStack', () => {
           baseRef: 'main',
           baseSha: 'base-1',
           headSha: 'sha-1',
+          behindBy: 0,
         },
         {
           number: 11,
@@ -93,6 +96,7 @@ describe('fetchPullRequestStack', () => {
           baseRef: 'feat-1',
           baseSha: 'sha-1',
           headSha: 'sha-2',
+          behindBy: 0,
         },
       ],
     });
@@ -138,8 +142,53 @@ describe('fetchPullRequestStack', () => {
     });
 
     expect(stack?.history).toBe('not-linear');
+    expect(stack?.layers[0]?.behindBy).toBe(0);
+    expect(stack?.layers[1]?.behindBy).toBe(3);
     expect(stack && 'hasConflicts' in stack).toBe(false);
     expect(graphql).not.toHaveBeenCalled();
+  });
+
+  test('propagates behindBy only to active layers and keeps merged layers without behindBy', async () => {
+    compareResults.clear();
+    compareResults.set('dev...sha-3853', 2);
+
+    const request = mock(() =>
+      Promise.resolve({
+        data: {
+          base: { ref: 'dev' },
+          pull_requests: [
+            {
+              number: 3848,
+              title: 'Lower merged layer',
+              state: 'closed',
+              merged_at: '2026-11-26T10:00:00Z',
+              base: { ref: 'dev', sha: 'base-0' },
+              head: { sha: 'sha-3848' },
+            },
+            {
+              number: 3853,
+              title: 'Sole remaining active layer',
+              state: 'open',
+              merged_at: null,
+              base: { ref: 'dev', sha: 'base-1' },
+              head: { sha: 'sha-3853' },
+            },
+          ],
+        },
+      })
+    );
+    const octokit = { request, graphql: mock(() => Promise.resolve({})) } as unknown as Octokit;
+
+    const stack = await fetchPullRequestStack(octokit, 'PCL-Community', 'PCL-CE', 3853, {
+      number: 9,
+      size: 2,
+      position: 2,
+      base: { ref: 'dev' },
+    });
+
+    expect(stack?.history).toBe('not-linear');
+    expect(stack?.layers[0]?.behindBy).toBeUndefined();
+    expect(stack?.layers[1]?.behindBy).toBe(2);
   });
 
   test('leaves history as unknown when compare fails (null) and others are 0', async () => {
@@ -211,5 +260,68 @@ describe('fetchPullRequestStack', () => {
     } finally {
       console.warn = originalWarn;
     }
+  });
+});
+
+describe('sole active Stack Layer classification', () => {
+  test('classifies a sole remaining open Layer directly targeting the Trunk as sole-active', () => {
+    const stack = {
+      number: 9,
+      trunk: 'dev',
+      count: 2,
+      place: 2,
+      history: 'not-linear' as const,
+      layers: [
+        { number: 3848, title: 'Layer 1', state: 'merged' as const, baseRef: 'dev' },
+        { number: 3853, title: 'Layer 2', state: 'open' as const, baseRef: 'dev', behindBy: 2 },
+      ],
+    };
+
+    expect(isSoleActiveStackLayer(stack, 3853)).toBe(true);
+    expect(hasMultiActiveStackDependencies(stack, 3853)).toBe(false);
+    // Viewing the already-merged Layer 1 of the same single-active-layer Stack still has no multi-active dependencies.
+    expect(hasMultiActiveStackDependencies(stack, 3848)).toBe(false);
+  });
+
+  test('treats a Stack with multiple active Layers or an unmerged lower Layer as multi-active', () => {
+    const withUpperDraft = {
+      number: 10,
+      trunk: 'main',
+      count: 3,
+      place: 2,
+      history: 'linear' as const,
+      layers: [
+        { number: 101, title: 'L1', state: 'merged' as const, baseRef: 'main' },
+        { number: 102, title: 'L2', state: 'open' as const, baseRef: 'main' },
+        { number: 103, title: 'L3', state: 'draft' as const, baseRef: 'feat/l2' },
+      ],
+    };
+    const withClosedLower = {
+      number: 11,
+      trunk: 'main',
+      count: 2,
+      place: 2,
+      history: 'linear' as const,
+      layers: [
+        { number: 201, title: 'L1', state: 'closed' as const, baseRef: 'main' },
+        { number: 202, title: 'L2', state: 'open' as const, baseRef: 'main' },
+      ],
+    };
+    const targetingNonTrunkBranch = {
+      number: 12,
+      trunk: 'main',
+      count: 2,
+      place: 2,
+      history: 'linear' as const,
+      layers: [
+        { number: 301, title: 'L1', state: 'merged' as const, baseRef: 'main' },
+        { number: 302, title: 'L2', state: 'open' as const, baseRef: 'feat/l1' },
+      ],
+    };
+
+    expect(isSoleActiveStackLayer(withUpperDraft, 102)).toBe(false);
+    expect(hasMultiActiveStackDependencies(withUpperDraft, 102)).toBe(true);
+    expect(isSoleActiveStackLayer(withClosedLower, 202)).toBe(false);
+    expect(isSoleActiveStackLayer(targetingNonTrunkBranch, 302)).toBe(false);
   });
 });

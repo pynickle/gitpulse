@@ -113,6 +113,18 @@ export async function fetchPullRequestStack(
           : null
       )
     );
+    const behindByNumber = new Map<number, number | null>();
+    active.forEach((pull, index) => {
+      const number = positiveInteger(pull.number ?? null);
+      if (number != null) {
+        behindByNumber.set(number, behindCounts[index] ?? null);
+      }
+    });
+    for (const layer of stack.layers) {
+      if (behindByNumber.has(layer.number)) {
+        layer.behindBy = behindByNumber.get(layer.number) ?? null;
+      }
+    }
     if (behindCounts.every((count) => count === 0)) {
       stack.history = 'linear';
     } else if (behindCounts.some((count) => count !== null && count > 0)) {

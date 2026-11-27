@@ -116,6 +116,8 @@ export interface PullRequestStackLayer {
   headSha?: string;
   baseSha?: string;
   baseRef?: string;
+  /** Commits on this Layer's base ref absent from its head. Only populated on active Layers. */
+  behindBy?: number | null;
 }
 
 export interface PullRequestStack {

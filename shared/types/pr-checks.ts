@@ -30,8 +30,20 @@ export interface CheckRollupContext {
   /** CheckRun lifecycle status. Absent for a StatusContext. */
   status?: string | null;
   detailsUrl?: string | null;
+  /** CheckRun output title (e.g. skip or failure summary). Absent for a StatusContext. */
+  title?: string | null;
+  /** CheckRun start timestamp. Absent for a StatusContext. */
+  startedAt?: string | null;
+  /** CheckRun completion timestamp. Absent for a StatusContext. */
+  completedAt?: string | null;
+  /** StatusContext description. Absent for a CheckRun. */
+  description?: string | null;
+  /** StatusContext avatar URL. Absent for a CheckRun. */
+  avatarUrl?: string | null;
+  /** StatusContext creation timestamp. Absent for a CheckRun. */
+  createdAt?: string | null;
   /** CheckRun app — GitHub Actions, Netlify, or another integration. */
-  checkSuite?: { app?: { name?: string | null } | null } | null;
+  checkSuite?: { app?: { name?: string | null; logoUrl?: string | null } | null } | null;
   /** StatusContext author. Absent for a CheckRun. */
   creator?: { login?: string | null } | null;
 }
@@ -67,8 +79,24 @@ export interface CheckListItem {
   name: string;
   /** The app that produced the check, when GitHub reports one. */
   appName: string | null;
+  /** App logo URL (CheckRun) or avatar URL (StatusContext), when reported. */
+  appLogoUrl: string | null;
   /** Link to the check's run on GitHub, when GitHub reports one. */
   detailsUrl: string | null;
+  /** CheckRun lifecycle status (e.g. IN_PROGRESS, QUEUED, COMPLETED), or null for StatusContext. */
+  status: string | null;
+  /** CheckRun conclusion or StatusContext state. */
+  conclusion: string | null;
+  /** CheckRun start timestamp. */
+  startedAt: string | null;
+  /** CheckRun completion timestamp. */
+  completedAt: string | null;
+  /** StatusContext creation timestamp. */
+  createdAt: string | null;
+  /** CheckRun title or StatusContext description. */
+  summary: string | null;
+  /** Positive run duration in seconds when both startedAt and completedAt are valid and completedAt > startedAt. */
+  durationSeconds: number | null;
 }
 
 export interface CheckListGroup {
@@ -95,6 +123,14 @@ export interface PullRequestChecksView {
    * truncated: the remaining contexts could be either, so no surface may guess.
    */
   failedCount: number | null;
+  /** pending-group contexts. Null when the rollup is truncated or empty. */
+  pendingCount: number | null;
+  /** success-group contexts. Null when the rollup is truncated or empty. */
+  successCount: number | null;
+  /** neutral-group contexts. Null when the rollup is truncated or empty. */
+  neutralCount: number | null;
+  /** skipped-group contexts. Null when the rollup is truncated or empty. */
+  skippedCount: number | null;
   /** GitHub's own Checks tab count for this pull request's head commit. */
   totalCount: number;
   /** The rollup reported more contexts than the 100 asked for. */
