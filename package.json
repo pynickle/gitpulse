@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "nuxt build",
-    "dev": "nuxt dev",
+    "dev": "portless run nuxt dev",
     "extension:build": "bun run --cwd extension build",
     "extension:build:firefox": "bun run --cwd extension build:firefox",
     "extension:zip": "bun run --cwd extension zip",
@@ -59,6 +59,7 @@
     "nuxtseo-devtools-host": "^1.0.3",
     "oxfmt": "^0.80.0",
     "oxlint": "^1.95.0",
+    "portless": "^0.18.1",
     "postcss": "8.5.33",
     "sass-embedded": "1.108.2",
     "tsrs": "^7.1.0-beta.tsrs5",
