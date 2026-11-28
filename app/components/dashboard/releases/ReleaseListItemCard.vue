@@ -270,7 +270,7 @@ const itemClass = computed(() => [
   line-height: 1.25;
 }
 
-/* Compact status chip — replaces Bulma .tag pills. */
+/* Compact status chip. */
 .release-status {
   display: inline-flex;
   align-items: center;

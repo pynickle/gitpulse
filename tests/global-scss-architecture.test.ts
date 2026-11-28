@@ -9,14 +9,11 @@ import type { AtRule, Declaration, Node, Root, Rule } from 'postcss';
 import { initCompiler } from 'sass-embedded';
 import type { FileImporter } from 'sass-embedded';
 
-import { installBulmaLayerClean } from '../modules/bulma-layer-clean/install';
-import { stripBulmaLayerImportant } from '../modules/bulma-layer-clean/plugin';
 import { hoverGate, HOVER_QUERY } from '../modules/hover-gate/plugin';
 
 const REPO_ROOT = resolve(import.meta.dir, '..');
 const APP_DIR = resolve(REPO_ROOT, 'app');
 const SCSS_DIR = resolve(APP_DIR, 'assets/scss');
-const NODE_MODULES_DIR = resolve(REPO_ROOT, 'node_modules');
 
 const compiler = initCompiler();
 afterAll(() => {
@@ -34,9 +31,6 @@ const nuxtAliasImporter: FileImporter<'sync'> = {
 
 const SASS_OPTIONS = {
   importers: [nuxtAliasImporter],
-  loadPaths: [NODE_MODULES_DIR],
-  quietDeps: true,
-  silenceDeprecations: ['if-function', 'global-builtin', 'import'] as const,
 };
 
 const compiledFileCache = new Map<string, string>();
@@ -46,10 +40,7 @@ function compileScssFile(filename: string) {
   if (cached !== undefined) {
     return cached;
   }
-  const css = compiler.compile(resolve(SCSS_DIR, filename), {
-    ...SASS_OPTIONS,
-    silenceDeprecations: [...SASS_OPTIONS.silenceDeprecations],
-  }).css;
+  const css = compiler.compile(resolve(SCSS_DIR, filename), SASS_OPTIONS).css;
   compiledFileCache.set(filename, css);
   return css;
 }
@@ -93,16 +84,13 @@ function collectSelectors(root: Root): string[] {
 }
 
 function compileScssSnippet(source: string) {
-  return compiler.compileString(source, {
-    ...SASS_OPTIONS,
-    silenceDeprecations: [...SASS_OPTIONS.silenceDeprecations],
-  }).css;
+  return compiler.compileString(source, SASS_OPTIONS).css;
 }
 
 let processedMainCssPromise: Promise<string> | undefined;
 
 async function getProcessedMainRoot(): Promise<Root> {
-  processedMainCssPromise ??= postcss([stripBulmaLayerImportant(), hoverGate()])
+  processedMainCssPromise ??= postcss([hoverGate()])
     .process(compileScssFile('main.scss'), { from: undefined })
     .then((result) => result.css);
   return postcss.parse(await processedMainCssPromise);
@@ -260,8 +248,7 @@ describe('global SCSS architecture (#196)', () => {
     root.walkAtRules('keyframes', (atRule) => {
       keyframesNames.push(atRule.params);
     });
-    expect(keyframesNames.filter((name) => name === 'spin')).toEqual(['spin']);
-    expect(keyframesNames.filter((name) => name === 'spinAround')).toEqual(['spinAround']);
+    expect(keyframesNames).toEqual(['spin']);
 
     let fabCount = 0;
     let lightPrimarySolidCount = 0;
@@ -524,18 +511,28 @@ describe('feature stylesheet ownership and modal shell extraction (#197)', () =>
   });
 });
 
-describe('layered Bulma stopgap, in-house reset, and non-important helpers (#198)', () => {
-  test('main.scss declares @layer reset, bulma; first and keeps application rules unlayered', async () => {
+describe('pure-SCSS cascade, in-house @layer reset, and Bulma retirement (#198, #206)', () => {
+  test('main.scss declares @layer reset; first, emits zero @layer bulma blocks, and keeps application rules unlayered', async () => {
     const root = await getProcessedMainRoot();
 
     const topLevelAtRules = root.nodes.filter(
       (node): node is AtRule => node.type === 'atrule' && node.name === 'layer'
     );
-    expect(topLevelAtRules.length).toBeGreaterThanOrEqual(3);
-    expect(topLevelAtRules[0]?.params.trim()).toBe('reset, bulma');
+    expect(topLevelAtRules).toHaveLength(2);
+    expect(topLevelAtRules[0]?.params.trim()).toBe('reset');
     expect(topLevelAtRules[0]?.nodes).toBeUndefined();
+    expect(topLevelAtRules[1]?.params.trim()).toBe('reset');
+    expect(topLevelAtRules[1]?.nodes?.length).toBeGreaterThan(0);
 
-    // Application global rules must remain unlayered so they override @layer reset and @layer bulma.
+    const bulmaLayers: string[] = [];
+    root.walkAtRules('layer', (atRule) => {
+      if (/\bbulma\b/i.test(atRule.params)) {
+        bulmaLayers.push(atRule.params.trim());
+      }
+    });
+    expect(bulmaLayers).toEqual([]);
+
+    // Application global rules must remain unlayered so they override @layer reset.
     const unlayeredSelectors = new Set<string>();
     root.walkRules((rule) => {
       if (enclosingLayerNames(rule).length === 0) {
@@ -550,33 +547,14 @@ describe('layered Bulma stopgap, in-house reset, and non-important helpers (#198
     expect(unlayeredSelectors.has('body')).toBe(true);
   });
 
-  test('zero !important declarations exist inside @layer bulma after the PostCSS pipeline', async () => {
-    const root = await getProcessedMainRoot();
-
-    const bulmaImportants: string[] = [];
-    root.walkDecls((decl) => {
-      if (!decl.important) {
-        return;
-      }
-      if (enclosingLayerNames(decl)[0] === 'bulma') {
-        const selector = decl.parent?.type === 'rule' ? (decl.parent as Rule).selector : '';
-        bulmaImportants.push(`${selector} { ${decl.prop}: ${decl.value} !important }`);
-      }
-    });
-
-    expect(bulmaImportants).toEqual([]);
+  test('Bulma stopgap stylesheet and temporary @layer bulma PostCSS module are removed', () => {
+    expect(existsSync(resolve(SCSS_DIR, 'bulma-stopgap.scss'))).toBe(false);
+    expect(existsSync(resolve(REPO_ROOT, 'modules/bulma-layer-clean'))).toBe(false);
   });
 
-  test('installBulmaLayerClean registers the PostCSS plugin on Nuxt options', () => {
-    const nuxt = { options: {} };
-    installBulmaLayerClean(nuxt);
-
-    const vite = nuxt.options as {
-      vite: { css: { postcss: { plugins: { postcssPlugin?: string }[] } } };
-    };
-    expect(vite.vite.css.postcss.plugins.map((plugin) => plugin.postcssPlugin)).toEqual([
-      'gitpulse-strip-bulma-layer-important',
-    ]);
+  test('compiled main.scss emits zero --bulma-* declarations or references anywhere', async () => {
+    const root = await getProcessedMainRoot();
+    expect(collectBulmaCustomPropertyUsages(root)).toEqual([]);
   });
 
   test('@layer reset emits minimal reset without stripping list-style from bare ul or ol', async () => {
@@ -991,12 +969,9 @@ describe('layout and single-file Bulma relics retirement (#200)', () => {
   });
 });
 
-function collectBulmaCustomPropertyUsages(root: Root, options?: { skipBulmaLayer?: boolean }) {
+function collectBulmaCustomPropertyUsages(root: Root) {
   const hits: string[] = [];
   root.walkDecls((decl) => {
-    if (options?.skipBulmaLayer && enclosingLayerNames(decl)[0] === 'bulma') {
-      return;
-    }
     if (decl.prop.startsWith('--bulma-') || decl.value.includes('--bulma-')) {
       const selector = decl.parent?.type === 'rule' ? (decl.parent as Rule).selector : '';
       hits.push(`${selector} { ${decl.prop}: ${decl.value} }`);
@@ -1006,9 +981,9 @@ function collectBulmaCustomPropertyUsages(root: Root, options?: { skipBulmaLayer
 }
 
 describe('Foundation Layer custom property migration and bridge removal (#199)', () => {
-  test('compiled main.scss emits zero --bulma-* declarations or references outside @layer bulma', async () => {
+  test('compiled main.scss emits zero --bulma-* declarations or references', async () => {
     const root = await getProcessedMainRoot();
-    expect(collectBulmaCustomPropertyUsages(root, { skipBulmaLayer: true })).toEqual([]);
+    expect(collectBulmaCustomPropertyUsages(root)).toEqual([]);
   });
 
   test('compiled application stylesheets emit zero --bulma-* declarations or references', () => {
