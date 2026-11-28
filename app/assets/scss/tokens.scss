@@ -92,12 +92,6 @@
 html.dark {
   color-scheme: dark;
 
-  /* ── Border radius scale (same as light) ── */
-  --gitpulse-radius-sm: 4px;
-  --gitpulse-radius-md: 6px;
-  --gitpulse-radius-lg: 8px;
-  --gitpulse-radius-xl: 12px;
-
   /* The semantic palette comes from the startup injection (shared/data/theme-palette.json). */
   --gitpulse-overlay-bg: rgba(5, 7, 12, 0.78);
   --gitpulse-accent-hover: #c4b5fd;

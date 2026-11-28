@@ -203,64 +203,54 @@
   }
 }
 
+@mixin gp-outlined-button($color, $soft, $border: $color) {
+  border-color: $border;
+  color: $color;
+
+  @include hover-only {
+    &:hover:not(:disabled, [aria-disabled='true']) {
+      background-color: $soft;
+      border-color: $border;
+      color: $color;
+    }
+  }
+
+  &:focus-visible {
+    background-color: $soft;
+    border-color: $border;
+    color: $color;
+  }
+}
+
 .gp-btn--outlined {
   background-color: transparent;
 
   &.gp-btn--primary {
-    border-color: var(--gitpulse-primary-solid);
-    color: var(--gitpulse-accent);
-
-    @include hover-only {
-      &:hover:not(:disabled, [aria-disabled='true']) {
-        background-color: var(--gitpulse-accent-soft);
-        border-color: var(--gitpulse-primary-solid);
-        color: var(--gitpulse-accent);
-      }
-    }
-
-    &:focus-visible {
-      background-color: var(--gitpulse-accent-soft);
-      border-color: var(--gitpulse-primary-solid);
-      color: var(--gitpulse-accent);
-    }
+    @include gp-outlined-button(
+      var(--gitpulse-accent),
+      var(--gitpulse-accent-soft),
+      var(--gitpulse-primary-solid)
+    );
   }
 
   &.gp-btn--link {
-    border-color: var(--gitpulse-link);
-    color: var(--gitpulse-link);
+    @include gp-outlined-button(var(--gitpulse-link), var(--gitpulse-info-soft));
+  }
 
-    @include hover-only {
-      &:hover:not(:disabled, [aria-disabled='true']) {
-        background-color: var(--gitpulse-info-soft);
-        border-color: var(--gitpulse-link);
-        color: var(--gitpulse-link);
-      }
-    }
+  &.gp-btn--info {
+    @include gp-outlined-button(var(--gitpulse-info), var(--gitpulse-info-soft));
+  }
 
-    &:focus-visible {
-      background-color: var(--gitpulse-info-soft);
-      border-color: var(--gitpulse-link);
-      color: var(--gitpulse-link);
-    }
+  &.gp-btn--success {
+    @include gp-outlined-button(var(--gitpulse-success), var(--gitpulse-success-soft));
+  }
+
+  &.gp-btn--warning {
+    @include gp-outlined-button(var(--gitpulse-warning), var(--gitpulse-warning-soft));
   }
 
   &.gp-btn--danger {
-    border-color: var(--gitpulse-danger);
-    color: var(--gitpulse-danger);
-
-    @include hover-only {
-      &:hover:not(:disabled, [aria-disabled='true']) {
-        background-color: var(--gitpulse-danger-soft);
-        border-color: var(--gitpulse-danger);
-        color: var(--gitpulse-danger);
-      }
-    }
-
-    &:focus-visible {
-      background-color: var(--gitpulse-danger-soft);
-      border-color: var(--gitpulse-danger);
-      color: var(--gitpulse-danger);
-    }
+    @include gp-outlined-button(var(--gitpulse-danger), var(--gitpulse-danger-soft));
   }
 
   &.gp-btn--secondary,

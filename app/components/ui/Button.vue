@@ -56,9 +56,6 @@ type ButtonSize = 'small' | 'normal' | 'medium' | 'large';
 defineOptions({ inheritAttrs: false });
 
 const {
-  to,
-  href,
-  target,
   variant = 'primary',
   size = 'normal',
   outlined = false,
@@ -86,7 +83,7 @@ const attrs = useAttrs();
 const isDisabled = computed(() => disabled || loading);
 
 const linkAttrs = computed(() => {
-  const { tabindex: _tabindex, ...rest } = attrs;
+  const { tabindex: _tabindex, onClick: _onClick, ...rest } = attrs;
   return rest;
 });
 
@@ -95,10 +92,22 @@ const resolvedLinkTabindex = computed(() => {
   return attrs.tabindex as string | number | undefined;
 });
 
+type LinkClickHandler = (event: MouseEvent) => unknown;
+
 const handleLinkClick = (event: MouseEvent) => {
   if (isDisabled.value) {
     event.preventDefault();
     event.stopImmediatePropagation();
+    return;
+  }
+
+  const forwardedClick = attrs.onClick as LinkClickHandler | LinkClickHandler[] | undefined;
+  if (Array.isArray(forwardedClick)) {
+    for (const handler of forwardedClick) {
+      handler(event);
+    }
+  } else if (typeof forwardedClick === 'function') {
+    forwardedClick(event);
   }
 };
 

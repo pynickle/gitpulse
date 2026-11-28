@@ -65,7 +65,7 @@ The test: Every changed line should trace directly to the user's request.
 - A hover state is written as `@include hover-only { &:hover { … } }` (`app/assets/scss/_pointer.scss`); the query is `(hover: hover) and (pointer: fine)` — capability, never a width. `modules/hover-gate/` gates every hover rule in the built CSS, so a stylesheet that predates this rule and still writes a bare `:hover` is covered; one you write or edit must use the mixin.
 - Anything that paints on `:focus` uses `:focus-visible`. Form fields keep bare `:focus`, because a field is tinted while the reader types in it.
 - A `:focus-within` that _tints_ (a card wash) is gated with its `:hover`; a `:focus-within` that _reveals_ a control (a row's add button) stays outside the gate — a reveal is a keyboard affordance.
-- A press never adds a tint and never adds motion; the one exception is a filled control, which deepens its own fill. The base rules live in `app/assets/scss/main.scss`, so a component does not re-declare the tap highlight itself; a drag surface keeps its own `touch-action: none`, and a component may keep its own `user-select: none`.
+- A press never adds a tint and never adds motion; the one exception is a filled control, which deepens its own fill. The base rules live in `app/assets/scss/base.scss` (imported by `app/assets/scss/main.scss`), so a component does not re-declare the tap highlight itself; a drag surface keeps its own `touch-action: none`, and a component may keep its own `user-select: none`.
 
 ## Web Styling & Pure-SCSS Architecture (ADR 0057)
 

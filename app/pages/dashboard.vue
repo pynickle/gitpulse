@@ -1794,7 +1794,7 @@ watch(
     margin: 0;
   }
 
-  :deep(.pagination-list) {
+  :deep(.dashboard-pagination__list) {
     flex-grow: 0;
   }
 }
