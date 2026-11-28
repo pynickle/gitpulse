@@ -205,7 +205,16 @@ const PR_UNSUPPORTED_EVENT_CLASSES = [
   'project_v2_field_history',
 ] as const;
 
-export const SKIPPED_TIMELINE_EVENTS = new Set(['subscribed', 'unsubscribed']);
+export const SKIPPED_TIMELINE_EVENTS = new Set(['mentioned', 'subscribed', 'unsubscribed']);
+
+export function omitSkippedTimelineEvents<T extends { event?: unknown }>(
+  events: readonly T[]
+): T[] {
+  return events.filter((rawEvent) => {
+    const eventName = rawEvent.event;
+    return typeof eventName !== 'string' || !SKIPPED_TIMELINE_EVENTS.has(eventName);
+  });
+}
 
 const GITHUB_WEB_HOSTS = new Set(['github.com', 'www.github.com']);
 const GITHUB_REPO_PATH_PATTERN = /^\/([^/]+)\/([^/]+)(?:\/|$)/;
@@ -1457,8 +1466,6 @@ export function normalizeIssueTimelineEvent(
           title: rawEvent.discussion?.title ?? rawEvent.title,
         },
       };
-    case 'mentioned':
-      return createUnavailableEvent(baseItem, eventName, 'mention');
     case 'marked_as_duplicate':
       return {
         ...baseItem,

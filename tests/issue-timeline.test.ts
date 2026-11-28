@@ -346,7 +346,6 @@ test('a parent issue event without a target explains itself with the unavailable
         h(Unavailable, {
           eventType: 'parent_issue_added',
           reasonCode: 'parent',
-          scope: 'issue',
         }),
     })
   );

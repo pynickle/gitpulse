@@ -907,7 +907,6 @@
     "pullRequestType": "PR",
     "issueType": "议题",
     "unavailable": "不可用",
-    "unavailableReason_mention": "GitHub API 不提供是哪个议题或 PR 提及了本条目。",
     "unavailableReason_blocking": "GitHub API 不提供此阻塞关系涉及的议题或 PR。",
     "unavailableReason_parent": "GitHub API 不提供此事件对应的父议题。"
   },

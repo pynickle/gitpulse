@@ -30,7 +30,6 @@
       v-else-if="item.kind === 'unavailable'"
       :event-type="item.eventType || ''"
       :reason-code="item.unavailableReasonCode || ''"
-      scope="issue"
     />
 
     <template v-else>

@@ -27,7 +27,6 @@
       v-else-if="item.kind === 'unavailable'"
       :event-type="item.eventType || ''"
       :reason-code="item.unavailableReasonCode || ''"
-      scope="pull"
     />
 
     <template v-else>

@@ -13,19 +13,15 @@ import { InfoIcon } from '@lucide/vue';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
-const { eventType, reasonCode, scope } = defineProps<{
+const { eventType, reasonCode } = defineProps<{
   eventType: string;
   reasonCode: string;
-  scope: 'issue' | 'pull';
 }>();
 
 const { t } = useI18n();
 
 const eventLabel = computed(() => {
-  const scopeSuffix = scope === 'pull' ? 'PR' : 'issue';
   switch (eventType) {
-    case 'mentioned':
-      return `mentioned this ${scopeSuffix}`;
     case 'blocking_added':
       return 'added a blocking relationship';
     case 'blocking_removed':

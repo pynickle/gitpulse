@@ -19,6 +19,7 @@ const {
   normalizeIssueTimelineEvent,
   normalizePRTimelineEvent,
   normalizeTimelineStateItems,
+  omitSkippedTimelineEvents,
   sortTimelineItems,
 } = await import('../server/utils/github-timeline-utils');
 
@@ -39,6 +40,36 @@ const normalizeIssueTimeline = (rawEvents: Record<string, any>[]) =>
   normalizeTimelineStateItems(
     sortTimelineItems(rawEvents.map((rawEvent) => normalizeIssueTimelineEvent(rawEvent, context)))
   );
+
+describe('timeline events sent to the client', () => {
+  test('omits a user mention from an issue timeline and a pull timeline', () => {
+    const rawEvents = [
+      {
+        event: 'commented',
+        id: 1,
+        actor: user('sourcery-ai[bot]'),
+        body: 'Sorry @pynickle',
+        created_at: '2026-11-28T05:20:48Z',
+      },
+      {
+        event: 'mentioned',
+        id: 2,
+        actor: user('pynickle'),
+        created_at: '2026-11-28T05:20:50Z',
+      },
+      {
+        event: 'subscribed',
+        id: 3,
+        actor: user('pynickle'),
+        created_at: '2026-11-28T05:20:51Z',
+      },
+    ];
+    const visible = omitSkippedTimelineEvents(rawEvents);
+
+    expect(normalizeIssueTimeline(visible).map((item) => item.eventType)).toEqual(['commented']);
+    expect(normalizePullTimeline(visible).map((item) => item.eventType)).toEqual(['commented']);
+  });
+});
 
 describe('issue timeline REST event normalization', () => {
   test('maps a sub-issue target from repository metadata when REST omits its URL', () => {

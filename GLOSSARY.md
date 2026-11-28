@@ -209,6 +209,14 @@ _Avoid_: sub-issue modal, child chooser
 
 ## Timelines
 
+**User Mention**:
+A person named with @ inside the text of an issue or pull request.
+_Avoid_: mentioned this PR, mentioned PR
+
+**Cross-reference**:
+A citation from one issue or pull request to another issue or pull request.
+_Avoid_: mention, mentioned PR, **Linked Pull Request**
+
 **Grouped Timeline Activity**:
 Consecutive events of the same type by the same GitHub user, presented together with a shared actor and a separate target and time for each event.
 _Avoid_: merged event, when individual actions remain distinct
