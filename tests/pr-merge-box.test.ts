@@ -530,7 +530,7 @@ describe('PRMergeBox Git capability', () => {
     expect(mergeButton(root)?.hasAttribute('disabled')).toBe(true);
     const reasonEl = root.querySelector('.merge-box__blocked-reason');
     expect(reasonEl).not.toBeNull();
-    expect(reasonEl?.classList.contains('is-sr-only')).toBe(false);
+    expect(reasonEl?.classList.contains('sr-only')).toBe(false);
     expect(reasonEl?.textContent?.trim()).toBe(
       'Only a linear Stack can merge. Rebase the Stack first.'
     );
@@ -542,7 +542,7 @@ describe('PRMergeBox Git capability', () => {
     expect(rebaseButton(root)).toBeNull();
     expect(mergeButton(root)?.hasAttribute('disabled')).toBe(true);
     const reasonEl = root.querySelector('.merge-box__blocked-reason');
-    expect(reasonEl?.classList.contains('is-sr-only')).toBe(false);
+    expect(reasonEl?.classList.contains('sr-only')).toBe(false);
     expect(reasonEl?.textContent?.trim()).toBe(
       'Only a linear Stack can merge. Stack Rebase is switched off on this deployment.'
     );
@@ -564,7 +564,7 @@ describe('PRMergeBox Git capability', () => {
     expect(rebaseButton(root)).toBeNull();
     expect(mergeButton(root)?.hasAttribute('disabled')).toBe(true);
     const reasonEl = root.querySelector('.merge-box__blocked-reason');
-    expect(reasonEl?.classList.contains('is-sr-only')).toBe(false);
+    expect(reasonEl?.classList.contains('sr-only')).toBe(false);
     expect(reasonEl?.textContent?.trim()).toBe('The Stack history could not be read.');
   });
 
@@ -1655,7 +1655,7 @@ describe('PRMergeBox regression suite', () => {
     const mergeBtn = root.querySelector<HTMLButtonElement>('.merge-box__merge-btn');
     expect(mergeBtn?.hasAttribute('disabled')).toBe(true);
     const reasonEl = root.querySelector('.merge-box__blocked-reason');
-    expect(reasonEl?.classList.contains('is-sr-only')).toBe(false);
+    expect(reasonEl?.classList.contains('sr-only')).toBe(false);
     expect(reasonEl?.textContent?.trim()).toBe(
       'Lower Layers in this Stack must be open and ready before merging.'
     );
@@ -1713,7 +1713,7 @@ describe('PRMergeBox regression suite', () => {
     expect(dialog?.getAttribute('closedby')).toBe('any');
     // Single polite sr-only live region, no per-row role="status"
     expect(dialog?.querySelectorAll('[role="status"]')).toHaveLength(1);
-    expect(dialog?.querySelector('[role="status"]')?.classList.contains('is-sr-only')).toBe(true);
+    expect(dialog?.querySelector('[role="status"]')?.classList.contains('sr-only')).toBe(true);
 
     const confirmBtn = dialog?.querySelector<HTMLButtonElement>('.stack-rebase__btn--primary');
     click(confirmBtn ?? null);

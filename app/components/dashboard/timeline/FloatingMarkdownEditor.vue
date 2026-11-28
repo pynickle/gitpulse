@@ -49,14 +49,18 @@
             </div>
 
             <ScrollArea class="detail-composer-sheet__scroll" axis="y">
-              <div v-if="errorMessage" class="notification is-danger is-light mb-3 py-2 px-3">
+              <div
+                v-if="errorMessage"
+                class="gp-notice gp-notice--danger gp-notice--compact floating-markdown-editor__error"
+                role="alert"
+              >
                 <button
-                  class="delete is-small"
+                  class="gp-dismiss gp-dismiss--small"
                   type="button"
                   :aria-label="t('floatingMarkdownEditor.dismissError')"
                   @click="errorMessage = ''"
                 />
-                <p class="is-size-7">{{ errorMessage }}</p>
+                <p class="floating-markdown-editor__error-text">{{ errorMessage }}</p>
               </div>
 
               <div class="detail-composer-sheet__body">
@@ -74,9 +78,7 @@
                   @update:bleed="composerBleed = $event"
                 >
                   <template #header-meta>
-                    <span class="is-size-7 has-text-weight-medium has-text-grey">{{
-                      currentUserLogin
-                    }}</span>
+                    <span class="floating-markdown-editor__login">{{ currentUserLogin }}</span>
                     <GitHubAvatar
                       variant="raised"
                       interactive
@@ -92,7 +94,7 @@
                 <div class="floating-markdown-editor__footer">
                   <div class="floating-markdown-editor__footer-actions">
                     <button
-                      class="button is-light is-small"
+                      class="gp-btn gp-btn--light gp-btn--small"
                       type="button"
                       :disabled="isSubmitting"
                       @click="collapseComposer"
@@ -100,10 +102,11 @@
                       {{ t('floatingMarkdownEditor.cancel') }}
                     </button>
                     <button
-                      class="button is-link is-small"
+                      class="gp-btn gp-btn--link gp-btn--small"
                       type="button"
-                      :class="{ 'is-loading': isSubmitting }"
+                      :class="{ 'gp-btn--loading': isSubmitting }"
                       :disabled="isSubmitting || !trimmedDraft || !canSubmit"
+                      :aria-busy="isSubmitting || undefined"
                       @click="handleSubmit"
                     >
                       {{ isSubmitting ? resolvedSubmittingLabel : resolvedSubmitLabel }}
@@ -118,19 +121,23 @@
     </template>
 
     <template v-else>
-      <div v-if="errorMessage" class="notification is-danger is-light mb-3 py-2 px-3">
+      <div
+        v-if="errorMessage"
+        class="gp-notice gp-notice--danger gp-notice--compact floating-markdown-editor__error"
+        role="alert"
+      >
         <button
-          class="delete is-small"
+          class="gp-dismiss gp-dismiss--small"
           type="button"
           :aria-label="t('floatingMarkdownEditor.dismissError')"
           @click="errorMessage = ''"
         />
-        <p class="is-size-7">{{ errorMessage }}</p>
+        <p class="floating-markdown-editor__error-text">{{ errorMessage }}</p>
       </div>
 
       <button
         v-if="!compact && !isExpanded"
-        class="floating-markdown-editor__capsule button is-light"
+        class="floating-markdown-editor__capsule gp-btn gp-btn--light"
         type="button"
         @click="expandComposer"
       >
@@ -143,10 +150,10 @@
           :alt="currentUserLogin"
           class="floating-markdown-editor__capsule-avatar"
         />
-        <span class="floating-markdown-editor__capsule-placeholder has-text-grey">
+        <span class="floating-markdown-editor__capsule-placeholder">
           {{ resolvedPlaceholder }}
         </span>
-        <span class="button is-link is-small floating-markdown-editor__capsule-submit">
+        <span class="gp-btn gp-btn--link gp-btn--small floating-markdown-editor__capsule-submit">
           {{ resolvedSubmitLabel }}
         </span>
       </button>
@@ -184,7 +191,7 @@
             @update:bleed="composerBleed = $event"
           >
             <template #header-meta>
-              <span v-if="!compact" class="is-size-7 has-text-weight-medium has-text-grey">{{
+              <span v-if="!compact" class="floating-markdown-editor__login">{{
                 currentUserLogin
               }}</span>
               <GitHubAvatar
@@ -202,7 +209,7 @@
           <div class="floating-markdown-editor__footer">
             <div class="floating-markdown-editor__footer-actions">
               <button
-                class="button is-light is-small"
+                class="gp-btn gp-btn--light gp-btn--small"
                 type="button"
                 :disabled="isSubmitting"
                 @click="collapseComposer"
@@ -210,10 +217,11 @@
                 {{ t('floatingMarkdownEditor.cancel') }}
               </button>
               <button
-                class="button is-link is-small"
+                class="gp-btn gp-btn--link gp-btn--small"
                 type="button"
-                :class="{ 'is-loading': isSubmitting }"
+                :class="{ 'gp-btn--loading': isSubmitting }"
                 :disabled="isSubmitting || !trimmedDraft || !canSubmit"
+                :aria-busy="isSubmitting || undefined"
                 @click="handleSubmit"
               >
                 {{ isSubmitting ? resolvedSubmittingLabel : resolvedSubmitLabel }}
@@ -668,9 +676,24 @@ defineExpose({ focus });
 .floating-markdown-editor__capsule-placeholder {
   flex: 1;
   min-width: 0;
+  color: var(--gitpulse-text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.floating-markdown-editor__error {
+  margin-bottom: 0.75rem;
+}
+
+.floating-markdown-editor__error-text {
+  font-size: 0.75rem;
+}
+
+.floating-markdown-editor__login {
+  color: var(--gitpulse-text-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
 }
 
 .floating-markdown-editor__capsule-submit {

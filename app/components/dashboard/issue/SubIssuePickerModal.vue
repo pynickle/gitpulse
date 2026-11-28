@@ -28,9 +28,20 @@ const rows = computed(() => toSubIssueRows(connection.value?.nodes ?? [], issue)
     <template #empty-icon><ListTreeIcon :size="24" aria-hidden="true" /></template>
     <SubIssueRows :rows="rows" @select="emit('select', $event)" />
     <template #footer>
-      <button v-if="failed" type="button" class="button is-small mt-2" @click="load">
+      <button
+        v-if="failed"
+        type="button"
+        class="gp-btn gp-btn--small sub-issue-picker-modal__retry"
+        @click="load"
+      >
         {{ t('dashboard.subIssues.retry') }}
       </button>
     </template>
   </PickerModal>
 </template>
+
+<style scoped lang="scss">
+.sub-issue-picker-modal__retry {
+  margin-top: 0.5rem;
+}
+</style>

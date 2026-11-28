@@ -1,39 +1,30 @@
 <template>
   <nav
-    class="pagination is-centered dashboard-pagination"
+    class="dashboard-pagination"
     :class="{ 'dashboard-pagination--comfortable': comfortableHitTargets }"
     role="navigation"
     aria-label="pagination"
   >
     <button
       type="button"
-      class="pagination-previous pagination-control"
+      class="dashboard-pagination__prev dashboard-pagination__control"
       :aria-label="t('dashboard.pagination.previous')"
       :disabled="!pagination.hasPrev"
       @click="emit('change', pagination.page - 1)"
     >
       <ChevronLeftIcon :size="18" aria-hidden="true" />
-      <span class="pagination-control-text">{{ t('dashboard.pagination.previous') }}</span>
+      <span class="dashboard-pagination__control-text">{{
+        t('dashboard.pagination.previous')
+      }}</span>
     </button>
 
-    <button
-      type="button"
-      class="pagination-next pagination-control"
-      :aria-label="t('dashboard.pagination.next')"
-      :disabled="!pagination.hasNext"
-      @click="emit('change', pagination.page + 1)"
-    >
-      <span class="pagination-control-text">{{ t('dashboard.pagination.next') }}</span>
-      <ChevronRightIcon :size="18" aria-hidden="true" />
-    </button>
-
-    <ul class="pagination-list">
+    <ul class="dashboard-pagination__list">
       <li v-for="item in pageItems" :key="item.key">
-        <span v-if="item.type === 'ellipsis'" class="pagination-ellipsis">&hellip;</span>
+        <span v-if="item.type === 'ellipsis'" class="dashboard-pagination__ellipsis">&hellip;</span>
         <button
           type="button"
           v-else
-          :class="['pagination-link', { 'is-current': item.page === pagination.page }]"
+          :class="['dashboard-pagination__link', { 'is-current': item.page === pagination.page }]"
           :aria-current="item.page === pagination.page ? 'page' : undefined"
           @click="emit('change', item.page)"
         >
@@ -41,6 +32,17 @@
         </button>
       </li>
     </ul>
+
+    <button
+      type="button"
+      class="dashboard-pagination__next dashboard-pagination__control"
+      :aria-label="t('dashboard.pagination.next')"
+      :disabled="!pagination.hasNext"
+      @click="emit('change', pagination.page + 1)"
+    >
+      <span class="dashboard-pagination__control-text">{{ t('dashboard.pagination.next') }}</span>
+      <ChevronRightIcon :size="18" aria-hidden="true" />
+    </button>
 
     <div class="dashboard-pagination__compact">
       <button
@@ -279,96 +281,131 @@ const pageItems = computed(() => {
 @use '~/assets/scss/pointer' as *;
 
 .dashboard-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
   margin: 0;
   gap: 0.125rem;
 }
 
-.pagination-link,
-.pagination-previous,
-.pagination-next {
+.dashboard-pagination__list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.dashboard-pagination__link,
+.dashboard-pagination__prev,
+.dashboard-pagination__next {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: none;
   border-radius: 4px;
   background: transparent;
-  color: var(--bulma-text, var(--gitpulse-text));
+  color: var(--gitpulse-text);
   padding: 0.25rem 0.5rem;
+  min-width: 1.5rem;
   min-height: 1.5rem;
   font-size: 0.75rem;
+  line-height: 1.5;
+  text-align: center;
+  white-space: nowrap;
+  user-select: none;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 
   @include hover-only {
     &:hover:not([disabled]) {
       background: var(--gitpulse-surface-hover);
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
     }
   }
 
   &:focus-visible:not([disabled]) {
     background: var(--gitpulse-surface-hover);
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    color: var(--gitpulse-text-strong);
   }
 }
 
-.pagination-link.is-current {
+.dashboard-pagination__link.is-current {
   background: var(--gitpulse-info-soft);
   border: none;
   color: var(--gitpulse-info);
   font-weight: 600;
 }
 
-html.dark .pagination-link.is-current {
+html.dark .dashboard-pagination__link.is-current {
   background: color-mix(in srgb, var(--gitpulse-info) 15%, transparent);
   color: var(--gitpulse-info);
 }
 
 @include hover-only {
-  .pagination-link.is-current:hover {
+  .dashboard-pagination__link.is-current:hover {
     background: color-mix(in srgb, var(--gitpulse-info) 25%, transparent);
     color: var(--gitpulse-info);
   }
 }
 
-.pagination-link.is-current:focus-visible {
+.dashboard-pagination__link.is-current:focus-visible {
   background: color-mix(in srgb, var(--gitpulse-info) 25%, transparent);
   color: var(--gitpulse-info);
 }
 
 @include hover-only {
-  html.dark .pagination-link.is-current:hover {
+  html.dark .dashboard-pagination__link.is-current:hover {
     background: color-mix(in srgb, var(--gitpulse-info) 20%, transparent);
     color: var(--gitpulse-info);
   }
 }
 
-html.dark .pagination-link.is-current:focus-visible {
+html.dark .dashboard-pagination__link.is-current:focus-visible {
   background: color-mix(in srgb, var(--gitpulse-info) 20%, transparent);
   color: var(--gitpulse-info);
 }
 
-.pagination-link[disabled],
-.pagination-previous[disabled],
-.pagination-next[disabled] {
+.dashboard-pagination__link[disabled],
+.dashboard-pagination__prev[disabled],
+.dashboard-pagination__next[disabled] {
   background: transparent;
   color: var(--gitpulse-text-subtle);
   opacity: 0.45;
+  cursor: default;
 }
 
-.pagination-ellipsis {
+.dashboard-pagination__ellipsis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: 1.5rem;
+  padding: 0 0.25rem;
   font-size: 0.75rem;
+  color: var(--gitpulse-text-subtle);
+  pointer-events: none;
+  user-select: none;
 }
 
-.pagination-previous.pagination-control,
-.pagination-next.pagination-control {
+.dashboard-pagination__prev.dashboard-pagination__control,
+.dashboard-pagination__next.dashboard-pagination__control {
   flex: 0 0 auto;
   padding: 0.25rem;
   width: auto;
 }
 
-.pagination-control svg {
+.dashboard-pagination__control svg {
   width: 1rem;
   height: 1rem;
 }
 
-.pagination-control-text {
+.dashboard-pagination__control-text {
   border: 0;
   clip: rect(0 0 0 0);
   height: 1px;
@@ -380,9 +417,9 @@ html.dark .pagination-link.is-current:focus-visible {
   width: 1px;
 }
 
-.dashboard-pagination--comfortable .pagination-link,
-.dashboard-pagination--comfortable .pagination-previous,
-.dashboard-pagination--comfortable .pagination-next {
+.dashboard-pagination--comfortable .dashboard-pagination__link,
+.dashboard-pagination--comfortable .dashboard-pagination__prev,
+.dashboard-pagination--comfortable .dashboard-pagination__next {
   min-width: 2.75rem;
   min-height: 2.75rem;
 }
@@ -415,7 +452,7 @@ html.dark .pagination-link.is-current:focus-visible {
   border: none;
   border-radius: var(--gitpulse-radius-md);
   background: transparent;
-  color: var(--bulma-text, var(--gitpulse-text));
+  color: var(--gitpulse-text);
   cursor: pointer;
   transition:
     background-color 0.15s ease,
@@ -424,7 +461,7 @@ html.dark .pagination-link.is-current:focus-visible {
   @include hover-only {
     &:hover:not(:disabled) {
       background: var(--gitpulse-surface-hover);
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
     }
   }
 
@@ -484,7 +521,7 @@ html.dark .pagination-link.is-current:focus-visible {
   padding: 0;
   border: none;
   background: transparent;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font: inherit;
   font-weight: 600;
   text-align: right;
@@ -511,9 +548,9 @@ html.dark .pagination-link.is-current:focus-visible {
 }
 
 @media (max-width: 860px) {
-  .dashboard-pagination > .pagination-previous,
-  .dashboard-pagination > .pagination-next,
-  .dashboard-pagination > .pagination-list {
+  .dashboard-pagination > .dashboard-pagination__prev,
+  .dashboard-pagination > .dashboard-pagination__next,
+  .dashboard-pagination > .dashboard-pagination__list {
     display: none;
   }
 

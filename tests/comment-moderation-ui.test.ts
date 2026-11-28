@@ -680,7 +680,7 @@ test('Discussion detail reconciles a wiped accepted parent, keeping replies and 
     await flush();
     button(view.root, 'discussionDetail.replyCount:1').click();
     await flush();
-    expect(view.root.querySelector('.tag.is-success')).not.toBeNull();
+    expect(view.root.querySelector('.gp-tag.gp-tag--success')).not.toBeNull();
     view.root.querySelector<HTMLButtonElement>('[aria-haspopup="menu"]')!.click();
     await flush();
     button(dom.document, 'commentModeration.delete').click();
@@ -689,7 +689,7 @@ test('Discussion detail reconciles a wiped accepted parent, keeping replies and 
     await flush();
     expect(view.root.textContent).toContain('Reply survives');
     expect(view.root.textContent).not.toContain('Accepted parent');
-    expect(view.root.querySelector('.tag.is-success') === null).toBe(true);
+    expect(view.root.querySelector('.gp-tag.gp-tag--success') === null).toBe(true);
     expect(view.root.textContent).toContain('discussionDetail.commentCount:1');
   } finally {
     await dom.cleanup();

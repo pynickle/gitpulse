@@ -56,7 +56,7 @@ watch(
 </script>
 
 <template>
-  <div v-if="loading || error || previewItems.length > 0" class="sidebar-card mb-4">
+  <div v-if="loading || error || previewItems.length > 0" class="sidebar-card">
     <div class="sidebar-card__header">
       <div class="sidebar-card__header-left">
         <UsersIcon :size="14" class="sidebar-card__icon" />
@@ -70,7 +70,7 @@ watch(
     <div class="sidebar-card__content">
       <div v-if="loading && previewItems.length === 0" class="repo-contributors__loading">
         <LoaderCircleIcon :size="16" class="spin-animation" aria-hidden="true" />
-        <span class="is-sr-only">{{ t('repoDetail.loadingContributors') }}</span>
+        <span class="sr-only">{{ t('repoDetail.loadingContributors') }}</span>
       </div>
 
       <p v-else-if="error && previewItems.length === 0" class="sidebar-card__error">
@@ -128,10 +128,10 @@ watch(
 <style scoped lang="scss">
 // Child component: must own full sidebar-card chrome. RepoDetail's scoped
 // .sidebar-card rules do not apply across component boundaries.
-@use '~/assets/scss/_variables' as *;
 @use '~/assets/scss/pointer' as *;
 
 .sidebar-card {
+  margin-bottom: 1rem;
   overflow: hidden;
   border: 1px solid var(--gitpulse-border);
   border-radius: 8px;
@@ -155,11 +155,11 @@ watch(
 }
 
 .sidebar-card__icon {
-  color: $brand-primary;
+  color: var(--gitpulse-accent);
 }
 
 .sidebar-card__title {
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0;
@@ -211,14 +211,14 @@ watch(
     &:hover {
       border-color: var(--gitpulse-border-strong);
       background: var(--gitpulse-surface-hover);
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
     }
   }
 
   &:focus-visible {
     border-color: var(--gitpulse-border-strong);
     background: var(--gitpulse-surface-hover);
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    color: var(--gitpulse-text-strong);
   }
 }
 

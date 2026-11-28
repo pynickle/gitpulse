@@ -129,7 +129,7 @@ const currentConfig = computed<GuideConfig>(() => {
 .sidebar-card__title {
   font-size: 13px;
   font-weight: 600;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   letter-spacing: -0.01em;
 }
 

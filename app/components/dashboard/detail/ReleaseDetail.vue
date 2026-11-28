@@ -96,8 +96,8 @@ usePageMeta(
 
 <template>
   <ScrollArea class="release-detail detail-scroll" media="(max-width: 1024px)">
-    <div class="columns" :class="{ 'columns--detail-sidebar-hidden': detailSidebarHidden }">
-      <ScrollArea class="column detail-main-column" media="(min-width: 1025px)">
+    <div class="detail-columns" :class="{ 'detail-columns--sidebar-hidden': detailSidebarHidden }">
+      <ScrollArea class="detail-main-column" media="(min-width: 1025px)">
         <header class="release-header">
           <div class="detail-header-eyebrow release-header__eyebrow">
             <a
@@ -118,19 +118,19 @@ usePageMeta(
           </div>
 
           <div class="detail-header-title">
-            <h1 class="title is-3 mb-0 header-title__text release-header__title">
+            <h1 class="header-title__text release-header__title">
               {{ releaseTitle }}
             </h1>
           </div>
 
           <div class="release-header__meta">
-            <span v-if="release.draft" class="tag is-warning is-light">
+            <span v-if="release.draft" class="gp-tag gp-tag--warning">
               {{ t('releaseDetail.draft') }}
             </span>
-            <span v-if="release.prerelease" class="tag is-info is-light">
+            <span v-if="release.prerelease" class="gp-tag gp-tag--info">
               {{ t('releaseDetail.prerelease') }}
             </span>
-            <span v-if="release.target_commitish" class="tag release-header__branch">
+            <span v-if="release.target_commitish" class="gp-tag release-header__branch">
               <GitBranchIcon :size="13" aria-hidden="true" />
               <span>{{ release.target_commitish }}</span>
             </span>
@@ -258,7 +258,7 @@ usePageMeta(
   overflow: hidden;
 }
 
-.detail-scroll :deep(.columns) {
+.detail-scroll :deep(.detail-columns) {
   height: 100%;
   min-height: 0;
   align-items: stretch;

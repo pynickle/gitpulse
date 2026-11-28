@@ -39,7 +39,7 @@ const currentProgress = computed(
     </p>
     <div v-else-if="failed" class="sub-issue-list__status">
       <p role="alert">{{ t('dashboard.subIssues.error') }}</p>
-      <button type="button" class="button is-small" @click="load">
+      <button type="button" class="gp-btn gp-btn--small" @click="load">
         {{ t('dashboard.subIssues.retry') }}
       </button>
     </div>
@@ -126,7 +126,7 @@ const currentProgress = computed(
 .sub-issue-list__status {
   padding: 0.4rem 0.5rem;
 
-  .button {
+  .gp-btn {
     margin-block-start: 0.35rem;
   }
 }

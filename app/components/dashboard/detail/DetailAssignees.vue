@@ -1,5 +1,5 @@
 <template>
-  <div class="sidebar-card mb-4">
+  <div class="sidebar-card">
     <div class="sidebar-card__header">
       <div class="sidebar-card__header-left">
         <UserRoundIcon :size="14" class="sidebar-card__icon" />
@@ -489,11 +489,10 @@ onUnmounted(() => {
 </script>
 
 <style scoped lang="scss">
-@use '~/assets/scss/_variables' as *;
-@use '~/assets/scss/reviewer-modal';
 @use '~/assets/scss/pointer' as *;
 
 .sidebar-card {
+  margin-bottom: 1rem;
   background: var(--gitpulse-surface-muted);
   border: 1px solid var(--gitpulse-border);
   border-radius: 8px;
@@ -517,13 +516,13 @@ onUnmounted(() => {
 }
 
 .sidebar-card__icon {
-  color: $brand-primary;
+  color: var(--gitpulse-accent);
 }
 
 .sidebar-card__title {
   font-size: 13px;
   font-weight: 600;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   letter-spacing: 0;
 }
 
@@ -540,7 +539,7 @@ onUnmounted(() => {
 .sidebar-card__error {
   margin: 8px 0 0;
   font-size: 11px;
-  color: var(--bulma-danger, #cc0f35);
+  color: var(--gitpulse-danger);
 }
 
 .sidebar-badge {
@@ -573,7 +572,7 @@ onUnmounted(() => {
 
   @include hover-only {
     &:hover {
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
       border-color: var(--gitpulse-border-strong);
       background: var(--gitpulse-surface-hover);
     }
@@ -623,7 +622,7 @@ onUnmounted(() => {
   flex: 1;
   font-size: 12px;
   font-weight: 500;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -646,7 +645,7 @@ onUnmounted(() => {
 
   @include hover-only {
     &:hover:not(:disabled) {
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
       background: var(--gitpulse-surface-hover);
       opacity: 1;
     }
@@ -698,7 +697,7 @@ onUnmounted(() => {
 
   @include hover-only {
     &:hover:not(:disabled) {
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
       background: var(--gitpulse-surface-hover);
       border-color: var(--gitpulse-border-strong);
     }

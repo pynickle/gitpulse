@@ -6,7 +6,7 @@
     <CommentBody v-slot="{ body }" :target="item.moderation" :body="item.body">
       <div class="comment-item__body">
         <MarkdownRenderer v-if="body" :value="body" :repo-owner="repoOwner" :repo-name="repoName" />
-        <p v-else class="has-text-grey is-size-7">
+        <p v-else class="comment-item__empty">
           {{ emptyText ?? t('detailTimeline.noCommentBody') }}
         </p>
       </div>
@@ -92,6 +92,11 @@ const canShowReactions = computed(
 
 .comment-item__body :deep(*:last-child) {
   margin-bottom: 0;
+}
+
+.comment-item__empty {
+  color: var(--gitpulse-text-muted);
+  font-size: 0.75rem;
 }
 
 .comment-item__reactions {

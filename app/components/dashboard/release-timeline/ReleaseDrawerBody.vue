@@ -77,7 +77,7 @@ const handleBodyNavigation = (event: MouseEvent) => {
           <TagIcon :size="14" aria-hidden="true" />
           <span>{{ tagName }}</span>
         </span>
-        <span v-if="isPrerelease" class="tag is-info is-light">
+        <span v-if="isPrerelease" class="gp-tag gp-tag--info">
           {{ t('releaseDetail.prerelease') }}
         </span>
       </div>

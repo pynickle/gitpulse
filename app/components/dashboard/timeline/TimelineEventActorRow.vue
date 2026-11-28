@@ -1,21 +1,20 @@
 <template>
   <div
-    class="is-flex"
+    class="timeline-actor-row"
     :class="{
-      'is-align-items-center': !alignStart,
-      'is-align-items-flex-start': alignStart,
+      'timeline-actor-row--start': alignStart,
     }"
   >
     <GitHubAvatar
       variant="raised"
       interactive
-      class="mr-4"
+      class="timeline-actor-row__avatar"
       :width="String(avatarSize)"
       :height="String(avatarSize)"
       :src="actor?.avatarUrl || ''"
       :alt="actor?.login || ''"
     />
-    <div class="is-flex is-justify-content-center">
+    <div class="timeline-actor-row__body">
       <slot />
     </div>
   </div>
@@ -31,3 +30,20 @@ const { avatarSize = 24, alignStart = false } = defineProps<{
   alignStart?: boolean;
 }>();
 </script>
+
+<style scoped lang="scss">
+.timeline-actor-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.timeline-actor-row--start {
+  align-items: flex-start;
+}
+
+.timeline-actor-row__body {
+  display: flex;
+  justify-content: center;
+}
+</style>

@@ -88,3 +88,82 @@ test('the gate query is the one the stylesheet mixin emits', () => {
 
   expect(css).toContain(`@media ${HOVER_QUERY}`);
 });
+
+test('a hover rule inside @layer stays inside its layer when gated', async () => {
+  const css = await run(`
+    @layer reset, bulma;
+    @layer bulma {
+      .button:hover, .button:focus-visible { background: blue; }
+      @media ${HOVER_QUERY} { .tag:hover { color: green; } }
+    }
+  `);
+
+  const root = postcss.parse(css);
+  const layerDeclarations: string[] = [];
+  const bulmaLayers: AtRule[] = [];
+
+  root.walkAtRules('layer', (atRule) => {
+    if (!atRule.nodes || atRule.nodes.length === 0) {
+      layerDeclarations.push(atRule.params.trim());
+    } else if (atRule.params.trim() === 'bulma') {
+      bulmaLayers.push(atRule);
+    }
+  });
+
+  expect(layerDeclarations).toEqual(['reset, bulma']);
+  expect(bulmaLayers).toHaveLength(1);
+
+  const bulmaLayer = bulmaLayers[0]!;
+  const gatedInsideLayer: string[] = [];
+  const ungatedInsideLayer: string[] = [];
+  let mediaCount = 0;
+
+  bulmaLayer.walkAtRules('media', (media) => {
+    if (media.params === HOVER_QUERY) {
+      mediaCount += 1;
+    }
+  });
+
+  bulmaLayer.walkRules((rule) => {
+    const parent = rule.parent;
+    const isGated =
+      parent?.type === 'atrule' &&
+      (parent as AtRule).name === 'media' &&
+      String((parent as AtRule).params) === HOVER_QUERY;
+    (isGated ? gatedInsideLayer : ungatedInsideLayer).push(rule.selector);
+  });
+
+  expect(gatedInsideLayer).toEqual(['.button:hover', '.tag:hover']);
+  expect(ungatedInsideLayer).toEqual(['.button:focus-visible']);
+  // One media wrapper for .button:hover and the pre-existing one for .tag:hover (no double-wrap).
+  expect(mediaCount).toBe(2);
+  expect(css).not.toMatch(/@media[^}]*@media/);
+});
+
+test('a nested @layer inside @layer bulma preserves layer membership when gating :hover', async () => {
+  const css = await run(`
+    @layer bulma {
+      @layer components {
+        .tabs a:hover { color: red; }
+      }
+    }
+  `);
+
+  const root = postcss.parse(css);
+  const hoverAncestors: string[] = [];
+
+  root.walkRules((rule) => {
+    if (rule.selector === '.tabs a:hover') {
+      let current = rule.parent;
+      while (current && current.type !== 'root') {
+        if (current.type === 'atrule') {
+          const at = current as AtRule;
+          hoverAncestors.push(`@${at.name} ${at.params}`);
+        }
+        current = current.parent;
+      }
+    }
+  });
+
+  expect(hoverAncestors).toEqual([`@media ${HOVER_QUERY}`, '@layer components', '@layer bulma']);
+});

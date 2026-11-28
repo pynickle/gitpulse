@@ -64,3 +64,11 @@ language = "system"
 entry = "bun run lint"
 pass_filenames = false
 always_run = true
+
+[[repos.hooks]]
+id = "bulma-guard"
+name = "Zero-Bulma guard"
+language = "system"
+entry = "bun scripts/check-bulma-ratchet.ts"
+pass_filenames = false
+always_run = true

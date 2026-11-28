@@ -1,18 +1,18 @@
 <template>
   <div class="dashboard-top-header">
-    <div class="card-header-title dashboard-top-header__toolbar">
-      <div class="buttons dashboard-top-header__nav">
-        <button type="button" class="button is-light is-small" @click="$emit('back')">
-          <ArrowLeftIcon :size="18" class="mr-1" />
+    <div class="dashboard-top-header__toolbar">
+      <div class="gp-btn-group dashboard-top-header__nav">
+        <button type="button" class="gp-btn gp-btn--light gp-btn--small" @click="$emit('back')">
+          <ArrowLeftIcon :size="18" />
           {{ backLabel }}
         </button>
         <button
           type="button"
           v-if="showHomeButton"
-          class="button is-light is-small"
+          class="gp-btn gp-btn--light gp-btn--small"
           @click="$emit('home')"
         >
-          <HouseIcon :size="18" class="mr-1" />
+          <HouseIcon :size="18" />
           {{ homeLabel }}
         </button>
       </div>
@@ -53,7 +53,7 @@
             <button
               v-if="showDetailSidebarToggle && !isDetailSidebarSheetViewport"
               type="button"
-              class="button is-light is-small dashboard-top-header__detail-sidebar-toggle"
+              class="gp-btn gp-btn--light gp-btn--small dashboard-top-header__detail-sidebar-toggle"
               :title="detailSidebarToggleLabel"
               :aria-label="detailSidebarToggleLabel"
               @click="$emit('toggle-detail-sidebar')"
@@ -194,11 +194,13 @@ const isDetailSummaryVisible = computed(() => {
 
 .dashboard-top-header__toolbar {
   display: flex;
+  flex-grow: 1;
   flex-wrap: wrap;
   align-items: center;
   min-height: var(--gitpulse-topbar-height);
   padding: 0.4rem 1rem;
   gap: 0.5rem 0.75rem;
+  color: var(--gitpulse-text-strong);
 }
 
 .dashboard-top-header__nav {
@@ -211,7 +213,7 @@ const isDetailSummaryVisible = computed(() => {
   margin-bottom: 0;
 }
 
-.dashboard-top-header__nav .button {
+.dashboard-top-header__nav .gp-btn {
   display: inline-flex;
   align-items: center;
   margin-bottom: 0;

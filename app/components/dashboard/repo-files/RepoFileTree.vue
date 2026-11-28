@@ -61,7 +61,7 @@ const navigateToItem = async (item: RepoContentItem) => {
 
 <template>
   <div class="repo-file-tree">
-    <h2 class="title is-5 repo-file-tree__title">
+    <h2 class="repo-file-tree__title">
       <FolderIcon :size="18" />
       <span>{{ t('repoDetail.files') }}</span>
     </h2>
@@ -99,7 +99,6 @@ const navigateToItem = async (item: RepoContentItem) => {
 </template>
 
 <style scoped lang="scss">
-@use '~/assets/scss/_variables' as *;
 @use '~/assets/scss/pointer' as *;
 
 .repo-file-tree {
@@ -111,8 +110,10 @@ const navigateToItem = async (item: RepoContentItem) => {
   align-items: center;
   gap: 8px;
   margin-bottom: 1rem;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 1.125rem;
+  font-weight: 800;
+  line-height: 1.125;
 }
 
 .repo-file-tree__loading {
@@ -151,7 +152,7 @@ const navigateToItem = async (item: RepoContentItem) => {
   border: 0;
   border-bottom: 1px solid var(--gitpulse-border);
   background: transparent;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 13px;
   text-align: left;
   cursor: pointer;
@@ -173,7 +174,7 @@ const navigateToItem = async (item: RepoContentItem) => {
 }
 
 .repo-file-tree__item-icon--dir {
-  color: $brand-primary;
+  color: var(--gitpulse-accent);
 }
 
 .repo-file-tree__item-icon--file {

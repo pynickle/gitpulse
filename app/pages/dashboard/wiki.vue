@@ -18,6 +18,7 @@ import {
 
 import { splitWikiHtmlSegments, type WikiHtmlSegment } from '#shared/utils/github-wiki';
 import DashboardOverlayFrame from '~/components/dashboard/overlay/DashboardOverlayFrame.vue';
+import Button from '~/components/ui/Button.vue';
 import GitHubIcon from '~/components/ui/GitHubIcon.vue';
 import MarkdownRenderer from '~/components/ui/MarkdownRenderer.vue';
 import PageErrorState from '~/components/ui/PageErrorState.vue';
@@ -351,15 +352,15 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
     <div class="wiki-page">
       <div class="wiki-page__header">
         <div class="wiki-page__heading">
-          <h1 class="title is-5 mb-0 is-flex is-align-items-center">
-            <BookOpenIcon :size="18" class="mr-2" aria-hidden="true" />
+          <h1 class="wiki-page__title">
+            <BookOpenIcon :size="18" aria-hidden="true" />
             {{ t('wikiPage.heading') }}
           </h1>
 
           <button
             type="button"
             v-if="repoTarget"
-            class="wiki-page__repo button is-ghost is-small"
+            class="wiki-page__repo gp-btn gp-btn--ghost gp-btn--small"
             :title="t('wikiPage.openRepo')"
             @click="handleRepoClick"
           >
@@ -370,7 +371,7 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
 
         <a
           v-if="repoTarget && available"
-          class="wiki-page__github-link button is-ghost is-small"
+          class="wiki-page__github-link gp-btn gp-btn--ghost gp-btn--small"
           :href="pageHtmlUrl"
           target="_blank"
           rel="noopener noreferrer"
@@ -467,16 +468,17 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
               </div>
 
               <div v-else class="wiki-page__empty">
-                <p class="mb-2">{{ t('wikiPage.pageUnavailable') }}</p>
-                <a
-                  class="button is-small is-ghost"
+                <p class="wiki-page__empty-message">{{ t('wikiPage.pageUnavailable') }}</p>
+                <Button
+                  variant="ghost"
+                  size="small"
                   :href="pageHtmlUrl"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <ExternalLinkIcon :size="14" class="mr-1" />
+                  <ExternalLinkIcon :size="14" class="wiki-page__empty-icon" />
                   <span>{{ t('wikiPage.viewOnGitHub') }}</span>
-                </a>
+                </Button>
               </div>
             </template>
           </section>
@@ -534,6 +536,17 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
   min-width: 0;
 }
 
+.wiki-page__title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0;
+  color: var(--gitpulse-text-strong);
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.125;
+}
+
 .wiki-page__repo {
   display: inline-flex;
   align-items: center;
@@ -572,6 +585,14 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
   font-size: 0.9rem;
 }
 
+.wiki-page__empty-message {
+  margin-bottom: 0.5rem;
+}
+
+.wiki-page__empty-icon {
+  margin-inline-end: 0.25rem;
+}
+
 .wiki-page__layout {
   display: grid;
   grid-template-columns: 16rem minmax(0, 1fr);
@@ -599,7 +620,7 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
   padding: 0.6rem 0.75rem;
   border-bottom: 1px solid var(--gitpulse-border);
   background: var(--gitpulse-surface);
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 0.8rem;
   font-weight: 600;
 }
@@ -672,7 +693,7 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
   margin-bottom: 1rem;
   padding-bottom: 0.75rem;
   border-bottom: 1px solid var(--gitpulse-border);
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 1.25rem;
   font-weight: 600;
 }
@@ -689,7 +710,7 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
   :deep(h5),
   :deep(h6) {
     margin: 1.4em 0 0.6em;
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    color: var(--gitpulse-text-strong);
     font-weight: 600;
     line-height: 1.3;
   }
@@ -849,7 +870,7 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
   padding: 0.6rem 0.75rem;
   border-bottom: 1px solid var(--gitpulse-border);
   background: var(--gitpulse-surface);
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 0.8rem;
   font-weight: 600;
 }

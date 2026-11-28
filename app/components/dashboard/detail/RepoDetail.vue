@@ -664,12 +664,12 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 
 <template>
   <div class="repo-detail-layout">
-    <div class="columns" :class="{ 'columns--detail-sidebar-hidden': detailSidebarHidden }">
-      <div class="column detail-main-column">
+    <div class="detail-columns" :class="{ 'detail-columns--sidebar-hidden': detailSidebarHidden }">
+      <div class="detail-main-column">
         <section class="repo-detail-header">
           <div class="repo-detail-header__title-row">
             <GitHubIcon :size="28" class="repo-detail-header__icon" />
-            <h1 class="title is-3 repo-detail-header__title">{{ repository.name }}</h1>
+            <h1 class="repo-detail-header__title">{{ repository.name }}</h1>
             <div class="repo-detail-header__actions">
               <button
                 type="button"
@@ -757,10 +757,10 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 
           <div class="repo-detail-header__identity">
             <div class="repo-detail-header__meta">
-              <span class="subtitle mb-0 is-6 has-text-weight-medium">{{ owner }}/{{ repo }}</span>
+              <span class="repo-detail-header__full-name">{{ owner }}/{{ repo }}</span>
               <span
                 v-if="repository.language"
-                class="tag is-link is-light repo-detail-header__language"
+                class="gp-tag gp-tag--link repo-detail-header__language"
               >
                 <span
                   class="repo-detail-header__language-dot"
@@ -771,7 +771,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
               <span
                 v-for="badge in repoBadges"
                 :key="badge.label"
-                class="tag repo-detail-header__badge"
+                class="gp-tag repo-detail-header__badge"
               >
                 <component :is="badge.icon" :size="13" />
                 <span>{{ badge.label }}</span>
@@ -791,13 +791,13 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
             </p>
           </div>
 
-          <div v-if="repository.description" class="repo-detail-description mb-4">
+          <div v-if="repository.description" class="repo-detail-description">
             <p class="repo-detail-description__body">
               {{ repository.description }}
             </p>
           </div>
 
-          <div class="repo-about mb-4">
+          <div class="repo-about">
             <div class="repo-about__grid">
               <div v-for="item in aboutItems" :key="item.label" class="repo-about__item">
                 <component :is="item.icon" :size="14" class="repo-about__item-icon" />
@@ -864,7 +864,8 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
                   <div
                     class="repo-detail-list-toolbar__pagination"
                     :class="{
-                      'is-hidden': !commitsShowPagination && !commitsLoading,
+                      'repo-detail-list-toolbar__pagination--hidden':
+                        !commitsShowPagination && !commitsLoading,
                       'is-loading': commitsLoading,
                     }"
                     :aria-hidden="!commitsShowPagination && !commitsLoading"
@@ -914,7 +915,8 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
                   <div
                     class="repo-detail-list-toolbar__pagination"
                     :class="{
-                      'is-hidden': !listShowPagination && !listLoading,
+                      'repo-detail-list-toolbar__pagination--hidden':
+                        !listShowPagination && !listLoading,
                       'is-loading': listLoading,
                     }"
                     :aria-hidden="!listShowPagination && !listLoading"
@@ -941,7 +943,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
               />
 
               <div class="repo-readme">
-                <h2 class="title is-5 repo-readme__title">
+                <h2 class="repo-readme__title">
                   <BookmarkIcon :size="18" />
                   <span>{{ copy.readme }}</span>
                 </h2>
@@ -991,7 +993,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
       <DetailSidebarColumn :hidden="detailSidebarHidden">
         <ScrollArea class="sidebar-scroll" media="(min-width: 1025px)">
           <div class="repo-sidebar">
-            <div class="sidebar-card mb-4">
+            <div class="sidebar-card">
               <div class="sidebar-card__header">
                 <div class="sidebar-card__header-left">
                   <StarIcon :size="14" class="sidebar-card__icon" />
@@ -1016,7 +1018,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
               </div>
             </div>
 
-            <div v-if="languageShares.length > 0 || loadingLanguages" class="sidebar-card mb-4">
+            <div v-if="languageShares.length > 0 || loadingLanguages" class="sidebar-card">
               <div class="sidebar-card__header">
                 <div class="sidebar-card__header-left">
                   <CodeXmlIcon :size="14" class="sidebar-card__icon" />
@@ -1029,7 +1031,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
                   class="repo-languages__loading"
                 >
                   <LoaderCircleIcon :size="16" class="spin-animation" aria-hidden="true" />
-                  <span class="is-sr-only">{{ t('repoDetail.loadingLanguages') }}</span>
+                  <span class="sr-only">{{ t('repoDetail.loadingLanguages') }}</span>
                 </div>
                 <div v-else class="repo-languages">
                   <div class="repo-languages__bar" role="img" :aria-label="languageBarAriaLabel">
@@ -1101,7 +1103,6 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 </template>
 
 <style scoped lang="scss">
-@use '~/assets/scss/_variables' as *;
 @use '~/assets/scss/detail-sidebar-columns' as *;
 @use '~/assets/scss/pointer' as *;
 @use '~/assets/scss/sidebar-github-link' as *;
@@ -1112,7 +1113,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
   min-height: 100%;
 }
 
-.repo-detail-layout :deep(.columns) {
+.repo-detail-layout :deep(.detail-columns) {
   align-items: flex-start;
   margin-bottom: 0;
 }
@@ -1151,8 +1152,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
   display: flex;
   flex-direction: column;
   min-height: 0;
-  /* Column padding plus the gap the sticky inset used to add. */
-  padding-top: calc(var(--bulma-column-gap) + var(--repo-detail-sidebar-extra-top-gap));
+  padding-top: var(--repo-detail-sidebar-extra-top-gap);
   padding-right: 1rem;
   box-sizing: border-box;
 }
@@ -1165,7 +1165,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 /* The header section wraps the whole main column, so this readability cap is
    lifted while the Detail Sidebar is hidden and the main column is expected
    to fill the overlay width. */
-.repo-detail-layout .columns--detail-sidebar-hidden .repo-detail-header {
+.repo-detail-layout .detail-columns--sidebar-hidden .repo-detail-header {
   max-width: none;
 }
 
@@ -1192,6 +1192,10 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 
 .repo-detail-header__title {
   margin-bottom: 0;
+  color: var(--gitpulse-text-strong);
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.125;
   overflow-wrap: anywhere;
   letter-spacing: 0;
 }
@@ -1226,7 +1230,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
     &:hover:not(:disabled):not(&--active) {
       background: var(--gitpulse-surface-hover);
       border-color: var(--gitpulse-border-strong);
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
     }
   }
 
@@ -1289,7 +1293,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
   @include hover-only {
     &:hover:not(&--active) {
       background: var(--gitpulse-surface-active);
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
     }
   }
 
@@ -1347,6 +1351,14 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
   min-width: 0;
 }
 
+.repo-detail-header__full-name {
+  margin-bottom: 0;
+  color: var(--gitpulse-text-muted);
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.25;
+}
+
 .repo-detail-header__language,
 .repo-detail-header__badge {
   display: inline-flex;
@@ -1391,7 +1403,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 .repo-detail-forked-from__link {
   min-width: 0;
   overflow-wrap: anywhere;
-  color: var(--gitpulse-text-strong, var(--bulma-text-strong));
+  color: var(--gitpulse-text-strong);
   font-weight: 500;
   text-decoration: none;
   cursor: pointer;
@@ -1413,11 +1425,12 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 
 .repo-detail-description {
   max-width: 54rem;
+  margin-bottom: 1rem;
 }
 
 .repo-detail-description__body {
   margin-bottom: 0;
-  color: var(--bulma-text-strong);
+  color: var(--gitpulse-text-strong);
   font-size: 1rem;
   line-height: 1.6;
 }
@@ -1614,7 +1627,7 @@ html.dark .repo-detail-section__chrome {
   /* Keep the same footprint whether pagination is real, loading, or hidden. */
   min-width: 7.5rem;
 
-  &.is-hidden {
+  &--hidden {
     visibility: hidden;
     pointer-events: none;
   }
@@ -1649,7 +1662,7 @@ html.dark .repo-detail-section__chrome {
 }
 
 .repo-about__item-value {
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
 }
 
 .repo-about__item-value--link {
@@ -1672,8 +1685,10 @@ html.dark .repo-detail-section__chrome {
   align-items: center;
   gap: 8px;
   margin-bottom: 1rem;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 1.125rem;
+  font-weight: 800;
+  line-height: 1.125;
 }
 
 .repo-readme__loading {
@@ -1708,6 +1723,7 @@ html.dark .repo-detail-section__chrome {
 }
 
 .sidebar-card {
+  margin-bottom: 1rem;
   overflow: hidden;
   border: 1px solid var(--gitpulse-border);
   border-radius: 8px;
@@ -1730,11 +1746,11 @@ html.dark .repo-detail-section__chrome {
 }
 
 .sidebar-card__icon {
-  color: $brand-primary;
+  color: var(--gitpulse-accent);
 }
 
 .sidebar-card__title {
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 13px;
   font-weight: 600;
 }
@@ -1783,7 +1799,7 @@ html.dark .repo-detail-section__chrome {
 
 .info-stat__value {
   margin-bottom: 0.25rem;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 1.35rem;
   font-weight: 800;
 }
@@ -1864,7 +1880,7 @@ html.dark .repo-detail-section__chrome {
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1879,7 +1895,7 @@ html.dark .repo-detail-section__chrome {
 @include sidebar-github-link;
 
 @media screen and (max-width: 1024px) {
-  .repo-detail-layout :deep(.columns) {
+  .repo-detail-layout :deep(.detail-columns) {
     display: block;
   }
 
@@ -1892,7 +1908,7 @@ html.dark .repo-detail-section__chrome {
     min-height: 0;
   }
 
-  .repo-detail-layout :deep(.columns > .detail-sidebar-column) {
+  .repo-detail-layout :deep(.detail-columns > .detail-sidebar-column) {
     display: none;
   }
 

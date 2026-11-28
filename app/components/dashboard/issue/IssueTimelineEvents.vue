@@ -1,12 +1,10 @@
 <template>
   <div>
-    <div class="mb-4 is-flex is-align-items-center">
-      <span class="is-size-5 has-text-weight-semibold ml-2 mr-4">{{
-        t('detailTimeline.activity')
-      }}</span>
-      <div v-if="loading" class="is-flex is-justify-content-center">
-        <LoadingIcon class="icon" />
-        <span class="ml-2 is-size-7 has-text-grey">{{ t('detailTimeline.loading') }}</span>
+    <div class="issue-timeline-events__header">
+      <span class="issue-timeline-events__title">{{ t('detailTimeline.activity') }}</span>
+      <div v-if="loading" class="issue-timeline-events__loading">
+        <LoadingIcon :size="16" aria-hidden="true" />
+        <span class="issue-timeline-events__loading-label">{{ t('detailTimeline.loading') }}</span>
       </div>
     </div>
 
@@ -33,21 +31,21 @@
 
         <TimelineRenamedTitleEvent
           v-else-if="item.eventType === 'renamed'"
-          class="mx-2"
+          class="issue-timeline-events__row"
           :actor="item.actor"
           :previous-title="item.previousTitle"
           :current-title="item.currentTitle"
           :created-at="item.createdAt"
         />
 
-        <div v-else-if="item.groupedEvents" class="mx-2">
+        <div v-else-if="item.groupedEvents" class="issue-timeline-events__row">
           <TimelineEventActorRow :actor="item.actor" align-start>
             <div>
-              <div class="is-size-7 has-text-grey mb-1">
+              <div class="issue-timeline-events__grouped-heading">
                 <GitHubProfileLink
                   :login="item.actor?.login"
                   :github-href="item.actor?.url"
-                  class="has-text-weight-medium has-text-link mr-1"
+                  class="issue-timeline-events__grouped-actor"
                 >
                   {{ item.actor?.login }}
                 </GitHubProfileLink>
@@ -66,7 +64,7 @@
             </div>
           </TimelineEventActorRow>
         </div>
-        <div v-else class="mx-2">
+        <div v-else class="issue-timeline-events__row">
           <TimelineEventActorRow :actor="item.actor">
             <IssueTimelineEventBody
               :item="item"
@@ -80,19 +78,20 @@
       </div>
     </div>
 
-    <div v-else-if="!loading" class="has-text-grey is-size-7">
+    <div v-else-if="!loading" class="issue-timeline-events__empty">
       {{ t('detailTimeline.noActivity') }}
     </div>
 
     <div
       v-if="hasNextPage && processedTimeline.length > 0"
-      class="mt-4 is-flex is-justify-content-center"
+      class="issue-timeline-events__load-more"
     >
       <button
-        class="button is-light is-small"
+        class="gp-btn gp-btn--light gp-btn--small"
         type="button"
-        :class="{ 'is-loading': loadingMore }"
+        :class="{ 'gp-btn--loading': loadingMore }"
         :disabled="loadingMore"
+        :aria-busy="loadingMore || undefined"
         @click="emit('load-more')"
       >
         {{ loadingMore ? t('detailTimeline.loadingMore') : t('detailTimeline.loadMore') }}
@@ -100,7 +99,7 @@
     </div>
 
     <FloatingMarkdownEditor
-      class="issue-timeline-events__composer mt-4"
+      class="issue-timeline-events__composer"
       :repo-owner="repoOwner"
       :repo-name="repoName"
       :item-number="issueNumber"
@@ -170,13 +169,63 @@ const switchToPullRequest = (owner: string, repo: string, pullNumber: number) =>
 </script>
 
 <style scoped lang="scss">
+.issue-timeline-events__header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.issue-timeline-events__title {
+  margin-left: 0.5rem;
+  margin-right: 1rem;
+  color: var(--gitpulse-text-strong);
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.issue-timeline-events__loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.issue-timeline-events__loading-label,
+.issue-timeline-events__empty {
+  color: var(--gitpulse-text-muted);
+  font-size: 0.75rem;
+}
+
 .issue-timeline-events__list {
   display: flex;
   flex-direction: column;
   gap: 1.125rem;
 }
 
+.issue-timeline-events__row {
+  margin-inline: 0.5rem;
+}
+
+.issue-timeline-events__grouped-heading {
+  margin-bottom: 0.25rem;
+  color: var(--gitpulse-text-muted);
+  font-size: 0.75rem;
+}
+
+.issue-timeline-events__grouped-actor {
+  margin-right: 0.25rem;
+  color: var(--gitpulse-link);
+  font-weight: 500;
+}
+
+.issue-timeline-events__load-more {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
 .issue-timeline-events__composer {
+  margin-top: 1rem;
   padding-top: 1rem;
 }
 </style>

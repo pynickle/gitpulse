@@ -4,6 +4,7 @@ import { computed, ref, toRef, type Component } from 'vue';
 
 import type { PackageSummary, PackageType, PackageTypeFilter } from '#shared/types/packages';
 import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
+import Button from '~/components/ui/Button.vue';
 import { useUserPackages } from '~/composables/useUserPackages';
 
 interface PackageFilterOption {
@@ -115,9 +116,9 @@ const updatedLabel = (pkg: PackageSummary) => {
 
     <div v-if="error" class="profile-package-list__status profile-package-list__status--error">
       <p>{{ error }}</p>
-      <button type="button" class="button is-small is-light" @click="refresh">
+      <Button variant="light" size="small" @click="refresh">
         {{ t('profile.retry') }}
-      </button>
+      </Button>
     </div>
 
     <template v-else>
@@ -130,7 +131,7 @@ const updatedLabel = (pkg: PackageSummary) => {
           v-for="pkg in items"
           :key="`${pkg.packageType}:${pkg.id}`"
           type="button"
-          class="profile-package-list__item card"
+          class="profile-package-list__item"
           @click="emit('select-package', pkg)"
         >
           <div class="profile-package-list__item-title-row">
@@ -141,7 +142,7 @@ const updatedLabel = (pkg: PackageSummary) => {
               aria-hidden="true"
             />
             <span class="profile-package-list__item-name" :title="pkg.name">{{ pkg.name }}</span>
-            <span v-if="visibilityLabel(pkg)" class="tag is-warning is-light">
+            <span v-if="visibilityLabel(pkg)" class="gp-tag gp-tag--warning">
               {{ visibilityLabel(pkg) }}
             </span>
           </div>
@@ -151,7 +152,7 @@ const updatedLabel = (pkg: PackageSummary) => {
           </p>
 
           <div class="profile-package-list__item-meta">
-            <span class="tag is-light">{{ t(`packages.types.${pkg.packageType}`) }}</span>
+            <span class="gp-tag">{{ t(`packages.types.${pkg.packageType}`) }}</span>
             <span v-if="typeof pkg.versionCount === 'number'">
               {{ t('packages.versionCount', { count: pkg.versionCount }, pkg.versionCount) }}
             </span>
@@ -241,11 +242,16 @@ const updatedLabel = (pkg: PackageSummary) => {
 }
 
 .profile-package-list__item {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
   padding: 0.85rem 1rem;
   border: 1px solid var(--gitpulse-border);
+  border-radius: var(--gitpulse-radius-xl);
+  background-color: var(--gitpulse-surface);
+  color: var(--gitpulse-text);
+  box-shadow: var(--gitpulse-shadow-card);
   text-align: left;
   cursor: pointer;
   transition: border-color 0.12s ease;

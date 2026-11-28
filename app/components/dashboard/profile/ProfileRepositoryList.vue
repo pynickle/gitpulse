@@ -4,6 +4,7 @@ import { toRef } from 'vue';
 
 import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
 import RepoItem from '~/components/dashboard/RepoItem.vue';
+import Button from '~/components/ui/Button.vue';
 import { useUserRepositories } from '~/composables/useUserConnections';
 
 const { username } = defineProps<{
@@ -21,9 +22,9 @@ const { items, loading, error, pagination, showPagination, goToPage, refresh } =
   <div class="profile-repo-list">
     <div v-if="error" class="profile-repo-list__status profile-repo-list__status--error">
       <p>{{ error }}</p>
-      <button type="button" class="button is-small is-light" @click="refresh">
+      <Button variant="light" size="small" @click="refresh">
         {{ t('profile.retry') }}
-      </button>
+      </Button>
     </div>
 
     <template v-else>

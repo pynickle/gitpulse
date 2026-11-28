@@ -1,19 +1,19 @@
 <template>
   <div class="dashboard-layout">
     <div
-      class="columns dashboard-layout-columns"
+      class="dashboard-layout-columns"
       :class="{
         'dashboard-layout-columns--icon-bar-only': showActivityBar && !showTabSidebar,
         'dashboard-layout-columns--narrow': !showActivityBar,
       }"
     >
       <!-- Activity Bar: 48px fixed width (left) -->
-      <div v-if="showActivityBar" class="column column-activity-bar">
+      <div v-if="showActivityBar" class="column-activity-bar">
         <slot name="activity-bar"></slot>
       </div>
 
       <!-- Tab Sidebar: persisted width (left-center) -->
-      <div v-if="showTabSidebar" class="column column-tab-sidebar" :style="tabSidebarStyle">
+      <div v-if="showTabSidebar" class="column-tab-sidebar" :style="tabSidebarStyle">
         <slot name="tab-sidebar"></slot>
       </div>
 
@@ -45,12 +45,12 @@
       </div>
 
       <!-- Main List: 700-800px max-width (center) -->
-      <div class="column column-main-content">
+      <div class="column-main-content">
         <slot name="main-content"></slot>
       </div>
 
       <!-- Widgets Panel: 320px width (right) -->
-      <div v-if="showWidgets" class="column column-widgets-panel">
+      <div v-if="showWidgets" class="column-widgets-panel">
         <slot name="widgets-panel"></slot>
       </div>
     </div>
@@ -134,7 +134,6 @@ const handleReset = () => {
 </script>
 
 <style scoped lang="scss">
-@use '~/assets/scss/_variables' as *;
 @use '~/assets/scss/pointer' as *;
 
 // Layout variables defining the 4-column structure
@@ -273,7 +272,7 @@ $splitter-hover-zone: 14px;
 
   @include hover-only {
     &:hover {
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
       background: var(--gitpulse-surface-hover, var(--gitpulse-shell-bg));
       border-color: var(--gitpulse-border-strong, var(--gitpulse-border));
     }

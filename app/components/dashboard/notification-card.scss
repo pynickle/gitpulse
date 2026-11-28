@@ -1,15 +1,15 @@
-@use 'pointer' as *;
+@use '~/assets/scss/pointer' as *;
 
 // ============================================
 // Base Card Styles
 // ============================================
 
-.card.is-unread {
+.dashboard-list-card.is-unread {
   border-color: color-mix(in srgb, var(--gitpulse-link) 24%, var(--gitpulse-border));
   background-color: var(--gitpulse-unread-bg);
 }
 
-.card.is-unread .dashboard-list-card__icon::after {
+.dashboard-list-card.is-unread .dashboard-list-card__icon::after {
   content: '';
   position: absolute;
   top: -3px;
@@ -56,6 +56,13 @@ $transition-hint:
 // ============================================
 // Notification Type Badges
 // ============================================
+
+.notification-card__avatar {
+  position: relative;
+  display: block;
+  width: 32px;
+  height: 32px;
+}
 
 .notification-type-badge {
   position: absolute;
@@ -168,6 +175,7 @@ $transition-hint:
   align-items: center;
   justify-content: flex-start;
   gap: 0.25rem;
+  margin-left: 0.75rem;
 }
 
 // On a narrow viewport the row's two controls stack: the column is then as wide as its

@@ -1,22 +1,22 @@
 <template>
   <component
     :is="profileLogin ? GitHubProfileLink : itemUrl ? 'a' : 'div'"
-    class="card dashboard-list-card dashboard-list-card--activity dashboard-list-card--detailed generic-search-card"
+    class="dashboard-list-card dashboard-list-card--activity dashboard-list-card--detailed generic-search-card"
     v-bind="linkProps"
   >
-    <div class="card-content p-3">
+    <div class="dashboard-list-card__body">
       <div class="dashboard-list-card__main-row">
-        <div class="dashboard-list-card__icon ml-2 mt-1">
+        <div class="dashboard-list-card__icon">
           <component :size="22" :is="icon" />
         </div>
         <div class="dashboard-list-card__content">
           <div class="dashboard-list-card__text-stack">
-            <p class="title is-6 mb-1 dashboard-list-card__title">
+            <p class="dashboard-list-card__title">
               {{ title }}
             </p>
-            <p class="subtitle is-7 has-text-grey mb-2 dashboard-list-card__meta">
+            <p class="dashboard-list-card__meta">
               <span class="dashboard-list-card__repo">{{ meta }}</span>
-              <span v-if="numberLabel" class="tag is-small dashboard-list-card__number">
+              <span v-if="numberLabel" class="gp-tag gp-tag--small dashboard-list-card__number">
                 {{ numberLabel }}
               </span>
               <span v-if="timeLabel" class="dashboard-list-card__separator">&middot;</span>
@@ -131,18 +131,28 @@ const icon = computed(() => {
 });
 </script>
 
-<style scoped lang="scss" src="~/assets/scss/card.scss" />
+<style scoped lang="scss" src="~/assets/scss/dashboard-list-card.scss" />
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .generic-search-card {
   color: inherit;
   text-decoration: none;
 
-  &:hover {
-    border-color: var(--gitpulse-accent);
+  @include hover-only {
+    &:hover {
+      border-color: var(--gitpulse-accent);
+    }
   }
 }
 
 .dashboard-list-card__icon {
+  margin-top: 0.25rem;
+  margin-left: 0.5rem;
   color: var(--gitpulse-accent);
+}
+
+.dashboard-list-card__meta {
+  margin-bottom: 0.5rem;
 }
 </style>

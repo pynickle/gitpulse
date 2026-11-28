@@ -890,7 +890,7 @@ onActivated(() => {
           >
             {{ owner }}/{{ repo }}
           </button>
-          <h1 v-if="fileName" class="repo-file-view__title mb-0">{{ fileName }}</h1>
+          <h1 v-if="fileName" class="repo-file-view__title">{{ fileName }}</h1>
         </div>
       </div>
 
@@ -1153,7 +1153,7 @@ onActivated(() => {
             <p class="repo-file-view__binary-hint">{{ t('repoFileView.binaryFileHint') }}</p>
             <button
               type="button"
-              class="button is-small is-link is-light mt-3"
+              class="gp-btn gp-btn--small gp-btn--light repo-file-view__binary-download"
               @click="downloadFile"
             >
               <DownloadIcon :size="14" aria-hidden="true" />
@@ -1211,7 +1211,6 @@ onActivated(() => {
 </template>
 
 <style scoped lang="scss">
-@use '~/assets/scss/_variables' as *;
 @use '~/assets/scss/pointer' as *;
 
 .repo-file-view {
@@ -1255,7 +1254,8 @@ onActivated(() => {
 }
 
 .repo-file-view__title {
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  margin-bottom: 0;
+  color: var(--gitpulse-text-strong);
   font-size: 0.9rem;
   font-weight: 700;
   overflow: hidden;
@@ -1333,7 +1333,7 @@ onActivated(() => {
   @include hover-only {
     &:hover {
       background: var(--gitpulse-surface-hover);
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
     }
   }
 }
@@ -1368,7 +1368,7 @@ onActivated(() => {
   @include hover-only {
     &:hover {
       background: var(--gitpulse-surface-hover);
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
     }
   }
 }
@@ -1437,7 +1437,7 @@ onActivated(() => {
 
 .repo-file-view__sidebar-title {
   margin: 0;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 0.82rem;
   font-weight: 700;
 }
@@ -1458,7 +1458,7 @@ onActivated(() => {
 @include hover-only {
   .repo-file-view__collapse-button:hover {
     background: var(--gitpulse-surface-hover);
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    color: var(--gitpulse-text-strong);
   }
 }
 
@@ -1483,7 +1483,7 @@ onActivated(() => {
   border: 0;
   border-radius: 5px;
   background: transparent;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   display: flex;
   align-items: center;
   gap: 0.35rem;
@@ -1511,7 +1511,7 @@ onActivated(() => {
   border: 0;
   border-radius: 5px;
   background: transparent;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   display: flex;
   align-items: center;
   gap: 0.35rem;
@@ -1640,7 +1640,7 @@ onActivated(() => {
   border: 0;
   border-bottom: 1px solid var(--gitpulse-border);
   background: transparent;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 0.82rem;
   text-align: left;
   cursor: pointer;
@@ -1667,7 +1667,7 @@ onActivated(() => {
 }
 
 .repo-file-view__file-icon--dir {
-  color: $brand-primary;
+  color: var(--gitpulse-accent);
 }
 
 .repo-file-view__file-icon--file {
@@ -1709,7 +1709,7 @@ onActivated(() => {
   gap: 0.35rem;
   flex: 1;
   min-width: 0;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 0.82rem;
   font-weight: 600;
   overflow: hidden;
@@ -1740,7 +1740,7 @@ onActivated(() => {
   @include hover-only {
     &:hover {
       background: var(--gitpulse-surface-hover);
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
     }
   }
 }
@@ -1780,13 +1780,17 @@ onActivated(() => {
   margin: 0;
   font-size: 1rem;
   font-weight: 600;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
 }
 
 .repo-file-view__binary-hint {
   margin: 0;
   font-size: 0.82rem;
   text-align: center;
+}
+
+.repo-file-view__binary-download {
+  margin-top: 0.75rem;
 }
 
 // Code display
@@ -1868,7 +1872,7 @@ onActivated(() => {
   font-family: var(--gitpulse-code-font-family);
   font-size: 0.82rem;
   line-height: 1.6;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
 }
 
 .repo-file-view__code-table {

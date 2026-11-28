@@ -575,7 +575,7 @@ const { handleKeydown } = useModalLifecycle({
 </script>
 
 <style scoped lang="scss">
-@use '~/assets/scss/detail-metadata-editor';
+@use '~/assets/scss/modal-shell';
 @use '~/assets/scss/pointer' as *;
 
 .close-modal__title {
@@ -659,7 +659,7 @@ const { handleKeydown } = useModalLifecycle({
 
   @include hover-only {
     &:hover:not(:disabled) {
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
     }
   }
 
@@ -737,7 +737,7 @@ const { handleKeydown } = useModalLifecycle({
   background: var(--gitpulse-surface);
   font-size: 12px;
   font-weight: 600;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   cursor: pointer;
 
   svg {
@@ -778,7 +778,7 @@ const { handleKeydown } = useModalLifecycle({
   border: none;
   background: transparent;
   font-size: 13px;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
 
   &::placeholder {
     color: var(--gitpulse-text-muted);
@@ -822,7 +822,7 @@ const { handleKeydown } = useModalLifecycle({
   min-width: 0;
   overflow: hidden;
   font-size: 13px;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   text-overflow: ellipsis;
   white-space: nowrap;
 }

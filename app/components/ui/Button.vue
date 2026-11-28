@@ -1,59 +1,123 @@
 <template>
-  <component :is="component" v-bind="bindProps" :class="classes">
+  <NuxtLinkLocale
+    v-if="to"
+    v-bind="linkAttrs"
+    :to="to"
+    :class="classes"
+    :aria-busy="loading || undefined"
+    :aria-disabled="isDisabled ? 'true' : undefined"
+    :tabindex="resolvedLinkTabindex"
+    @click="handleLinkClick"
+  >
     <slot />
-  </component>
+  </NuxtLinkLocale>
+  <a
+    v-else-if="href"
+    v-bind="linkAttrs"
+    :href="href"
+    :target="target"
+    :class="classes"
+    :aria-busy="loading || undefined"
+    :aria-disabled="isDisabled ? 'true' : undefined"
+    :tabindex="resolvedLinkTabindex"
+    @click="handleLinkClick"
+  >
+    <slot />
+  </a>
+  <button
+    v-else
+    v-bind="attrs"
+    :type="type"
+    :disabled="isDisabled"
+    :class="classes"
+    :aria-busy="loading || undefined"
+  >
+    <slot />
+  </button>
 </template>
 
 <script setup lang="ts">
 import { computed, useAttrs } from 'vue';
 
+type ButtonVariant =
+  | 'primary'
+  | 'secondary'
+  | 'light'
+  | 'ghost'
+  | 'link'
+  | 'info'
+  | 'success'
+  | 'warning'
+  | 'danger'
+  | 'danger-soft';
+
+type ButtonSize = 'small' | 'normal' | 'medium' | 'large';
+
+defineOptions({ inheritAttrs: false });
+
 const {
-  to,
-  href,
-  target,
-  color = 'primary',
-  size = 'large',
-  lifted = true,
+  variant = 'primary',
+  size = 'normal',
+  outlined = false,
+  loading = false,
+  disabled = false,
+  block = false,
+  pill = false,
+  type = 'button',
 } = defineProps<{
-  to?: string | object;
+  to?: string | Record<string, unknown>;
   href?: string;
   target?: string;
-  color?: string;
-  size?: 'normal' | 'large';
-  lifted?: boolean;
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  outlined?: boolean;
+  loading?: boolean;
+  disabled?: boolean;
+  block?: boolean;
+  pill?: boolean;
+  type?: 'button' | 'submit' | 'reset';
 }>();
 
 const attrs = useAttrs();
 
-const component = computed(() => {
-  if (to) return 'NuxtLinkLocale';
-  if (href) return 'a';
-  return 'button';
+const isDisabled = computed(() => disabled || loading);
+
+const linkAttrs = computed(() => {
+  const { tabindex: _tabindex, onClick: _onClick, ...rest } = attrs;
+  return rest;
 });
 
-const bindProps = computed(() => {
-  const baseAttrs = { ...attrs };
-
-  if (to) {
-    return { ...baseAttrs, to };
-  }
-  if (href) {
-    return { ...baseAttrs, href, target };
-  }
-  return { ...baseAttrs, type: (attrs.type as string | undefined) ?? 'button' };
+const resolvedLinkTabindex = computed(() => {
+  if (isDisabled.value) return -1;
+  return attrs.tabindex as string | number | undefined;
 });
+
+type LinkClickHandler = (event: MouseEvent) => unknown;
+
+const handleLinkClick = (event: MouseEvent) => {
+  if (isDisabled.value) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    return;
+  }
+
+  const forwardedClick = attrs.onClick as LinkClickHandler | LinkClickHandler[] | undefined;
+  if (Array.isArray(forwardedClick)) {
+    for (const handler of forwardedClick) {
+      handler(event);
+    }
+  } else if (typeof forwardedClick === 'function') {
+    forwardedClick(event);
+  }
+};
 
 const classes = computed(() => [
-  'button',
-  size === 'large' ? 'is-large' : null,
-  color ? `is-${color}` : null,
-  lifted ? 'is-lifted' : null,
-  'px-6',
+  'gp-btn',
+  `gp-btn--${variant}`,
+  size !== 'normal' ? `gp-btn--${size}` : null,
+  outlined ? 'gp-btn--outlined' : null,
+  block ? 'gp-btn--block' : null,
+  pill ? 'gp-btn--pill' : null,
+  loading ? 'gp-btn--loading' : null,
 ]);
 </script>
-
-<style scoped lang="scss">
-.button {
-  font-size: 1.1rem;
-}
-</style>

@@ -238,7 +238,7 @@ const confirm = async () => {
       <p :id="descriptionId" class="stack-rebase__description">
         {{ t('prReview.stackRebase.description', { trunk }) }}
       </p>
-      <p class="is-sr-only" role="status" aria-live="polite">
+      <p class="sr-only" role="status" aria-live="polite">
         {{ liveAnnouncement }}
       </p>
       <ol class="stack-rebase__layers">
@@ -330,7 +330,7 @@ const confirm = async () => {
   font-size: 14px;
   font-weight: 600;
   letter-spacing: -0.01em;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
 
   svg {
     flex-shrink: 0;
@@ -423,7 +423,7 @@ const confirm = async () => {
   white-space: nowrap;
   font-size: 12px;
   font-weight: 600;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
 }
 
 .stack-rebase__status {
@@ -499,7 +499,7 @@ const confirm = async () => {
 
   @include hover-only {
     &:hover:not(:disabled) {
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
       background: var(--gitpulse-surface-hover);
       border-color: var(--gitpulse-border-strong);
     }

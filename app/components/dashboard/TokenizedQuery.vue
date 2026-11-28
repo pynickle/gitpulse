@@ -189,7 +189,7 @@ const tokens = computed<Token[]>(() => {
 }
 
 .tq-token--keyword .tq-seg--bareword {
-  color: var(--bulma-text, #334155);
+  color: var(--gitpulse-text);
 }
 
 // Type qualifiers: is:issue, is:pr, is:public, etc

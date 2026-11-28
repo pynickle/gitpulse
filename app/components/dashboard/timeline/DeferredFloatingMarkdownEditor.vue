@@ -31,7 +31,7 @@
     :inert="isAnyModalOpen || undefined"
   >
     <button
-      class="deferred-floating-markdown-editor__capsule button is-light"
+      class="deferred-floating-markdown-editor__capsule gp-btn gp-btn--light"
       type="button"
       @click="activateEditor"
     >
@@ -44,10 +44,12 @@
         :alt="currentUserLogin"
         class="deferred-floating-markdown-editor__capsule-avatar"
       />
-      <span class="deferred-floating-markdown-editor__capsule-placeholder has-text-grey">
+      <span class="deferred-floating-markdown-editor__capsule-placeholder">
         {{ resolvedPlaceholder }}
       </span>
-      <span class="button is-link is-small deferred-floating-markdown-editor__capsule-submit">
+      <span
+        class="gp-btn gp-btn--link gp-btn--small deferred-floating-markdown-editor__capsule-submit"
+      >
         {{ resolvedSubmitLabel }}
       </span>
     </button>
@@ -200,6 +202,7 @@ watch(
 .deferred-floating-markdown-editor__capsule-placeholder {
   flex: 1;
   min-width: 0;
+  color: var(--gitpulse-text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

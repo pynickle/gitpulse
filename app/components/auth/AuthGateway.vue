@@ -1,18 +1,14 @@
 <template>
   <div class="auth-gateway">
-    <div class="auth-gateway__header mb-4">
-      <p class="auth-gateway__eyebrow mb-2">{{ modeLabel }}</p>
-      <h2 class="title is-4 mb-2">{{ t('landing.authCardTitle') }}</h2>
-      <p class="subtitle is-6 has-text-grey mb-0">{{ t('landing.authCardSubtitle') }}</p>
+    <div class="auth-gateway__header">
+      <p class="auth-gateway__eyebrow">{{ modeLabel }}</p>
+      <h2 class="auth-gateway__title">{{ t('landing.authCardTitle') }}</h2>
+      <p class="auth-gateway__subtitle">{{ t('landing.authCardSubtitle') }}</p>
     </div>
 
     <div class="auth-gateway__content">
-      <Button
-        v-if="providers.oauthEnabled"
-        :href="oauthHref"
-        class="is-fullwidth is-justify-content-center mb-0"
-      >
-        <GitHubIcon class="mr-3" />
+      <Button v-if="providers.oauthEnabled" :href="oauthHref" size="large" block>
+        <GitHubIcon class="auth-gateway__btn-icon" />
         {{ t('auth.connectWithGithub') }}
       </Button>
 
@@ -21,26 +17,26 @@
       </div>
 
       <form v-if="showPatSection" class="auth-gateway__pat" @submit.prevent="handlePatSubmit">
-        <div class="field">
-          <label class="label auth-gateway__label" for="github-pat-input">{{
+        <div class="gp-field">
+          <label class="gp-label auth-gateway__label" for="github-pat-input">{{
             t('auth.tokenLabel')
           }}</label>
-          <div class="control has-icons-left">
+          <div class="gp-control gp-control--icon-left">
             <input
               id="github-pat-input"
               v-model="token"
-              class="input"
+              class="gp-input"
               type="password"
               autocomplete="off"
               spellcheck="false"
               :placeholder="t('auth.tokenPlaceholder')"
               :disabled="submitting"
             />
-            <span class="icon is-left auth-gateway__input-icon">
+            <span class="gp-control__icon auth-gateway__input-icon">
               <KeyRoundIcon :size="18" />
             </span>
           </div>
-          <p class="help has-text-grey-dark auth-gateway__help">
+          <p class="gp-help auth-gateway__help">
             {{ t('auth.tokenHelp') }}
             <a href="https://github.com/settings/tokens" target="_blank" rel="noreferrer">
               {{ t('auth.tokenHelpLink') }}
@@ -55,13 +51,13 @@
           </div>
         </div>
 
-        <div v-if="tokenError" class="notification is-danger is-light auth-gateway__error">
+        <div v-if="tokenError" class="gp-notice gp-notice--danger auth-gateway__error" role="alert">
           {{ tokenError }}
         </div>
 
-        <Button type="submit" class="is-fullwidth is-justify-content-center" :disabled="submitting">
-          <LoadingIcon v-if="submitting" class="mr-3" :size="18" />
-          <KeyRoundIcon v-else class="mr-3" :size="18" />
+        <Button type="submit" size="large" block :disabled="submitting">
+          <LoadingIcon v-if="submitting" class="auth-gateway__btn-icon" :size="18" />
+          <KeyRoundIcon v-else class="auth-gateway__btn-icon" :size="18" />
           {{ submitting ? t('auth.connectingWithPat') : t('auth.continueWithPat') }}
         </Button>
       </form>
@@ -171,18 +167,41 @@ const handlePatSubmit = async () => {
 </script>
 
 <style scoped lang="scss">
-@use '~/assets/scss/variables' as *;
-
 .auth-gateway {
   height: 100%;
 }
 
+.auth-gateway__header {
+  margin-bottom: 1rem;
+}
+
 .auth-gateway__eyebrow {
+  margin-bottom: 0.5rem;
   font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: $brand-primary;
+  color: var(--gitpulse-accent);
+}
+
+.auth-gateway__title {
+  margin-bottom: 0.5rem;
+  color: var(--gitpulse-text-strong);
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.125;
+}
+
+.auth-gateway__subtitle {
+  margin-bottom: 0;
+  color: var(--gitpulse-text-muted);
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.25;
+}
+
+.auth-gateway__btn-icon {
+  margin-inline-end: 0.75rem;
 }
 
 .auth-gateway__divider {

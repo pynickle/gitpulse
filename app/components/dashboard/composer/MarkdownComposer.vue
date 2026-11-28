@@ -414,7 +414,7 @@ defineExpose({
 <template>
   <div class="markdown-composer" :class="composerClass">
     <div class="markdown-composer__header">
-      <div v-if="layout === 'tabbed'" class="markdown-composer__tabs tabs is-small mb-0">
+      <div v-if="layout === 'tabbed'" class="markdown-composer__tabs">
         <ul>
           <li :class="{ 'is-active': activePane === 'write' }">
             <a href="#" @click.prevent="setActivePane('write')">
@@ -432,7 +432,7 @@ defineExpose({
         <slot name="header-meta" />
         <button
           v-if="switchable"
-          class="button is-small is-light markdown-composer__layout-switch"
+          class="gp-btn gp-btn--small gp-btn--light markdown-composer__layout-switch"
           type="button"
           :aria-label="
             layout === 'split'
@@ -464,7 +464,7 @@ defineExpose({
       <textarea
         ref="textareaRef"
         :value="draft"
-        class="textarea markdown-composer__textarea"
+        class="gp-textarea markdown-composer__textarea"
         :class="{ 'markdown-composer__textarea--hidden': !writeVisible }"
         role="combobox"
         :rows="compact ? 4 : 6"
@@ -497,7 +497,7 @@ defineExpose({
           :repo-owner="repoOwner"
           :repo-name="repoName"
         />
-        <p v-else class="has-text-grey is-size-7 mb-0">
+        <p v-else class="markdown-composer__preview-empty">
           {{ t('floatingMarkdownEditor.previewEmpty') }}
         </p>
       </ScrollArea>
@@ -521,6 +521,8 @@ defineExpose({
 </template>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .markdown-composer__header,
 .markdown-composer__header-meta {
   display: flex;
@@ -541,27 +543,63 @@ defineExpose({
 }
 
 .markdown-composer__tabs {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
   min-width: 0;
+  margin-bottom: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  user-select: none;
 
-  &.tabs ul {
-    border-bottom: none !important;
+  ul {
+    display: flex;
+    flex: 1 0 auto;
+    align-items: center;
+    justify-content: flex-start;
     gap: 2px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
   }
 
-  &.tabs li a {
-    /* Bulma pulls tab links down by 1px to cover the ul border. These pills have
-       no ul border, and `.tabs` clips overflow-y, so that margin cuts off the
-       bottom of the active pill. */
-    margin-bottom: 0;
-    border-radius: 8px;
-    border: 1px solid transparent;
-    padding: 0.3rem 0.875rem;
-    font-size: 0.8rem;
-  }
+  li {
+    display: block;
 
-  &.tabs li.is-active a {
-    background: var(--gitpulse-surface-muted, rgba(0, 0, 0, 0.06));
-    border-color: var(--gitpulse-border, rgba(0, 0, 0, 0.12));
+    a {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 0;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      padding: 0.3rem 0.875rem;
+      font-size: 0.8rem;
+      color: var(--gitpulse-text-muted);
+      transition:
+        background-color 0.16s ease,
+        border-color 0.16s ease,
+        color 0.16s ease;
+
+      @include hover-only {
+        &:hover {
+          color: var(--gitpulse-text-strong);
+        }
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--gitpulse-focus-ring);
+        outline-offset: -2px;
+        color: var(--gitpulse-text-strong);
+      }
+    }
+
+    &.is-active a {
+      background: var(--gitpulse-surface-muted);
+      border-color: var(--gitpulse-border);
+      color: var(--gitpulse-link);
+    }
   }
 }
 
@@ -629,5 +667,11 @@ defineExpose({
   border-radius: 8px;
   padding: 0.875rem;
   background: var(--gitpulse-surface-muted);
+}
+
+.markdown-composer__preview-empty {
+  margin-bottom: 0;
+  color: var(--gitpulse-text-muted);
+  font-size: 0.75rem;
 }
 </style>

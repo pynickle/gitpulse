@@ -138,10 +138,10 @@ const handleSecondary = () => runAction(variant.value.secondary.action);
       <h1 class="error-card__title">{{ title }}</h1>
       <p class="error-card__description">{{ description }}</p>
       <div class="error-card__actions">
-        <Button color="primary" @click="handlePrimary">
+        <Button variant="primary" size="large" @click="handlePrimary">
           {{ primaryLabel }}
         </Button>
-        <Button color="light" @click="handleSecondary">
+        <Button variant="light" size="large" @click="handleSecondary">
           {{ secondaryLabel }}
         </Button>
       </div>
@@ -205,7 +205,7 @@ const handleSecondary = () => runAction(variant.value.secondary.action);
   width: 100%;
 }
 
-.error-card__actions :deep(.button) {
+.error-card__actions :deep(.gp-btn) {
   width: 100%;
   max-width: 280px;
 }
@@ -249,13 +249,13 @@ const handleSecondary = () => runAction(variant.value.secondary.action);
     margin-bottom: 1.5rem;
   }
 
-  .error-card__actions :deep(.button) {
+  .error-card__actions :deep(.gp-btn) {
     width: 100%;
     max-width: none;
   }
 
   // The light button fill matches the page background, so it needs its own edge.
-  .error-card__actions :deep(.button.is-light) {
+  .error-card__actions :deep(.gp-btn--light) {
     background-color: var(--gitpulse-surface);
     border: 1px solid var(--gitpulse-border);
   }

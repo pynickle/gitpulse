@@ -107,7 +107,7 @@ watch(
         <!-- Successful SVG render — v-html, no DOMPurify overlay (securityLevel:'strict' is sufficient) -->
         <template v-else>
           <button
-            class="mermaid-block__open button is-small"
+            class="mermaid-block__open gp-btn gp-btn--small"
             type="button"
             :aria-label="t('markdown.mermaid.open')"
             :title="t('markdown.mermaid.open')"
@@ -179,7 +179,7 @@ watch(
   gap: 0.25rem;
   border-color: var(--gitpulse-border);
   background-color: color-mix(in srgb, var(--gitpulse-surface) 92%, transparent);
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 0.75rem;
   line-height: 1;
   box-shadow: var(--gitpulse-shadow-card);

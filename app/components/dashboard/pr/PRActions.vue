@@ -869,7 +869,6 @@ const formatRelativeTime = (dateString: string | undefined) => {
 </script>
 
 <style scoped lang="scss">
-@use '~/assets/scss/_variables' as *;
 @use '~/assets/scss/pointer' as *;
 @use '~/assets/scss/sidebar-github-link' as *;
 
@@ -928,7 +927,7 @@ const formatRelativeTime = (dateString: string | undefined) => {
 
 .sidebar-section__icon {
   flex-shrink: 0;
-  color: $brand-primary;
+  color: var(--gitpulse-accent);
 }
 
 .sidebar-section__title {
@@ -944,7 +943,7 @@ const formatRelativeTime = (dateString: string | undefined) => {
   text-transform: none;
   letter-spacing: 0;
   font-size: 13px;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
 }
 
 .sidebar-section__body {
@@ -969,7 +968,7 @@ const formatRelativeTime = (dateString: string | undefined) => {
 .sidebar-section__error {
   margin: 0;
   font-size: 11px;
-  color: var(--bulma-danger, #cc0f35);
+  color: var(--gitpulse-danger);
 }
 
 .reviewer-warning-list {
@@ -1008,7 +1007,7 @@ const formatRelativeTime = (dateString: string | undefined) => {
 
   @include hover-only {
     &:hover {
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
       border-color: var(--gitpulse-border-strong);
       background: var(--gitpulse-surface-hover);
     }
@@ -1138,7 +1137,7 @@ const formatRelativeTime = (dateString: string | undefined) => {
 .reviewer-item__name {
   font-size: 12px;
   font-weight: 500;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1192,7 +1191,7 @@ const formatRelativeTime = (dateString: string | undefined) => {
 
   @include hover-only {
     &:hover {
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
       background: var(--gitpulse-surface-hover);
       opacity: 1;
     }
@@ -1220,7 +1219,7 @@ const formatRelativeTime = (dateString: string | undefined) => {
 
 .info-item__value {
   font-size: 12px;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1271,7 +1270,7 @@ const formatRelativeTime = (dateString: string | undefined) => {
 .info-stat__value {
   font-size: 16px;
   font-weight: 700;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
 }
 
 .info-stat__label {
@@ -1319,7 +1318,7 @@ const formatRelativeTime = (dateString: string | undefined) => {
     &:hover:not(:disabled) {
       background: var(--gitpulse-surface-hover);
       border-color: var(--gitpulse-border-strong);
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
     }
   }
 

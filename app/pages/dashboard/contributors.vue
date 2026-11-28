@@ -190,15 +190,15 @@ watch(repoFullName, () => {
     <div class="contributors-page">
       <div class="contributors-page__header">
         <div class="contributors-page__heading">
-          <h1 class="title is-5 mb-0 is-flex is-align-items-center">
-            <UsersIcon :size="18" class="mr-2" aria-hidden="true" />
+          <h1 class="contributors-page__title">
+            <UsersIcon :size="18" aria-hidden="true" />
             {{ t('contributorsPage.heading') }}
           </h1>
 
           <button
             type="button"
             v-if="repoTarget"
-            class="contributors-page__repo button is-ghost is-small"
+            class="contributors-page__repo gp-btn gp-btn--ghost gp-btn--small"
             :title="t('contributorsPage.openRepo')"
             @click="handleRepoClick"
           >
@@ -265,7 +265,7 @@ watch(repoFullName, () => {
           class="contributors-page__grid"
           :class="{ 'contributors-page__grid--loading': gridLoadingSoft }"
         >
-          <article v-for="card in matrixCards" :key="card.key" class="contributors-page__card card">
+          <article v-for="card in matrixCards" :key="card.key" class="contributors-page__card">
             <div class="contributors-page__card-top">
               <GitHubProfileLink
                 v-if="card.login"
@@ -370,6 +370,17 @@ watch(repoFullName, () => {
   min-width: 0;
 }
 
+.contributors-page__title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0;
+  color: var(--gitpulse-text-strong);
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.125;
+}
+
 .contributors-page__repo {
   display: inline-flex;
   align-items: center;
@@ -460,6 +471,7 @@ watch(repoFullName, () => {
 }
 
 .contributors-page__card {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
@@ -469,6 +481,7 @@ watch(repoFullName, () => {
   border: 1px solid var(--gitpulse-border);
   border-radius: 10px;
   background: var(--gitpulse-surface);
+  color: var(--gitpulse-text);
   box-shadow: none;
 }
 

@@ -176,14 +176,14 @@ onBeforeUnmount(() => {
           <div class="tree-group-row">
             <span class="tree-depth-spacer" :style="getGroupDepthStyle(group.depth)" />
             <button
-              class="button is-ghost is-small drag-handle"
+              class="gp-btn gp-btn--ghost gp-btn--small drag-handle"
               type="button"
               :aria-label="t('dashboard.tabsSettings.dragHandleGroup')"
             >
               <GripVerticalIcon :size="14" />
             </button>
             <button
-              class="button is-ghost is-small tree-icon"
+              class="gp-btn gp-btn--ghost gp-btn--small tree-icon"
               type="button"
               @click="toggleGroupCollapsed(group.id)"
             >
@@ -194,7 +194,7 @@ onBeforeUnmount(() => {
             </span>
             <div class="tree-group-main">
               <input
-                class="input is-small tree-name-input"
+                class="gp-input gp-input--small tree-name-input"
                 :value="group.name"
                 :disabled="!canEditGroup(group)"
                 @change="
@@ -209,7 +209,7 @@ onBeforeUnmount(() => {
                 })
               }}</span>
               <button
-                class="button is-ghost is-small tree-add tree-add-view"
+                class="gp-btn gp-btn--ghost gp-btn--small tree-add tree-add-view"
                 type="button"
                 :title="t('dashboard.tabsSettings.addViewToGroup', { group: group.name })"
                 :aria-label="t('dashboard.tabsSettings.addViewToGroup', { group: group.name })"
@@ -219,7 +219,7 @@ onBeforeUnmount(() => {
               </button>
               <button
                 v-if="group.depth < maxGroupDepth"
-                class="button is-ghost is-small tree-add"
+                class="gp-btn gp-btn--ghost gp-btn--small tree-add"
                 type="button"
                 :title="t('dashboard.tabsSettings.addChildGroupTitle', { group: group.name })"
                 @click="handleStartChildGroup(group.id)"
@@ -227,7 +227,7 @@ onBeforeUnmount(() => {
                 <PlusIcon :size="14" />
               </button>
               <button
-                class="button is-ghost is-small tree-delete"
+                class="gp-btn gp-btn--ghost gp-btn--small tree-delete"
                 type="button"
                 :disabled="!canEditGroup(group)"
                 :aria-label="t('dashboard.tabsSettings.deleteGroupLabel', { group: group.name })"
@@ -248,14 +248,14 @@ onBeforeUnmount(() => {
             <span>{{ t('dashboard.tabsSettings.deleteGroupConfirm', { group: group.name }) }}</span>
             <div class="inline-delete-confirm__actions">
               <button
-                class="button is-small is-light"
+                class="gp-btn gp-btn--small gp-btn--light"
                 type="button"
                 @click="cancelDeleteConfirmation"
               >
                 {{ t('dashboard.tabsSettings.cancelDeleteButton') }}
               </button>
               <button
-                class="button is-small is-danger"
+                class="gp-btn gp-btn--small gp-btn--danger"
                 type="button"
                 @click="confirmDeleteGroup(group.id)"
               >
@@ -273,19 +273,19 @@ onBeforeUnmount(() => {
               {{ t('dashboard.tabsSettings.addChildGroupLabel', { group: group.name }) }}
             </div>
             <div class="inline-child-creator__controls">
-              <div class="control has-icons-left inline-child-creator__input">
+              <div class="gp-control gp-control--icon-left inline-child-creator__input">
                 <input
                   v-model="childGroupName"
-                  class="input is-small"
+                  class="gp-input gp-input--small"
                   type="text"
                   :placeholder="t('dashboard.tabsSettings.childGroupNamePlaceholder')"
                   @keyup.enter="handleCreateChildGroup"
                   @keyup.esc="handleCancelChildGroup"
                 />
-                <span class="icon is-small is-left"><FolderIcon :size="14" /></span>
+                <span class="gp-control__icon"><FolderIcon :size="14" /></span>
               </div>
               <button
-                class="button is-primary is-small"
+                class="gp-btn gp-btn--primary gp-btn--small"
                 type="button"
                 :disabled="!childGroupName.trim()"
                 @click="handleCreateChildGroup"
@@ -294,7 +294,7 @@ onBeforeUnmount(() => {
                 <span>{{ t('dashboard.tabsSettings.createGroupButton') }}</span>
               </button>
               <button
-                class="button is-ghost is-small"
+                class="gp-btn gp-btn--ghost gp-btn--small"
                 type="button"
                 @click="handleCancelChildGroup"
               >
@@ -324,7 +324,7 @@ onBeforeUnmount(() => {
                 @keydown.enter.self="selectTabFromRow(tab)"
               >
                 <button
-                  class="button is-ghost is-small drag-handle"
+                  class="gp-btn gp-btn--ghost gp-btn--small drag-handle"
                   type="button"
                   :aria-label="t('dashboard.tabsSettings.dragHandleTab')"
                   @click.stop
@@ -338,7 +338,7 @@ onBeforeUnmount(() => {
                     v-if="editingSubtitleTabId === tab.id"
                     :ref="setSubtitleInputRef"
                     v-model="editingSubtitleDraft"
-                    class="input is-small tab-subtitle-input"
+                    class="gp-input gp-input--small tab-subtitle-input"
                     type="text"
                     :aria-label="t('dashboard.tabsSettings.editSubtitleLabel', { view: tab.name })"
                     @keydown.enter.stop.prevent="saveSubtitleFromInput(tab)"
@@ -370,7 +370,7 @@ onBeforeUnmount(() => {
                   >
                     <span>{{ t('dashboard.tabsSettings.deleteViewConfirm') }}</span>
                     <button
-                      class="button is-ghost is-small tree-action-button"
+                      class="gp-btn gp-btn--ghost gp-btn--small tree-action-button"
                       type="button"
                       :aria-label="t('dashboard.tabsSettings.cancelDeleteButton')"
                       @click="cancelDeleteConfirmation"
@@ -378,7 +378,7 @@ onBeforeUnmount(() => {
                       <XIcon :size="14" />
                     </button>
                     <button
-                      class="button is-ghost is-small tree-delete"
+                      class="gp-btn gp-btn--ghost gp-btn--small tree-delete"
                       type="button"
                       :aria-label="t('dashboard.tabsSettings.confirmDeleteViewButton')"
                       @click="confirmDeleteTab(tab.id)"
@@ -388,7 +388,7 @@ onBeforeUnmount(() => {
                   </div>
                   <button
                     v-else
-                    class="button is-ghost is-small tree-delete"
+                    class="gp-btn gp-btn--ghost gp-btn--small tree-delete"
                     type="button"
                     :aria-label="t('dashboard.tabsSettings.deleteViewLabel', { view: tab.name })"
                     @click="requestDeleteTab(tab.id)"
@@ -416,20 +416,20 @@ onBeforeUnmount(() => {
       <span class="group-creator-tile__icon" aria-hidden="true">
         <FolderPlusIcon :size="16" />
       </span>
-      <div class="control has-icons-left group-creator-tile__input">
+      <div class="gp-control gp-control--icon-left group-creator-tile__input">
         <input
           id="new-group-name"
           v-model="newGroup.name"
-          class="input is-small"
+          class="gp-input gp-input--small"
           type="text"
           :aria-label="t('dashboard.tabsSettings.groupNameLabel')"
           :placeholder="t('dashboard.tabsSettings.groupNamePlaceholder')"
           @keyup.enter="handleCreateGroup"
         />
-        <span class="icon is-small is-left"><FolderIcon :size="14" /></span>
+        <span class="gp-control__icon"><FolderIcon :size="14" /></span>
       </div>
       <button
-        class="button is-primary is-small group-create-button"
+        class="gp-btn gp-btn--primary gp-btn--small group-create-button"
         type="button"
         :disabled="!newGroup.name.trim()"
         @click="handleCreateGroup"

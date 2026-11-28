@@ -65,21 +65,29 @@ const mountNavbar = (variant?: 'app' | 'public') => {
 
 describe('Navbar', () => {
   test('links the localized brand name to the locale root', () => {
-    const brand = mountNavbar('public').querySelector('.navbar-brand-link');
+    const root = mountNavbar('public');
+    const nav = root.querySelector('nav.top-navbar');
+    const brand = root.querySelector('.navbar-brand-link');
 
+    expect(nav).not.toBeNull();
+    expect(nav?.classList.contains('navbar')).toBe(false);
     expect(brand?.textContent?.trim()).toBe('GitPulse');
     expect(brand?.getAttribute('href')).toBe('/');
   });
 
   test('keeps the dashboard brand as the page heading', () => {
-    expect(mountNavbar().querySelector('h1.title')?.textContent?.trim()).toBe('GitPulse');
+    const root = mountNavbar();
+    const heading = root.querySelector('h1.navbar-brand-title');
+
+    expect(heading?.textContent?.trim()).toBe('GitPulse');
+    expect(heading?.classList.contains('title')).toBe(false);
   });
 
   test('keeps the public shell brand out of the heading outline', () => {
     const root = mountNavbar('public');
 
-    expect(root.querySelector('h1.title')).toBeNull();
-    expect(root.querySelector('span.title')?.textContent?.trim()).toBe('GitPulse');
+    expect(root.querySelector('h1')).toBeNull();
+    expect(root.querySelector('span.navbar-brand-title')?.textContent?.trim()).toBe('GitPulse');
   });
 
   test('keeps the controls visible on narrow viewports only for the public shell', () => {

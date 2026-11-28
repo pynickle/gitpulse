@@ -237,15 +237,15 @@ watch(repoFullName, () => {
     <div class="branches-page">
       <div class="branches-page__header">
         <div class="branches-page__heading">
-          <h1 class="title is-5 mb-0 is-flex is-align-items-center">
-            <GitBranchIcon :size="18" class="mr-2" aria-hidden="true" />
+          <h1 class="branches-page__title">
+            <GitBranchIcon :size="18" aria-hidden="true" />
             {{ t('branchesPage.heading') }}
           </h1>
 
           <button
             type="button"
             v-if="repoTarget"
-            class="branches-page__repo button is-ghost is-small"
+            class="branches-page__repo gp-btn gp-btn--ghost gp-btn--small"
             :title="t('branchesPage.openRepo')"
             @click="handleRepoClick"
           >
@@ -324,11 +324,7 @@ watch(repoFullName, () => {
           class="branches-page__list"
           :class="{ 'branches-page__list--loading': loading }"
         >
-          <article
-            v-for="branch in filteredItems"
-            :key="branch.name"
-            class="branches-page__item card"
-          >
+          <article v-for="branch in filteredItems" :key="branch.name" class="branches-page__item">
             <button
               type="button"
               class="branches-page__item-main"
@@ -339,10 +335,10 @@ watch(repoFullName, () => {
                 <GitBranchIcon :size="15" class="branches-page__item-icon" aria-hidden="true" />
                 <span class="branches-page__item-title">{{ branch.name }}</span>
 
-                <span v-if="branch.isDefault" class="tag is-success is-light">
+                <span v-if="branch.isDefault" class="gp-tag gp-tag--success">
                   {{ t('branchesPage.default') }}
                 </span>
-                <span v-if="branch.protected" class="tag is-info is-light">
+                <span v-if="branch.protected" class="gp-tag gp-tag--info">
                   {{ t('branchesPage.protected') }}
                 </span>
               </div>
@@ -464,6 +460,17 @@ watch(repoFullName, () => {
   min-width: 0;
 }
 
+.branches-page__title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0;
+  color: var(--gitpulse-text-strong);
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.125;
+}
+
 .branches-page__repo {
   display: inline-flex;
   align-items: center;
@@ -580,11 +587,17 @@ watch(repoFullName, () => {
 }
 
 .branches-page__item {
+  position: relative;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
   padding: 0.875rem 1rem;
+  border: 1px solid var(--gitpulse-border);
+  border-radius: var(--gitpulse-radius-xl);
+  background-color: var(--gitpulse-surface);
+  color: var(--gitpulse-text);
+  box-shadow: var(--gitpulse-shadow-card);
 
   @media (max-width: 640px) {
     flex-direction: column;

@@ -268,7 +268,6 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped lang="scss">
-@use '~/assets/scss/_variables' as *;
 @use '~/assets/scss/pointer' as *;
 
 // ─── Trigger button ────────────────────────────────────────────
@@ -298,7 +297,7 @@ onBeforeUnmount(() => {
     &:hover:not(:disabled) {
       background: var(--gitpulse-surface-hover);
       border-color: var(--gitpulse-border-strong);
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
     }
   }
 
@@ -365,7 +364,7 @@ onBeforeUnmount(() => {
 .branch-selector-panel__title {
   font-size: 14px;
   font-weight: 600;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   margin: 0;
   letter-spacing: -0.01em;
 }
@@ -420,7 +419,7 @@ onBeforeUnmount(() => {
 
   &:focus-within {
     border-color: var(--gitpulse-accent);
-    box-shadow: 0 0 0 2px rgba($brand-primary, 0.12);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--gitpulse-accent) 12%, transparent);
   }
 }
 
@@ -433,7 +432,7 @@ onBeforeUnmount(() => {
   width: 100%;
   border: 0;
   background: transparent;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 13px;
   outline: none;
 
@@ -561,7 +560,7 @@ onBeforeUnmount(() => {
     @include hover-only {
       &:hover:not(:disabled) {
         background: var(--gitpulse-surface-hover);
-        color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+        color: var(--gitpulse-text-strong);
       }
     }
   }

@@ -140,8 +140,8 @@ watch(requestedUser, () => {
   >
     <div class="starred-page">
       <div class="starred-page__header">
-        <h1 class="title is-5 mb-0 is-flex is-align-items-center">
-          <StarIcon :size="18" class="mr-2" aria-hidden="true" />
+        <h1 class="starred-page__title">
+          <StarIcon :size="18" aria-hidden="true" />
           {{ pageTitle }}
         </h1>
 
@@ -211,6 +211,17 @@ watch(requestedUser, () => {
   margin-bottom: 1rem;
 }
 
+.starred-page__title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0;
+  color: var(--gitpulse-text-strong);
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.125;
+}
+
 .starred-page__controls {
   display: flex;
   align-items: center;
@@ -253,9 +264,9 @@ watch(requestedUser, () => {
 </style>
 
 <style lang="scss">
-/* The overlay frame's card-content has a 2rem bottom padding; strip it so the
+/* The overlay frame's content has a 2rem bottom padding; strip it so the
    sticky pagination bar sits flush with the bottom of the scrollport. */
-.card-content.starred-page-content {
+.detail-frame__content.starred-page-content {
   padding-bottom: 0;
 }
 </style>

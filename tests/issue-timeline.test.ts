@@ -262,10 +262,10 @@ test('a parent issue and a blocked-by issue render as links when the timeline in
     })
   );
 
-  const links = Array.from(view.root.querySelectorAll<HTMLAnchorElement>('a.tags'));
+  const links = Array.from(view.root.querySelectorAll<HTMLAnchorElement>('a.gp-tags'));
   expect(
     links.map((link) =>
-      Array.from(link.querySelectorAll('.tag'), (tag) =>
+      Array.from(link.querySelectorAll('.gp-tag'), (tag) =>
         tag.textContent?.replace(/\s+/g, ' ').trim()
       )
     )
@@ -398,8 +398,8 @@ test('a grouped issue activity displays one actor and action before its individu
   const group = view.root.querySelector('.issue-timeline-events__list');
   expect(group?.querySelectorAll('.avatar-stub')).toHaveLength(1);
   expect(group?.querySelector('a')?.getAttribute('href')).toBe('/dashboard/profile?user=octocat');
-  const target = group?.querySelector<HTMLAnchorElement>('a.tags');
-  const tags = Array.from(target?.querySelectorAll('.tag') ?? [], (tag) =>
+  const target = group?.querySelector<HTMLAnchorElement>('a.gp-tags');
+  const tags = Array.from(target?.querySelectorAll('.gp-tag') ?? [], (tag) =>
     tag.textContent?.replace(/\s+/g, ' ').trim()
   );
   expect(tags).toEqual(['Issue #27', 'Build setup']);
@@ -468,4 +468,14 @@ test('the issue timeline shows its comment and commit through the shared cards',
     expect(author()?.getAttribute('href')).toBe(external);
     expect(author()?.getAttribute('target')).toBe('_blank');
   }
+});
+
+test('getStateReasonClass maps issue state reasons onto semantic gp-tag tone modifiers', () => {
+  expect(timelineEvents.getStateReasonClass('COMPLETED')).toBe('gp-tag--success');
+  expect(timelineEvents.getStateReasonClass('completed')).toBe('gp-tag--success');
+  expect(timelineEvents.getStateReasonClass('DUPLICATE')).toBe('gp-tag--link');
+  expect(timelineEvents.getStateReasonClass('NOT_PLANNED')).toBe('gp-tag--warning');
+  expect(timelineEvents.getStateReasonClass('REOPENED')).toBe('gp-tag--primary');
+  expect(timelineEvents.getStateReasonClass(undefined)).toBe('gp-tag--info');
+  expect(timelineEvents.getStateReasonClass('unknown')).toBe('gp-tag--info');
 });

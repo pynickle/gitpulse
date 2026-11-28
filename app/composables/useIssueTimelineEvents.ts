@@ -99,10 +99,10 @@ const stateReasonMap = withLowercaseAliases({
 });
 
 const stateReasonClassMap = withLowercaseAliases({
-  COMPLETED: 'is-success',
-  DUPLICATE: 'is-link',
-  NOT_PLANNED: 'is-warning',
-  REOPENED: 'is-primary',
+  COMPLETED: 'gp-tag--success',
+  DUPLICATE: 'gp-tag--link',
+  NOT_PLANNED: 'gp-tag--warning',
+  REOPENED: 'gp-tag--primary',
 });
 
 export function formatLockReason(lockReason: string | undefined | null): string {
@@ -116,8 +116,8 @@ export function formatStateReason(stateReason: string | undefined | null): strin
 }
 
 export function getStateReasonClass(stateReason: string | undefined | null): string {
-  if (!stateReason) return 'is-info';
-  return stateReasonClassMap[stateReason] || 'is-info';
+  if (!stateReason) return 'gp-tag--info';
+  return stateReasonClassMap[stateReason] || 'gp-tag--info';
 }
 
 function isSameTarget(

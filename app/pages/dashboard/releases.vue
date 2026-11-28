@@ -206,15 +206,15 @@ watch(repoFullName, () => {
     <div class="releases-page">
       <div class="releases-page__header">
         <div class="releases-page__heading">
-          <h1 class="title is-5 mb-0 is-flex is-align-items-center">
-            <TagIcon :size="18" class="mr-2" aria-hidden="true" />
+          <h1 class="releases-page__title">
+            <TagIcon :size="18" aria-hidden="true" />
             {{ t('releasesPage.heading') }}
           </h1>
 
           <button
             type="button"
             v-if="repoTarget"
-            class="releases-page__repo button is-ghost is-small"
+            class="releases-page__repo gp-btn gp-btn--ghost gp-btn--small"
             :title="t('releasesPage.openRepo')"
             @click="handleRepoClick"
           >
@@ -329,6 +329,17 @@ watch(repoFullName, () => {
   min-width: 0;
 }
 
+.releases-page__title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0;
+  color: var(--gitpulse-text-strong);
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.125;
+}
+
 .releases-page__repo {
   display: inline-flex;
   align-items: center;
@@ -429,9 +440,9 @@ watch(repoFullName, () => {
 </style>
 
 <style lang="scss">
-/* The overlay frame's card-content has a 2rem bottom padding; strip it so the
+/* The overlay frame's content has a 2rem bottom padding; strip it so the
    sticky pagination bar sits flush with the bottom of the scrollport. */
-.card-content.releases-page-content {
+.detail-frame__content.releases-page-content {
   padding-bottom: 0;
 }
 </style>

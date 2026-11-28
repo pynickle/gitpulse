@@ -53,7 +53,7 @@ const handleListRowKeydown = (event: KeyboardEvent, item: DashboardIssuePrEntity
       </div>
       <p class="repo-issue-pr-list__error-title">{{ t('repoDetail.listErrorTitle') }}</p>
       <p class="repo-issue-pr-list__error-message">{{ error }}</p>
-      <Button color="primary" size="normal" @click="emit('retry')">
+      <Button variant="primary" size="normal" @click="emit('retry')">
         {{ t('repoDetail.retry') }}
       </Button>
     </div>
@@ -114,7 +114,7 @@ const handleListRowKeydown = (event: KeyboardEvent, item: DashboardIssuePrEntity
 
 .repo-issue-pr-list__error-title {
   margin: 0;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 0.9375rem;
   font-weight: 600;
 }
@@ -145,8 +145,7 @@ const handleListRowKeydown = (event: KeyboardEvent, item: DashboardIssuePrEntity
     outline-offset: 2px;
   }
 
-  /* Kill global .card margin so left/right protrusion is identical (full width). */
-  :deep(.card),
+  /* Kill list card margin so left/right protrusion is identical (full width). */
   :deep(.dashboard-list-card) {
     margin: 0;
     width: 100%;

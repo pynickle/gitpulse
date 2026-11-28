@@ -22,15 +22,23 @@
       @switch-pull-request="switchToPullRequest"
     />
 
-    <div v-else class="columns" :class="{ 'columns--detail-sidebar-hidden': detailSidebarHidden }">
+    <div
+      v-else
+      class="detail-columns"
+      :class="{ 'detail-columns--sidebar-hidden': detailSidebarHidden }"
+    >
       <ScrollArea
         @scroll-element="mainColumnRef = $event"
-        class="column detail-main-column"
+        class="detail-main-column"
         @scroll="onCompactHeaderScroll"
         media="(min-width: 1025px)"
       >
-        <div v-if="detailError" class="notification is-danger is-light mb-4 py-2 px-3">
-          <p class="is-size-7">{{ detailError }}</p>
+        <div
+          v-if="detailError"
+          class="gp-notice gp-notice--danger gp-notice--compact pr-detail__error"
+          role="alert"
+        >
+          <p class="pr-detail__error-text">{{ detailError }}</p>
         </div>
 
         <div ref="detailHeaderRef" class="detail-header-boundary">
@@ -1260,7 +1268,7 @@ watch(
 @use '~/assets/scss/detail-sidebar-columns' as *;
 @use '~/assets/scss/pointer' as *;
 
-.pr-detail-layout :deep(.columns) {
+.pr-detail-layout :deep(.detail-columns) {
   height: 100%;
   min-height: 0;
   align-items: stretch;
@@ -1309,6 +1317,14 @@ watch(
   min-width: 0;
 }
 
+.pr-detail__error {
+  margin-bottom: 1rem;
+}
+
+.pr-detail__error-text {
+  font-size: 0.75rem;
+}
+
 .pr-detail-tabs {
   display: flex;
   align-items: stretch;
@@ -1351,7 +1367,7 @@ watch(
   }
 
   &.is-active {
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    color: var(--gitpulse-text-strong);
     border-bottom-color: var(--gitpulse-accent, var(--gitpulse-link));
   }
 }

@@ -13,11 +13,11 @@
       <GitHubProfileLink
         :login="author?.login"
         :github-href="author?.url"
-        class="timeline-card-header__author is-size-6 has-text-weight-medium has-text-link"
+        class="timeline-card-header__author"
       >
         {{ author?.login }}
       </GitHubProfileLink>
-      <span class="timeline-card-header__time is-size-7 has-text-grey">
+      <span class="timeline-card-header__time">
         {{ formatDurationFromNow(createdAt || '', localeCode, relativeTimeNow) }}
       </span>
     </div>
@@ -64,11 +64,16 @@ const relativeTimeNow = useRelativeTimeNow();
 }
 
 .timeline-card-header__author {
+  color: var(--gitpulse-link);
+  font-size: 1rem;
+  font-weight: 500;
   line-height: 1.25;
   overflow-wrap: anywhere;
 }
 
 .timeline-card-header__time {
+  color: var(--gitpulse-text-muted);
+  font-size: 0.75rem;
   line-height: 1.3;
 }
 </style>

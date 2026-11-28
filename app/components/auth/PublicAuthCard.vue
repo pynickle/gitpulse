@@ -1,5 +1,5 @@
 <template>
-  <section class="public-card card">
+  <section class="public-card">
     <div class="public-card__copy">
       <div class="public-card__logo">
         <RoundImg src="/icon.png" :alt="logoAlt" width="72" height="72" />
@@ -35,9 +35,8 @@ const { paragraphs = [], logoAlt = 'GitPulse' } = defineProps<{
 </script>
 
 <style scoped lang="scss">
-@use '~/assets/scss/variables' as *;
-
 .public-card {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(18rem, 0.95fr);
   width: min(100%, 1040px);
@@ -45,6 +44,7 @@ const { paragraphs = [], logoAlt = 'GitPulse' } = defineProps<{
   border: 1px solid var(--gitpulse-border);
   border-radius: var(--gitpulse-radius-lg);
   background: var(--gitpulse-surface);
+  color: var(--gitpulse-text);
   box-shadow: var(--gitpulse-shadow-card);
   text-align: left;
 }
@@ -70,16 +70,10 @@ const { paragraphs = [], logoAlt = 'GitPulse' } = defineProps<{
   min-width: 0;
 }
 
-/* The shared button carries `px-6` (3rem per side), which overflows a 320px
-   card once an icon sits next to the label. Scoped to this card so every other
-   surface keeps the button it had. */
-.public-card__panel :deep(.button) {
-  padding-inline: 1.5rem !important;
-}
-
+/* Narrow mobile card: tighten button horizontal padding so an icon + label fits cleanly. */
 @media (max-width: 480px) {
-  .public-card__panel :deep(.button) {
-    padding-inline: 0.85rem !important;
+  .public-card__panel :deep(.gp-btn) {
+    padding-inline: 0.85rem;
   }
 }
 
@@ -93,7 +87,7 @@ const { paragraphs = [], logoAlt = 'GitPulse' } = defineProps<{
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: $brand-primary;
+  color: var(--gitpulse-accent);
 }
 
 .public-card__title {

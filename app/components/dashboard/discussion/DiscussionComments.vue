@@ -3,6 +3,7 @@ import { CircleExclamationPointIcon, MessageSquareIcon } from '@lucide/vue';
 
 import type { DiscussionComment } from '#shared/types/discussions';
 import DiscussionCommentCard from '~/components/dashboard/discussion/DiscussionCommentCard.vue';
+import LoadingIcon from '~/components/ui/LoadingIcon.vue';
 
 type DiscussionReplySubmitHandler = (comment: DiscussionComment, body: string) => Promise<void>;
 
@@ -36,18 +37,22 @@ const { t } = useI18n();
 
 <template>
   <section class="discussion-comments">
-    <h2 class="title is-5 discussion-comments__heading">
+    <h2 class="discussion-comments__heading">
       <MessageSquareIcon :size="20" />
       {{ t('discussionDetail.commentCount', { count: totalCount }) }}
     </h2>
 
-    <div v-if="error" class="notification is-danger is-light py-2 px-3 discussion-comments__error">
-      <p class="is-size-7">
-        <CircleExclamationPointIcon :size="14" class="mr-1" style="vertical-align: text-bottom" />
+    <div
+      v-if="error"
+      class="gp-notice gp-notice--danger gp-notice--compact discussion-comments__error"
+      role="alert"
+    >
+      <p class="discussion-comments__error-text">
+        <CircleExclamationPointIcon :size="14" class="discussion-comments__error-icon" />
         {{ error }}
       </p>
       <button
-        class="button is-danger is-light is-small mt-2"
+        class="gp-btn gp-btn--danger-soft gp-btn--small discussion-comments__retry"
         type="button"
         @click="emit('load-more-comments')"
       >
@@ -56,8 +61,10 @@ const { t } = useI18n();
     </div>
 
     <div v-if="loading" class="discussion-comments__loading">
-      <span class="loader" aria-hidden="true" />
-      <span class="is-size-7 has-text-grey">{{ t('discussionDetail.loadingComments') }}</span>
+      <LoadingIcon :size="16" aria-hidden="true" />
+      <span class="discussion-comments__loading-label">{{
+        t('discussionDetail.loadingComments')
+      }}</span>
     </div>
 
     <div v-else-if="comments.length" class="discussion-comments__timeline">
@@ -84,16 +91,17 @@ const { t } = useI18n();
       />
     </div>
 
-    <p v-else class="discussion-comments__empty has-text-grey">
+    <p v-else class="discussion-comments__empty">
       {{ t('discussionDetail.noCommentsPrompt') }}
     </p>
 
     <button
       v-if="hasNextPage"
-      class="button is-light discussion-comments__load-more"
+      class="gp-btn gp-btn--light discussion-comments__load-more"
       type="button"
-      :class="{ 'is-loading': loadingMore }"
+      :class="{ 'gp-btn--loading': loadingMore }"
       :disabled="loadingMore"
+      :aria-busy="loadingMore || undefined"
       @click="emit('load-more-comments')"
     >
       {{
@@ -117,11 +125,28 @@ const { t } = useI18n();
   align-items: center;
   gap: 0.5rem;
   margin-bottom: 0;
+  color: var(--gitpulse-text-strong);
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.125;
 }
 
 .discussion-comments__error {
   display: flex;
   flex-direction: column;
+}
+
+.discussion-comments__error-text {
+  font-size: 0.75rem;
+}
+
+.discussion-comments__error-icon {
+  margin-right: 0.25rem;
+  vertical-align: text-bottom;
+}
+
+.discussion-comments__retry {
+  margin-top: 0.5rem;
 }
 
 .discussion-comments__timeline {
@@ -139,11 +164,17 @@ const { t } = useI18n();
   background: var(--gitpulse-surface-muted);
 }
 
+.discussion-comments__loading-label {
+  color: var(--gitpulse-text-muted);
+  font-size: 0.75rem;
+}
+
 .discussion-comments__empty {
   border: 1px dashed var(--gitpulse-border);
   border-radius: 8px;
   margin-bottom: 0;
   padding: 1rem;
+  color: var(--gitpulse-text-muted);
   text-align: center;
 }
 

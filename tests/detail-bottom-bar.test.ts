@@ -204,8 +204,8 @@ function createTestHarness(isNarrow: boolean) {
       }
 
       return () =>
-        h('div', { class: 'columns' }, [
-          h('div', { class: 'column detail-main-column' }, [
+        h('div', { class: 'detail-columns' }, [
+          h('div', { class: 'detail-main-column' }, [
             paneConfig.kind === 'pull-request' ||
             paneConfig.kind === 'issue' ||
             paneConfig.kind === 'discussion'

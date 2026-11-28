@@ -463,7 +463,7 @@ watch(visibleSuggestions, (suggestions) => {
   border: 1px solid var(--gitpulse-border);
   border-radius: 9999px;
   background: var(--gitpulse-surface);
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 0.75rem;
   font-weight: 600;
 }
@@ -520,7 +520,7 @@ watch(visibleSuggestions, (suggestions) => {
   border: 0;
   outline: none;
   background: transparent;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 0.8125rem;
   line-height: 22px;
 

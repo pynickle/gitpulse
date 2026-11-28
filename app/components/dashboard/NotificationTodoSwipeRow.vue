@@ -241,7 +241,7 @@ const revealed = computed(() => offset.value > 0 || guiding || feedback.value !=
 // cut at the card's edge. A wide viewport never slides, and clipping it would trim the
 // card's own shadow, so it keeps painting exactly as it did before.
 .notification-swipe-row--swipeable .notification-swipe-row__viewport {
-  border-radius: var(--bulma-card-radius, 0.75rem);
+  border-radius: var(--gitpulse-radius-xl);
   overflow: hidden;
   touch-action: pan-y;
 }
@@ -259,7 +259,7 @@ const revealed = computed(() => offset.value > 0 || guiding || feedback.value !=
   inset: 0;
   display: flex;
   align-items: stretch;
-  border-radius: var(--bulma-card-radius, 0.75rem);
+  border-radius: var(--gitpulse-radius-xl);
   overflow: hidden;
   pointer-events: none;
   opacity: 0;
@@ -298,7 +298,7 @@ const revealed = computed(() => offset.value > 0 || guiding || feedback.value !=
 .notification-swipe-row__card-backing {
   position: absolute;
   inset: 0.25rem;
-  border-radius: var(--bulma-card-radius, 0.75rem);
+  border-radius: var(--gitpulse-radius-xl);
   background-color: var(--gitpulse-surface);
   pointer-events: none;
 }

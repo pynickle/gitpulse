@@ -54,7 +54,7 @@ const relativeTime = computed(() => {
           class="repo-latest-commit-bar__skeleton-line repo-latest-commit-bar__skeleton-line--narrow"
         />
       </div>
-      <span class="is-sr-only">{{ t('repoDetail.loadingCommit') }}</span>
+      <span class="sr-only">{{ t('repoDetail.loadingCommit') }}</span>
     </template>
 
     <template v-else-if="error && !commit">
@@ -195,7 +195,7 @@ const relativeTime = computed(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 0.8125rem;
   font-weight: 600;
   text-decoration: none;
@@ -347,17 +347,5 @@ const relativeTime = computed(() => {
     flex-shrink: 0;
     margin-left: auto;
   }
-}
-
-.is-sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
 }
 </style>

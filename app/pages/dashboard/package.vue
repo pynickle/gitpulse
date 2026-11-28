@@ -264,12 +264,12 @@ const handleHome = async () => {
               class="package-page__type-icon"
               aria-hidden="true"
             />
-            <h1 class="title is-4 mb-0 package-page__name">{{ detail.name }}</h1>
-            <span class="tag is-light">{{ t(`packages.types.${detail.packageType}`) }}</span>
+            <h1 class="package-page__name">{{ detail.name }}</h1>
+            <span class="gp-tag">{{ t(`packages.types.${detail.packageType}`) }}</span>
             <span
               v-if="visibilityLabel"
-              class="tag is-light"
-              :class="detail.visibility === 'public' ? 'is-success' : 'is-warning'"
+              class="gp-tag"
+              :class="detail.visibility === 'public' ? 'gp-tag--success' : 'gp-tag--warning'"
             >
               {{ visibilityLabel }}
             </span>
@@ -328,7 +328,7 @@ const handleHome = async () => {
         </header>
 
         <section v-if="installCommand" class="package-page__install">
-          <h2 class="title is-6 mb-2 package-page__section-title">
+          <h2 class="package-page__section-title">
             <TerminalIcon :size="15" aria-hidden="true" />
             {{ t('packageDetail.install') }}
           </h2>
@@ -339,7 +339,7 @@ const handleHome = async () => {
 
         <section class="package-page__versions">
           <div class="package-page__versions-header">
-            <h2 class="title is-6 mb-0 package-page__section-title">
+            <h2 class="package-page__section-title">
               <TagIcon :size="15" aria-hidden="true" />
               {{ t('packageDetail.versions') }}
             </h2>
@@ -395,7 +395,7 @@ const handleHome = async () => {
           </div>
 
           <ul v-else class="package-page__version-list">
-            <li v-for="version in versions" :key="version.id" class="package-page__version card">
+            <li v-for="version in versions" :key="version.id" class="package-page__version">
               <div class="package-page__version-main">
                 <a
                   v-if="version.htmlUrl"
@@ -413,8 +413,8 @@ const handleHome = async () => {
                 <span
                   v-for="tag in versionSecondaryTags(version)"
                   :key="tag"
-                  class="tag is-light"
-                  :class="tag === 'latest' ? 'is-success' : 'is-info'"
+                  class="gp-tag"
+                  :class="tag === 'latest' ? 'gp-tag--success' : 'gp-tag--info'"
                 >
                   {{ tag }}
                 </span>
@@ -481,6 +481,11 @@ const handleHome = async () => {
 }
 
 .package-page__name {
+  margin-bottom: 0;
+  color: var(--gitpulse-text-strong);
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.125;
   overflow-wrap: anywhere;
 }
 
@@ -532,6 +537,15 @@ const handleHome = async () => {
   display: flex;
   align-items: center;
   gap: 0.45rem;
+  margin-bottom: 0;
+  color: var(--gitpulse-text-strong);
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.125;
+}
+
+.package-page__install > .package-page__section-title {
+  margin-bottom: 0.5rem;
 }
 
 .package-page__install-command {
@@ -594,9 +608,13 @@ const handleHome = async () => {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 .package-page__version {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -604,6 +622,10 @@ const handleHome = async () => {
   gap: 0.5rem 1rem;
   padding: 0.7rem 1rem;
   border: 1px solid var(--gitpulse-border);
+  border-radius: var(--gitpulse-radius-xl);
+  background-color: var(--gitpulse-surface);
+  color: var(--gitpulse-text);
+  box-shadow: var(--gitpulse-shadow-card);
 }
 
 .package-page__version-main {

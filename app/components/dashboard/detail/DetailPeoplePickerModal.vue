@@ -438,5 +438,5 @@ const handleOverlayKeydown = (event: KeyboardEvent) => {
 </template>
 
 <style scoped lang="scss">
-@use '~/assets/scss/reviewer-modal';
+@use './people-picker-modal';
 </style>

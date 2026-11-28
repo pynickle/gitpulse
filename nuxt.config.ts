@@ -177,7 +177,7 @@ export default defineNuxtConfig({
     },
   },
 
-  css: ['bulma/css/bulma.min.css', '~/assets/scss/main.scss'],
+  css: ['~/assets/scss/main.scss'],
 
   build: {
     // Nuxt 4.7 emits a synthetic ESM-only `vue` package in server output; packages

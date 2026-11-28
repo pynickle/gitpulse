@@ -1,37 +1,37 @@
 <template>
-  <div class="merge-item px-4 pt-3 pb-3">
-    <div class="is-flex is-align-items-center">
+  <div class="merge-item">
+    <div class="merge-item__row">
       <GitHubAvatar
         variant="raised"
         interactive
         v-if="item.actor?.avatarUrl"
-        class="mr-3 merge-avatar"
+        class="merge-avatar"
         width="32"
         height="32"
         :src="item.actor.avatarUrl"
         :alt="item.actor.login"
       />
-      <div v-else class="mr-3 has-background-grey-lighter merge-avatar-fallback merge-avatar">
+      <div v-else class="merge-avatar-fallback merge-avatar">
         <GitMergeIcon :size="16" />
       </div>
 
-      <div class="is-flex is-flex-direction-column is-justify-content-center is-flex-grow-1">
-        <div class="is-flex is-align-items-center">
+      <div class="merge-item__body">
+        <div class="merge-item__meta">
           <GitHubProfileLink
             v-if="item.actor?.login"
             :login="item.actor.login"
             :github-href="item.actor.url"
-            class="is-size-6 has-text-weight-medium has-text-link mr-2"
+            class="merge-item__actor"
           >
             {{ item.actor.login }}
           </GitHubProfileLink>
           <span class="merge-label">
-            <GitMergeIcon :size="14" class="mr-1" />
+            <GitMergeIcon :size="14" />
             merged commit
           </span>
         </div>
 
-        <TimelineEventTime class="is-size-7 has-text-grey mt-1" :date="item.createdAt" />
+        <TimelineEventTime class="merge-item__time" :date="item.createdAt" />
       </div>
 
       <a
@@ -43,7 +43,7 @@
         "
         target="_blank"
         rel="noopener"
-        class="merge-sha tag is-family-monospace ml-3"
+        class="merge-sha gp-tag"
       >
         {{ item.commit.oid.slice(0, 7) }}
       </a>
@@ -73,9 +73,41 @@ defineProps<{
 .merge-item {
   @include timeline-event-accent(var(--gitpulse-purple));
 
+  padding: 0.75rem 1rem;
   border-radius: 12px;
   background-color: var(--gitpulse-purple-soft);
   transition: background-color 0.2s ease;
+}
+
+.merge-item__row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.merge-item__body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex-grow: 1;
+}
+
+.merge-item__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.merge-item__actor {
+  color: var(--gitpulse-link);
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.merge-item__time {
+  margin-top: 0.25rem;
+  color: var(--gitpulse-text-muted);
+  font-size: 0.75rem;
 }
 
 .merge-avatar {
@@ -89,18 +121,21 @@ defineProps<{
   display: flex;
   align-items: center;
   justify-content: center;
+  background-color: var(--gitpulse-surface-muted);
   color: var(--gitpulse-purple);
 }
 
 .merge-label {
   display: inline-flex;
   align-items: center;
+  gap: 0.25rem;
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--gitpulse-purple);
 }
 
 .merge-sha {
+  font-family: var(--gitpulse-code-font-family);
   font-size: 0.75rem;
   background-color: var(--gitpulse-accent-soft);
   color: var(--gitpulse-purple);
@@ -112,9 +147,5 @@ defineProps<{
       color: var(--gitpulse-accent);
     }
   }
-}
-
-.is-family-monospace {
-  font-family: var(--gitpulse-code-font-family);
 }
 </style>

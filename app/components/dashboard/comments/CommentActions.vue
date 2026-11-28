@@ -326,7 +326,7 @@ const onKeydown = (event: KeyboardEvent) => {
 
 <style scoped lang="scss">
 @use '~/assets/scss/variables' as *;
-@use '~/assets/scss/detail-metadata-editor';
+@use '~/assets/scss/modal-shell';
 @use '~/assets/scss/pointer' as *;
 
 .comment-actions {
@@ -414,7 +414,7 @@ const onKeydown = (event: KeyboardEvent) => {
   border: 0;
   border-radius: var(--gitpulse-radius-md);
   background: transparent;
-  color: var(--bulma-text, var(--gitpulse-text));
+  color: var(--gitpulse-text);
   font: inherit;
   font-size: 0.8125rem;
   font-weight: 500;
@@ -430,13 +430,13 @@ const onKeydown = (event: KeyboardEvent) => {
   @include hover-only {
     &:hover:not(:disabled) {
       background: var(--gitpulse-surface-active);
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
     }
   }
 
   &:focus-visible {
     background: var(--gitpulse-surface-active);
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    color: var(--gitpulse-text-strong);
     outline: 2px solid var(--gitpulse-focus-ring);
     outline-offset: -2px;
   }
@@ -531,7 +531,7 @@ const onKeydown = (event: KeyboardEvent) => {
   font-size: 13px;
   font-weight: 500;
   line-height: 1.4;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   transition: color 0.12s ease;
 }
 
@@ -586,7 +586,7 @@ const onKeydown = (event: KeyboardEvent) => {
 // The delete answer is the one filled control that only removes: it keeps the
 // picker's filled-button geometry, in the danger tone.
 .comment-actions__submit--danger {
-  color: var(--bulma-primary-invert, #fff);
+  color: #ffffff;
   background: var(--gitpulse-danger-solid);
 
   @include hover-only {

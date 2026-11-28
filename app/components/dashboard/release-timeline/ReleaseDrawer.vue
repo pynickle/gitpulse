@@ -207,7 +207,7 @@ const handleOpenReleasePage = async () => {
           <div v-else-if="error && !detail" class="release-drawer__status">
             <p class="release-drawer__error">{{ error }}</p>
             <button
-              class="button is-small is-danger is-outlined"
+              class="gp-btn gp-btn--small gp-btn--danger gp-btn--outlined"
               type="button"
               @click="emit('retry')"
             >

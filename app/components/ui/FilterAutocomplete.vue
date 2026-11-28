@@ -239,7 +239,7 @@ onBeforeUnmount(() => {
   min-width: 0;
   border: 0;
   background: transparent;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   font-size: 0.8125rem;
   outline: none;
   line-height: 1.4;

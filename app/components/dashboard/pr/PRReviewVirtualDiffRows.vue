@@ -1378,7 +1378,7 @@ onBeforeUnmount(() => {
   min-width: 0;
   padding: 0.2rem 0.65rem;
   background: transparent;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   overflow: hidden;

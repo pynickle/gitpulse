@@ -143,8 +143,8 @@ watch(
 .dashboard-home-top-bar {
   position: sticky;
   top: 0;
-  // Above the list card (Bulma `.card` is `position: relative`), below the
-  // Dashboard Menu overlay (scrim 23 / panel 24).
+  // Above the list card (`.dashboard-list-card` is `position: relative`), below
+  // the Dashboard Menu overlay (scrim 23 / panel 24).
   z-index: 22;
   display: flex;
   flex-shrink: 0;

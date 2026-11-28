@@ -71,7 +71,7 @@ const {
         <span>{{ selectedGroupName }}</span>
       </span>
       <button
-        class="button is-ghost drawer-close"
+        class="gp-btn gp-btn--ghost drawer-close"
         type="button"
         :aria-label="t('dashboard.tabsSettings.closeEditorLabel')"
         @click="closeEditor"
@@ -82,17 +82,17 @@ const {
 
     <ScrollArea class="drawer-body" media="(max-width: 1160px)" content-class="drawer-body-flow">
       <ScrollArea class="drawer-form" media="(min-width: 1161px)">
-        <div class="field">
-          <label class="label">{{ t('dashboard.tabsSettings.viewNameLabel') }}</label>
-          <div class="control has-icons-left">
-            <input v-model="newTab.name" class="input" type="text" />
-            <span class="icon is-small is-left"><SearchIcon :size="16" /></span>
+        <div class="gp-field">
+          <label class="gp-label">{{ t('dashboard.tabsSettings.viewNameLabel') }}</label>
+          <div class="gp-control gp-control--icon-left">
+            <input v-model="newTab.name" class="gp-input" type="text" />
+            <span class="gp-control__icon"><SearchIcon :size="16" /></span>
           </div>
         </div>
 
-        <div class="field">
+        <div class="gp-field">
           <div class="subtitle-label-row">
-            <label class="label mb-0" for="new-tab-subtitle">
+            <label class="gp-label subtitle-label-row__label" for="new-tab-subtitle">
               {{ t('dashboard.tabsSettings.viewSubtitleLabel') }}
             </label>
             <div
@@ -114,23 +114,23 @@ const {
               </button>
             </div>
           </div>
-          <div v-if="newTab.subtitleMode === 'custom'" class="control has-icons-left">
+          <div v-if="newTab.subtitleMode === 'custom'" class="gp-control gp-control--icon-left">
             <input
               id="new-tab-subtitle"
-              class="input"
+              class="gp-input"
               type="text"
               :value="newTab.subtitle"
               @input="handleSubtitleInput"
             />
-            <span class="icon is-small is-left"><ListFilterIcon :size="16" /></span>
+            <span class="gp-control__icon"><ListFilterIcon :size="16" /></span>
           </div>
-          <p v-if="newTab.subtitleMode === 'none'" class="help subtitle-auto-hint">
+          <p v-if="newTab.subtitleMode === 'none'" class="gp-help subtitle-auto-hint">
             {{ t('dashboard.tabsSettings.noSubtitleHint') }}
           </p>
         </div>
 
         <section class="search-fields-panel">
-          <div class="section-label-row mb-3">
+          <div class="section-label-row search-fields-panel__header">
             <div class="section-label">
               <span class="section-icon is-query" aria-hidden="true">
                 <ListFilterIcon :size="13" />
@@ -167,8 +167,8 @@ const {
             </div>
           </div>
 
-          <div class="field">
-            <label class="label">{{ t('dashboard.tabsSettings.searchSyntaxInputLabel') }}</label>
+          <div class="gp-field">
+            <label class="gp-label">{{ t('dashboard.tabsSettings.searchSyntaxInputLabel') }}</label>
             <GitHubSearchSyntaxEditor
               v-model="newTab.query.syntax"
               :ast="searchSyntaxAst"
@@ -235,11 +235,11 @@ const {
     </ScrollArea>
 
     <footer class="drawer-footer">
-      <button class="button is-light drawer-cancel-btn" type="button" @click="closeEditor">
+      <button class="gp-btn gp-btn--light drawer-cancel-btn" type="button" @click="closeEditor">
         {{ t('dashboard.tabsSettings.cancelEditorButton') }}
       </button>
       <button
-        class="button drawer-save-btn"
+        class="gp-btn drawer-save-btn"
         type="button"
         :disabled="!canSaveTab"
         :title="saveValidationMessage || undefined"
@@ -256,3 +256,13 @@ const {
     </footer>
   </aside>
 </template>
+
+<style scoped lang="scss">
+.subtitle-label-row .subtitle-label-row__label {
+  margin-bottom: 0;
+}
+
+.search-fields-panel__header {
+  margin-bottom: 0.75rem;
+}
+</style>

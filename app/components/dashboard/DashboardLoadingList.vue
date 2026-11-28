@@ -16,32 +16,32 @@ const skeletonCardCount = 20;
     <div
       v-for="index in skeletonCardCount"
       :key="`${currentTab}-loading-card-${index}`"
-      class="mb-4 mr-4"
+      class="dashboard-loading-list__row"
     >
       <div
-        class="card dashboard-list-card dashboard-loading-card"
+        class="dashboard-list-card dashboard-loading-card"
         :class="
           currentTab === 'repos' ? 'dashboard-list-card--repo' : 'dashboard-list-card--activity'
         "
       >
-        <div class="card-content p-3" :class="{ 'pl-4': currentTab === 'repos' }">
-          <div class="media mb-2">
-            <div v-if="currentTab !== 'repos'" class="media-left ml-2 mt-2">
+        <div class="dashboard-list-card__body">
+          <div class="dashboard-loading-card__media">
+            <div v-if="currentTab !== 'repos'" class="dashboard-loading-card__media-left">
               <span class="dashboard-loading-card__icon" />
             </div>
 
-            <div class="media-content">
-              <div class="is-flex is-justify-content-space-between is-align-items-center">
+            <div class="dashboard-loading-card__media-content">
+              <div class="dashboard-loading-card__header">
                 <span class="dashboard-loading-card__line dashboard-loading-card__line--title" />
                 <span class="dashboard-loading-card__pill" />
               </div>
 
               <div
                 v-if="currentTab === 'notifications' || currentTab === 'todos'"
-                class="dashboard-loading-card__line dashboard-loading-card__line--subtitle mt-2"
+                class="dashboard-loading-card__line dashboard-loading-card__line--subtitle"
               />
 
-              <div v-else class="dashboard-loading-card__tags mt-2">
+              <div v-else class="dashboard-loading-card__tags">
                 <span class="dashboard-loading-card__tag" />
                 <span class="dashboard-loading-card__tag dashboard-loading-card__tag--short" />
               </div>
@@ -54,7 +54,7 @@ const skeletonCardCount = 20;
             <span class="dashboard-loading-card__metric" />
           </div>
 
-          <div v-else class="ml-2 dashboard-loading-card__footer">
+          <div v-else class="dashboard-loading-card__footer">
             <span class="dashboard-loading-card__line dashboard-loading-card__line--footer" />
           </div>
         </div>
@@ -63,7 +63,7 @@ const skeletonCardCount = 20;
   </div>
 </template>
 
-<style scoped lang="scss" src="~/assets/scss/card.scss" />
+<style scoped lang="scss" src="~/assets/scss/dashboard-list-card.scss" />
 <style scoped lang="scss">
 .dashboard-loading-list {
   width: 100%;
@@ -71,11 +71,40 @@ const skeletonCardCount = 20;
   overflow: hidden;
 }
 
+.dashboard-loading-list__row {
+  margin-bottom: 1rem;
+  margin-right: 1rem;
+}
+
 .dashboard-loading-card {
   overflow: hidden;
   background:
     radial-gradient(circle at top left, var(--gitpulse-info-soft), transparent 36%),
     linear-gradient(135deg, var(--gitpulse-surface), var(--gitpulse-surface-muted));
+}
+
+.dashboard-loading-card__media {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+}
+
+.dashboard-loading-card__media-left {
+  flex: 0 0 auto;
+  margin-top: 0.5rem;
+  margin-left: 0.5rem;
+  margin-inline-end: 1rem;
+}
+
+.dashboard-loading-card__media-content {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.dashboard-loading-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .dashboard-loading-card__icon,
@@ -106,6 +135,7 @@ const skeletonCardCount = 20;
 .dashboard-loading-card__line--subtitle {
   width: 42%;
   height: 0.875rem;
+  margin-top: 0.5rem;
   border-radius: 0.45rem;
 }
 
@@ -126,6 +156,14 @@ const skeletonCardCount = 20;
   display: flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+.dashboard-loading-card__tags {
+  margin-top: 0.5rem;
+}
+
+.dashboard-loading-card__footer {
+  margin-left: 0.5rem;
 }
 
 .dashboard-loading-card__tag {

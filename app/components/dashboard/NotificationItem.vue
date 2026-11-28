@@ -1,15 +1,15 @@
 <template>
   <div
-    class="card dashboard-list-card dashboard-list-card--activity dashboard-list-card--detailed notification-card"
+    class="dashboard-list-card dashboard-list-card--activity dashboard-list-card--detailed notification-card"
     :class="{
       'is-unread': currentNotification.unread,
       'notification-card--todo': isTodoCard,
     }"
   >
-    <div class="card-content p-3">
+    <div class="dashboard-list-card__body">
       <div class="dashboard-list-card__main-row notification-card__main-row">
         <div class="dashboard-list-card__icon">
-          <figure class="image is-32x32">
+          <figure class="notification-card__avatar">
             <Transition name="notification-avatar" mode="out-in">
               <GitHubAvatar
                 v-if="avatarSrc"
@@ -65,7 +65,7 @@
           <div class="notification-card__content-frame">
             <div class="dashboard-list-card__text-stack notification-card__text-stack">
               <p
-                class="title is-6 mb-1 dashboard-list-card__subject"
+                class="dashboard-list-card__subject"
                 :class="{
                   'dashboard-list-card__subject--with-conflict': showPullRequestConflict,
                 }"
@@ -104,7 +104,7 @@
                 <span>{{ t('dashboard.notificationSubjectEnrichment.itemError') }}</span>
               </p>
 
-              <p class="subtitle is-7 has-text-grey mb-0 dashboard-list-card__meta">
+              <p class="dashboard-list-card__meta">
                 <span v-if="showSubjectNumber" class="notification-card__number">
                   #{{ subjectNumber }}
                 </span>
@@ -146,7 +146,7 @@
               </p>
             </div>
 
-            <div v-if="showActionColumn" class="notification-card__action-column ml-3">
+            <div v-if="showActionColumn" class="notification-card__action-column">
               <div v-if="showReason" class="notification-card__actions">
                 <button
                   v-if="reasonMarksAsRead"
@@ -475,8 +475,8 @@ const reasonIcon = computed(() => {
 });
 </script>
 
-<style scoped lang="scss" src="~/assets/scss/card.scss" />
-<style scoped lang="scss" src="~/assets/scss/notification-card.scss" />
+<style scoped lang="scss" src="~/assets/scss/dashboard-list-card.scss" />
+<style scoped lang="scss" src="./notification-card.scss" />
 <style scoped lang="scss">
 .avatar-skeleton {
   display: inline-flex;

@@ -395,7 +395,7 @@ watch(
               @select="handleSelectStackPullRequest"
             />
           </div>
-          <h1 class="pr-review-workspace__title mb-0">{{ workspaceTitle }}</h1>
+          <h1 class="pr-review-workspace__title">{{ workspaceTitle }}</h1>
         </div>
       </div>
 
@@ -444,23 +444,26 @@ watch(
     </header>
 
     <div v-if="review.errorMessage.value && !hasFiles" class="pr-review-workspace__notice">
-      <div class="notification is-danger is-light">
-        <p class="mb-3">{{ review.errorMessage.value }}</p>
-        <button class="button is-small is-danger" type="button" @click="review.retryLoad">
+      <div class="gp-notice gp-notice--danger" role="alert">
+        <p class="pr-review-workspace__error-text">{{ review.errorMessage.value }}</p>
+        <button class="gp-btn gp-btn--small gp-btn--danger" type="button" @click="review.retryLoad">
           {{ t('prReview.retry') }}
         </button>
       </div>
     </div>
 
     <div v-else-if="review.loading.value" class="pr-review-workspace__notice">
-      <div class="is-flex is-align-items-center is-justify-content-center">
-        <span class="button is-loading is-light pr-review-workspace__loading-btn mr-2"></span>
+      <div class="pr-review-workspace__loading">
+        <span
+          class="gp-btn gp-btn--loading gp-btn--light pr-review-workspace__loading-btn"
+          aria-hidden="true"
+        ></span>
         <span>{{ t('prReview.loadingFiles') }}</span>
       </div>
     </div>
 
     <div v-else-if="!hasFiles" class="pr-review-workspace__notice">
-      <p class="has-text-grey">{{ t('prReview.noFiles') }}</p>
+      <p class="pr-review-workspace__empty">{{ t('prReview.noFiles') }}</p>
     </div>
 
     <div
@@ -724,7 +727,8 @@ watch(
 
 .pr-review-workspace__title {
   min-width: 0;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  margin-bottom: 0;
+  color: var(--gitpulse-text-strong);
   font-size: 0.9rem;
   font-weight: 700;
   overflow: hidden;
@@ -826,7 +830,7 @@ watch(
   @include hover-only {
     &:hover {
       background: var(--gitpulse-surface-hover);
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
     }
   }
 
@@ -877,15 +881,19 @@ watch(
   padding: 2rem;
 }
 
-html.dark .pr-review-workspace__loading-btn {
-  color: var(--gitpulse-text-strong);
-  background-color: var(--gitpulse-surface);
-  border-color: var(--gitpulse-border);
+.pr-review-workspace__error-text {
+  margin-bottom: 0.75rem;
 }
 
-html.dark .pr-review-workspace__loading-btn::after {
-  border-color: var(--gitpulse-text-strong);
-  border-right-color: transparent;
+.pr-review-workspace__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.pr-review-workspace__empty {
+  color: var(--gitpulse-text-muted);
 }
 
 .pr-review-discard-dialog {
@@ -915,7 +923,7 @@ html.dark .pr-review-workspace__loading-btn::after {
   font-size: 14px;
   font-weight: 600;
   letter-spacing: -0.01em;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
 }
 
 .pr-review-discard-dialog__text {
@@ -952,7 +960,7 @@ html.dark .pr-review-workspace__loading-btn::after {
 
   @include hover-only {
     &:hover {
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
       background: var(--gitpulse-surface-hover);
       border-color: var(--gitpulse-border-strong);
     }

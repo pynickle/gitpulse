@@ -100,7 +100,7 @@ const { t } = useI18n();
         </div>
       </div>
       <button
-        class="button is-ghost is-small release-timeline-header__recovery"
+        class="gp-btn gp-btn--ghost gp-btn--small release-timeline-header__recovery"
         type="button"
         :aria-label="t('releaseTimeline.recoveredEntry', { count: recoveredCount })"
         :title="t('releaseTimeline.recoveredEntry', { count: recoveredCount })"
@@ -114,7 +114,7 @@ const { t } = useI18n();
       </button>
       <button
         v-if="showReload"
-        class="button is-ghost is-small release-timeline-header__action"
+        class="gp-btn gp-btn--ghost gp-btn--small release-timeline-header__action"
         type="button"
         :aria-label="t('releaseTimeline.reload')"
         :title="t('releaseTimeline.reload')"
@@ -131,7 +131,7 @@ const { t } = useI18n();
         </span>
       </button>
       <button
-        class="button is-ghost is-small release-timeline-header__action"
+        class="gp-btn gp-btn--ghost gp-btn--small release-timeline-header__action"
         type="button"
         :aria-label="t('releaseTimeline.manage')"
         :title="t('releaseTimeline.manage')"
@@ -143,7 +143,7 @@ const { t } = useI18n();
         </span>
       </button>
       <button
-        class="button is-ghost is-small release-timeline-header__action"
+        class="gp-btn gp-btn--ghost gp-btn--small release-timeline-header__action"
         :class="{ 'release-timeline-header__action--active': filterActive }"
         type="button"
         :aria-label="t('releaseTimeline.filter')"
@@ -198,7 +198,7 @@ const { t } = useI18n();
   overflow: hidden;
   font-size: 1.25rem;
   font-weight: 700;
-  color: var(--bulma-text-strong);
+  color: var(--gitpulse-text-strong);
   letter-spacing: -0.01em;
   text-overflow: ellipsis;
   white-space: nowrap;

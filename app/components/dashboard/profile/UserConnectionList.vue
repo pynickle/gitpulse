@@ -4,6 +4,7 @@ import { toRef } from 'vue';
 
 import DashboardPagination from '~/components/dashboard/DashboardPagination.vue';
 import UserListItem from '~/components/dashboard/profile/UserListItem.vue';
+import Button from '~/components/ui/Button.vue';
 import { useUserConnections, type UserConnectionRelation } from '~/composables/useUserConnections';
 
 const { username, relation } = defineProps<{
@@ -24,9 +25,9 @@ const { items, loading, error, pagination, showPagination, goToPage, refresh } =
   <div class="user-connection-list">
     <div v-if="error" class="user-connection-list__status user-connection-list__status--error">
       <p>{{ error }}</p>
-      <button type="button" class="button is-small is-light" @click="refresh">
+      <Button variant="light" size="small" @click="refresh">
         {{ t('profile.retry') }}
-      </button>
+      </Button>
     </div>
 
     <template v-else>

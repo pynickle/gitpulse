@@ -51,7 +51,7 @@
                   :aria-current="activeTabId === tab.id ? 'page' : undefined"
                   @click="emit('tab-select', tab.id)"
                 >
-                  <span class="icon is-small tab-sidebar__tab-icon">
+                  <span class="tab-sidebar__tab-icon">
                     <component :is="tab.icon" :size="15" />
                   </span>
                   <span class="tab-sidebar__tab-text">
@@ -224,7 +224,7 @@ const displayGroups = computed<DisplayTabSidebarGroup[]>(() => {
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--bulma-text-weak, #6b7280);
+  color: var(--gitpulse-text-subtle);
   line-height: 1;
 }
 
@@ -238,7 +238,7 @@ const displayGroups = computed<DisplayTabSidebarGroup[]>(() => {
   border: none;
   border-radius: 5px;
   background: transparent;
-  color: var(--bulma-text-weak, #9ca3af);
+  color: var(--gitpulse-text-subtle);
   font-size: 0.68rem;
   font-weight: 650;
   white-space: nowrap;
@@ -247,8 +247,8 @@ const displayGroups = computed<DisplayTabSidebarGroup[]>(() => {
 
   @include hover-only {
     &:hover {
-      background: var(--bulma-background-hover);
-      color: var(--bulma-text, #374151);
+      background: var(--gitpulse-surface-hover);
+      color: var(--gitpulse-text);
     }
   }
 
@@ -286,7 +286,7 @@ const displayGroups = computed<DisplayTabSidebarGroup[]>(() => {
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: var(--bulma-text-strong, #1e293b);
+  color: var(--gitpulse-text-strong);
   font: inherit;
   font-size: 0.81rem;
   font-weight: 700;
@@ -297,7 +297,7 @@ const displayGroups = computed<DisplayTabSidebarGroup[]>(() => {
 
   @include hover-only {
     &:hover {
-      background: var(--bulma-background-hover);
+      background: var(--gitpulse-surface-hover);
     }
   }
 
@@ -310,12 +310,12 @@ const displayGroups = computed<DisplayTabSidebarGroup[]>(() => {
   &--nested {
     font-size: 0.78rem;
     font-weight: 600;
-    color: var(--bulma-text, #475569);
+    color: var(--gitpulse-text);
     padding-left: calc(0.6rem + var(--depth-offset, 0rem));
   }
 
   &--collapsed {
-    color: var(--bulma-text-weak, #6b7280);
+    color: var(--gitpulse-text-subtle);
   }
 }
 
@@ -326,12 +326,12 @@ const displayGroups = computed<DisplayTabSidebarGroup[]>(() => {
   justify-content: center;
   width: 14px;
   height: 14px;
-  color: var(--bulma-text-weak, #9ca3af);
+  color: var(--gitpulse-text-subtle);
   transition: color 0.15s ease;
 
   @include hover-only {
     .tab-sidebar__group:hover & {
-      color: var(--bulma-text, #374151);
+      color: var(--gitpulse-text);
     }
   }
 }
@@ -395,7 +395,7 @@ const displayGroups = computed<DisplayTabSidebarGroup[]>(() => {
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: var(--bulma-text, #475569);
+  color: var(--gitpulse-text);
   font-family: inherit;
   font-size: 0.79rem;
   font-weight: 500;
@@ -407,8 +407,8 @@ const displayGroups = computed<DisplayTabSidebarGroup[]>(() => {
 
   @include hover-only {
     &:hover {
-      background: var(--bulma-background-hover);
-      color: var(--bulma-text-strong, #1e293b);
+      background: var(--gitpulse-surface-hover);
+      color: var(--gitpulse-text-strong);
     }
   }
 
@@ -441,7 +441,8 @@ const displayGroups = computed<DisplayTabSidebarGroup[]>(() => {
   align-items: center;
   justify-content: center;
   width: 16px;
-  color: var(--bulma-text-weak, #9ca3af);
+  height: 16px;
+  color: var(--gitpulse-text-subtle);
 }
 
 .tab-sidebar__tab-text {
@@ -464,7 +465,7 @@ const displayGroups = computed<DisplayTabSidebarGroup[]>(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--bulma-text-weak, #9ca3af);
+  color: var(--gitpulse-text-subtle);
   font-size: 0.66rem;
   font-weight: 500;
   line-height: 1.25;

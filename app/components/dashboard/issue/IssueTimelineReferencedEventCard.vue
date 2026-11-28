@@ -1,27 +1,26 @@
 <template>
-  <div class="commit-item px-4 pt-2 pb-1">
-    <div class="is-flex is-align-items-center mb-2">
+  <div class="commit-item">
+    <div class="commit-item__row">
       <GitHubAvatar
         variant="raised"
         interactive
         v-if="item.actor?.avatarUrl"
-        class="mr-3"
         width="32"
         height="32"
         :src="item.actor.avatarUrl"
         :alt="item.actor.login"
       />
 
-      <div class="is-flex is-flex-direction-column is-justify-content-center is-flex-grow-1">
-        <div class="is-flex is-align-items-center mt-1">
+      <div class="commit-item__body">
+        <div class="commit-item__meta">
           <GitHubProfileLink
             :login="item.actor?.login"
             :github-href="item.actor?.url"
-            class="is-size-7 has-text-weight-medium has-text-link mr-2"
+            class="commit-item__actor"
           >
             {{ item.actor?.login }}
           </GitHubProfileLink>
-          <span class="commit-message is-size-7 has-text-grey">
+          <span class="commit-message commit-item__muted">
             {{ t('issueDetail.referenceCommitIntro') }}
           </span>
         </div>
@@ -29,10 +28,10 @@
         <!-- v-html: computed headline passes through sanitizeHtml's xss allowlist. -->
         <span
           v-if="sanitizedCommitMessageHeadlineHtml"
-          class="is-size-6 has-text-weight-medium commit-message"
+          class="commit-item__headline commit-message"
           v-html="sanitizedCommitMessageHeadlineHtml"
         />
-        <span v-else class="is-size-7 has-text-grey">
+        <span v-else class="commit-item__muted">
           {{ t('issueDetail.referenceCommitFallback') }}
         </span>
       </div>
@@ -42,11 +41,11 @@
         :href="item.commit.commitUrl"
         target="_blank"
         rel="noopener"
-        class="tag is-light is-family-monospace ml-3"
+        class="gp-tag commit-item__sha"
       >
         {{ item.commit?.oid?.slice(0, 7) }}
       </a>
-      <span v-else class="tag is-light is-family-monospace ml-3">
+      <span v-else class="gp-tag commit-item__sha">
         {{ item.commit?.oid?.slice(0, 7) || t('issueDetail.commitFallbackRef') }}
       </span>
     </div>
@@ -81,9 +80,51 @@ const sanitizedCommitMessageHeadlineHtml = computed(() => {
 
 <style scoped lang="scss">
 .commit-item {
+  padding: 0.5rem 1rem 0.25rem;
   border-radius: 12px;
   background-color: var(--gitpulse-surface-muted);
   transition: background-color 0.2s ease;
+}
+
+.commit-item__row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.commit-item__body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex-grow: 1;
+}
+
+.commit-item__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.commit-item__actor {
+  color: var(--gitpulse-link);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.commit-item__muted {
+  color: var(--gitpulse-text-muted);
+  font-size: 0.75rem;
+}
+
+.commit-item__headline {
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.commit-item__sha {
+  font-family: var(--gitpulse-code-font-family);
 }
 
 .commit-message {

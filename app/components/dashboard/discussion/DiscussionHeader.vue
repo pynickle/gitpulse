@@ -1,5 +1,5 @@
 <template>
-  <div class="mb-4">
+  <div class="detail-header">
     <!-- Tier 1: Eyebrow -->
     <div class="detail-header-eyebrow">
       <span class="header-repo">
@@ -13,7 +13,7 @@
 
     <!-- Tier 2: Full-width Title -->
     <div class="detail-header-title">
-      <h1 class="title is-3 mb-0 header-title__text">
+      <h1 class="header-title__text">
         {{ discussion.title || t('discussionDetail.titleFallback') }}
       </h1>
     </div>
@@ -50,26 +50,25 @@
 
     <!-- Author row -->
     <div>
-      <div class="is-flex is-align-items-center mb-4">
+      <div class="detail-header-author">
         <GitHubAvatar
           variant="raised"
           interactive
-          class="mr-3"
           width="28"
           height="28"
           :src="discussion.author?.avatarUrl || ''"
           :alt="discussion.author?.login || t('discussionDetail.authorFallback')"
         />
-        <div class="is-flex is-align-items-center is-flex-wrap-wrap header-author">
+        <div class="header-author">
           <GitHubProfileLink
             v-if="discussion.author?.login || discussion.author?.url"
             :login="discussion.author.login"
             :github-href="discussion.author.url"
-            class="header-author__name has-text-weight-medium has-text-link"
+            class="header-author__name header-author__name--link"
           >
             {{ discussion.author.login }}
           </GitHubProfileLink>
-          <span v-else class="header-author__name has-text-weight-medium">
+          <span v-else class="header-author__name">
             {{ discussion.author?.login || t('discussionDetail.authorFallback') }}
           </span>
           <span class="header-author__time">

@@ -11,6 +11,7 @@ import {
 } from '@lucide/vue';
 import { computed, ref } from 'vue';
 
+import Button from '~/components/ui/Button.vue';
 import ScrollArea from '~/components/ui/ScrollArea.vue';
 import type { PRReviewDraftComment, PRReviewFile } from '~/composables/usePRReview';
 
@@ -206,7 +207,7 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
   >
     <div class="pr-review-file-sidebar__content">
       <div class="pr-review-file-sidebar__header">
-        <h2 class="title is-6 mb-1">{{ t('prReview.files') }}</h2>
+        <h2 class="pr-review-file-sidebar__title">{{ t('prReview.files') }}</h2>
         <div class="pr-review-file-sidebar__header-actions">
           <div
             class="pr-review-file-sidebar__view-toggle"
@@ -274,10 +275,10 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
           </span>
           <span class="pr-review-file-sidebar__name">{{ file.filename }}</span>
           <span class="pr-review-file-sidebar__meta">
-            <span class="has-text-success" :title="exact(file.additions)"
+            <span class="pr-review-file-sidebar__stat--add" :title="exact(file.additions)"
               >+{{ compact(file.additions) }}</span
             >
-            <span class="has-text-danger" :title="exact(file.deletions)"
+            <span class="pr-review-file-sidebar__stat--delete" :title="exact(file.deletions)"
               >-{{ compact(file.deletions) }}</span
             >
             <span v-if="getDraftCount(file.filename)" class="pr-review-file-sidebar__draft-count">
@@ -354,16 +355,17 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
         </template>
       </ScrollArea>
 
-      <button
+      <Button
         v-if="hasMoreFiles"
-        type="button"
-        class="button is-small is-fullwidth is-light mt-3"
-        :class="{ 'is-loading': loadingMore }"
-        :disabled="loadingMore"
+        variant="light"
+        size="small"
+        block
+        :loading="loadingMore"
+        class="pr-review-file-sidebar__load-more"
         @click="emit('load-more')"
       >
         {{ t('prReview.loadMoreFiles') }}
-      </button>
+      </Button>
     </div>
 
     <button
@@ -494,8 +496,12 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
   gap: 0.5rem;
 }
 
-.pr-review-file-sidebar__header .title {
+.pr-review-file-sidebar__title {
+  margin-bottom: 0.25rem;
+  color: var(--gitpulse-text-strong);
   font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1.125;
 }
 
 .pr-review-file-sidebar__subheader {
@@ -540,7 +546,7 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
 @include hover-only {
   .pr-review-file-sidebar__collapse-button:hover {
     background: var(--gitpulse-surface-hover);
-    color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+    color: var(--gitpulse-text-strong);
   }
 }
 
@@ -575,7 +581,7 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
   border-left: 3px solid transparent;
   border-radius: 5px;
   background: transparent;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -614,6 +620,18 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
   flex-wrap: wrap;
   gap: 0.4rem;
   font-size: 0.75rem;
+}
+
+.pr-review-file-sidebar__stat--add {
+  color: var(--gitpulse-success);
+}
+
+.pr-review-file-sidebar__stat--delete {
+  color: var(--gitpulse-danger);
+}
+
+.pr-review-file-sidebar__load-more {
+  margin-top: 0.75rem;
 }
 
 .pr-review-file-sidebar__status {
@@ -657,7 +675,7 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
   border: 0;
   border-radius: 5px;
   background: transparent;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   display: flex;
   align-items: center;
   gap: 0.35rem;

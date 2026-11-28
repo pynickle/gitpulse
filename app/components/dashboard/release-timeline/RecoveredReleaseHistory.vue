@@ -92,7 +92,7 @@ const {
               {{ t('releaseTimeline.recoveredDescription') }}
             </p>
             <button
-              class="button is-small recovered-history__clear"
+              class="gp-btn gp-btn--small recovered-history__clear"
               type="button"
               :disabled="saving"
               @click="emit('clear')"
@@ -219,7 +219,7 @@ const {
   min-width: 0;
   margin: 0;
   overflow: hidden;
-  color: var(--bulma-text-strong);
+  color: var(--gitpulse-text-strong);
   font-size: 1rem;
   font-weight: 700;
   line-height: 1.3;

@@ -459,7 +459,6 @@ const formatDate = (dateString: string | undefined) => {
 </script>
 
 <style scoped lang="scss">
-@use '~/assets/scss/_variables' as *;
 @use '~/assets/scss/pointer' as *;
 @use '~/assets/scss/sidebar-github-link' as *;
 
@@ -501,7 +500,7 @@ const formatDate = (dateString: string | undefined) => {
 
 .sidebar-section__icon {
   flex-shrink: 0;
-  color: $brand-primary;
+  color: var(--gitpulse-accent);
 }
 
 .sidebar-section__title {
@@ -517,7 +516,7 @@ const formatDate = (dateString: string | undefined) => {
   text-transform: none;
   letter-spacing: 0;
   font-size: 13px;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
 }
 
 .sidebar-section__body {
@@ -593,7 +592,7 @@ const formatDate = (dateString: string | undefined) => {
     &:hover:not(:disabled) {
       background: var(--gitpulse-surface-hover);
       border-color: var(--gitpulse-border-strong);
-      color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+      color: var(--gitpulse-text-strong);
     }
   }
 
@@ -753,7 +752,7 @@ const formatDate = (dateString: string | undefined) => {
 
 .info-item__value {
   font-size: 12px;
-  color: var(--bulma-text-strong, var(--gitpulse-text-strong));
+  color: var(--gitpulse-text-strong);
   display: flex;
   align-items: center;
   gap: 6px;
