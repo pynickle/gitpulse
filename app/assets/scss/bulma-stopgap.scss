@@ -29,24 +29,12 @@
       background-color: var(--gitpulse-surface-muted);
     }
 
-    .has-text-primary {
-      color: var(--gitpulse-accent);
-    }
-
     .has-text-link {
       color: var(--gitpulse-link);
     }
 
-    .has-text-info {
-      color: var(--gitpulse-info);
-    }
-
     .has-text-success {
       color: var(--gitpulse-success);
-    }
-
-    .has-text-warning {
-      color: var(--gitpulse-warning);
     }
 
     .has-text-danger {
@@ -64,10 +52,6 @@
 
     .is-justify-content-center {
       justify-content: center;
-    }
-
-    .is-justify-content-space-between {
-      justify-content: space-between;
     }
 
     .is-flex-direction-column {
@@ -101,10 +85,6 @@
 
     .mb-4 {
       margin-bottom: 1rem;
-    }
-
-    .mb-5 {
-      margin-bottom: 1.5rem;
     }
 
     .ml-1 {
@@ -165,20 +145,12 @@
       padding: 0;
     }
 
-    .p-3 {
-      padding: 0.75rem;
-    }
-
     .pb-1 {
       padding-bottom: 0.25rem;
     }
 
     .pb-3 {
       padding-bottom: 0.75rem;
-    }
-
-    .pl-4 {
-      padding-left: 1rem;
     }
 
     .pt-2 {
@@ -189,11 +161,6 @@
       padding-top: 0.75rem;
     }
 
-    .px-3 {
-      padding-left: 0.75rem;
-      padding-right: 0.75rem;
-    }
-
     .px-4 {
       padding-left: 1rem;
       padding-right: 1rem;
@@ -202,11 +169,6 @@
     .px-6 {
       padding-left: 3rem;
       padding-right: 3rem;
-    }
-
-    .py-2 {
-      padding-top: 0.5rem;
-      padding-bottom: 0.5rem;
     }
 
     .py-5 {
@@ -250,10 +212,6 @@
 
     .is-hidden {
       display: none;
-    }
-
-    .is-inline {
-      display: inline;
     }
 
     .is-sr-only {

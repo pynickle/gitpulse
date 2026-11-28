@@ -27,10 +27,16 @@ const handleHome = async () => {
     :back-label="t('detailOverlay.back')"
     :home-label="t('detailOverlay.home')"
     :show-home-button="shouldShowHomeButton"
-    content-class="p-0"
+    content-class="tabs-page-content"
     @back="handleBack"
     @home="handleHome"
   >
     <TabsSettingsPage :model="tabsSettings" />
   </DashboardOverlayFrame>
 </template>
+
+<style scoped lang="scss">
+:deep(.detail-frame__content.tabs-page-content) {
+  padding: 0;
+}
+</style>

@@ -16,7 +16,7 @@
             @home="goToDashboardHome"
           />
           <div
-            class="dashboard-empty-state is-flex-grow-1"
+            class="dashboard-empty-state dashboard-file-loading__empty"
             role="status"
             :aria-label="t('detailOverlay.loading.repository')"
             aria-busy="true"
@@ -154,7 +154,7 @@
                     <div
                       v-for="todo in filteredTodoItems"
                       :key="todo.id"
-                      class="mb-4 mr-4 dashboard-list-row"
+                      class="dashboard-list-row"
                       role="button"
                       tabindex="0"
                       @click="handleTodoOpen(todo.notification)"
@@ -184,7 +184,7 @@
                     <div
                       v-for="notification in filteredNotifications"
                       :key="notification.id"
-                      class="mb-4 mr-4 dashboard-list-row"
+                      class="dashboard-list-row"
                       role="button"
                       tabindex="0"
                       @click="handleNotificationOpen(notification)"
@@ -215,7 +215,7 @@
                     <div
                       v-for="issue in issues"
                       :key="issue.id"
-                      class="mb-4 mr-4 dashboard-list-row"
+                      class="dashboard-list-row"
                       role="button"
                       tabindex="0"
                       @click="openSearchResult(issue)"
@@ -242,7 +242,7 @@
                     <div
                       v-for="issue in issues"
                       :key="issue.id"
-                      class="mb-4 mr-4 dashboard-list-row"
+                      class="dashboard-list-row"
                       role="button"
                       tabindex="0"
                       @click="handleIssueOpen(issue)"
@@ -260,7 +260,7 @@
                     <div
                       v-for="pull in pulls"
                       :key="pull.id"
-                      class="mb-4 mr-4 dashboard-list-row"
+                      class="dashboard-list-row"
                       role="button"
                       tabindex="0"
                       @click="handlePROpen(pull)"
@@ -271,7 +271,7 @@
                   </template>
 
                   <template v-else-if="currentTab === 'repos'">
-                    <div v-for="repo in repos" class="mb-4 mr-4 dashboard-list-row" :key="repo.id">
+                    <div v-for="repo in repos" class="dashboard-list-row" :key="repo.id">
                       <AsyncRepoItem :repo="repo" />
                     </div>
                   </template>
@@ -1583,6 +1583,18 @@ watch(
   background: var(--gitpulse-page-bg);
 }
 
+.dashboard-list-row {
+  margin-bottom: 1rem;
+  margin-right: 1rem;
+  cursor: pointer;
+  border-radius: 12px;
+
+  &:focus-visible {
+    outline: 2px solid var(--gitpulse-focus-ring, var(--gitpulse-link));
+    outline-offset: 2px;
+  }
+}
+
 @media (max-width: 860px) {
   .dashboard-page {
     flex-direction: column;
@@ -1617,13 +1629,12 @@ watch(
     }
   }
 
-  // Keep exactly one scrollbar track's width here instead of the wide 1rem (`mr-4`):
+  // Keep exactly one scrollbar track's width here instead of the wide 1rem row margin:
   // the overlay thumb is 10px wide and sits inside the panel, so the row has to stand
-  // off it by that much on top of its own 0.25rem margin. Bulma spacing helpers live
-  // in `@layer bulma` without `!important`, so unlayered scoped rules win cleanly and
-  // the pagination footer's `:last-child` `margin-bottom: 0` below stays effective.
+  // off it by that much on top of its own 0.25rem margin. The pagination footer's
+  // `:last-child` `margin-bottom: 0` rule below carries higher specificity and stays effective.
   .dashboard-list-row,
-  :deep(.dashboard-loading-list > .mb-4) {
+  :deep(.dashboard-loading-list > .dashboard-loading-list__row) {
     margin-block-end: 0.5rem;
     margin-right: var(--gitpulse-scrollbar-track-size);
   }
@@ -1676,6 +1687,10 @@ watch(
   display: flex;
   height: 100%;
   flex-direction: column;
+}
+
+.dashboard-file-loading__empty {
+  flex-grow: 1;
 }
 
 .dashboard-main-card {
@@ -1804,7 +1819,7 @@ watch(
 
 .dashboard-main-card:has(.dashboard-pagination-footer)
   .dashboard-list-scroll
-  :deep(.dashboard-list-content > .mb-4:last-child) {
+  :deep(.dashboard-list-content > .dashboard-list-row:last-child) {
   margin-bottom: 0;
 }
 
@@ -1817,16 +1832,6 @@ watch(
   color: var(--gitpulse-text-muted);
   font-size: 0.875rem;
   text-align: center;
-}
-
-.dashboard-list-row {
-  cursor: pointer;
-  border-radius: 12px;
-
-  &:focus-visible {
-    outline: 2px solid var(--gitpulse-focus-ring, var(--gitpulse-link));
-    outline-offset: 2px;
-  }
 }
 
 /* The failure block sits where the list normally does, so the shell keeps its

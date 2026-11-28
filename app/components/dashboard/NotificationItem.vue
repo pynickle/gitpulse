@@ -6,7 +6,7 @@
       'notification-card--todo': isTodoCard,
     }"
   >
-    <div class="dashboard-list-card__body p-3">
+    <div class="dashboard-list-card__body">
       <div class="dashboard-list-card__main-row notification-card__main-row">
         <div class="dashboard-list-card__icon">
           <figure class="notification-card__avatar">
@@ -65,7 +65,7 @@
           <div class="notification-card__content-frame">
             <div class="dashboard-list-card__text-stack notification-card__text-stack">
               <p
-                class="mb-1 dashboard-list-card__subject"
+                class="dashboard-list-card__subject"
                 :class="{
                   'dashboard-list-card__subject--with-conflict': showPullRequestConflict,
                 }"
@@ -104,7 +104,7 @@
                 <span>{{ t('dashboard.notificationSubjectEnrichment.itemError') }}</span>
               </p>
 
-              <p class="has-text-grey mb-0 dashboard-list-card__meta">
+              <p class="dashboard-list-card__meta">
                 <span v-if="showSubjectNumber" class="notification-card__number">
                   #{{ subjectNumber }}
                 </span>
@@ -146,7 +146,7 @@
               </p>
             </div>
 
-            <div v-if="showActionColumn" class="notification-card__action-column ml-3">
+            <div v-if="showActionColumn" class="notification-card__action-column">
               <div v-if="showReason" class="notification-card__actions">
                 <button
                   v-if="reasonMarksAsRead"

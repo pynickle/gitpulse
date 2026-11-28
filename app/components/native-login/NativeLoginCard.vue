@@ -78,13 +78,13 @@ const statusClass = computed(() => {
       <input type="hidden" name="browserToken" :value="model.browserToken" />
       <input type="hidden" name="csrfToken" :value="model.csrfToken" />
       <Button type="submit" size="large" block>
-        <ShieldCheckIcon class="mr-3" :size="20" />
+        <ShieldCheckIcon class="native-login__btn-icon" :size="20" />
         {{ t('nativeLogin.approve') }}
       </Button>
     </form>
 
     <Button v-else-if="showSignIn" :href="model.signInUrl" size="large" block>
-      <GitHubIcon class="mr-3" />
+      <GitHubIcon class="native-login__btn-icon" />
       {{ t('nativeLogin.continueWithGithub') }}
     </Button>
 
@@ -150,6 +150,10 @@ const statusClass = computed(() => {
 
 .native-login__identity-name {
   color: var(--gitpulse-text);
+}
+
+.native-login__btn-icon {
+  margin-inline-end: 0.75rem;
 }
 
 .native-login__result {

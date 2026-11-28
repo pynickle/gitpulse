@@ -140,8 +140,8 @@ watch(requestedUser, () => {
   >
     <div class="starred-page">
       <div class="starred-page__header">
-        <h1 class="starred-page__title mb-0 is-flex is-align-items-center">
-          <StarIcon :size="18" class="mr-2" aria-hidden="true" />
+        <h1 class="starred-page__title">
+          <StarIcon :size="18" aria-hidden="true" />
           {{ pageTitle }}
         </h1>
 
@@ -212,6 +212,10 @@ watch(requestedUser, () => {
 }
 
 .starred-page__title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0;
   color: var(--gitpulse-text-strong);
   font-size: 1.25rem;
   font-weight: 800;

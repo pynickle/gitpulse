@@ -18,7 +18,12 @@
 
 .dashboard-list-card > .dashboard-list-card__body {
   height: 100%;
+  padding: 0.75rem;
   overflow: hidden;
+}
+
+.dashboard-list-card--repo > .dashboard-list-card__body {
+  padding-left: 1rem;
 }
 
 // The whole-card tint is a pointer affordance, and the keyboard joins it through the
@@ -71,6 +76,7 @@
 
 .dashboard-list-card__title,
 .dashboard-list-card__subject {
+  margin-bottom: 0.25rem;
   overflow: hidden;
   overflow-wrap: anywhere;
   word-break: break-word;
@@ -121,6 +127,7 @@
 
 .dashboard-list-card__meta,
 .dashboard-list-card__description {
+  margin-bottom: 0;
   color: var(--gitpulse-text-muted);
   font-size: 0.75rem;
   font-weight: 400;
