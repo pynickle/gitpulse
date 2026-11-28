@@ -1,6 +1,8 @@
 import { enrichCommentModeration } from '#server/utils/comment-moderation-utils';
 import {
+  applyPRAutomaticBaseChanges,
   applyPRForcePushRefs,
+  applyPRStackChanges,
   assignCommitCheckRollups,
   buildPRTimelineCapabilities,
   createUnsupportedWarnings,
@@ -67,7 +69,8 @@ function enrichTimelineEventWithPullCommit(
 /**
  * Everything GraphQL adds to the REST timeline, in one request. A failed read
  * degrades each part on its own: threads and provenance go missing, and a force
- * push still renders without its branch, but the timeline itself still loads.
+ * push, automatic base change, or stack event still renders without the fields
+ * GraphQL would have added, but the timeline itself still loads.
  */
 async function fetchPRTimelineSupplementForTimeline(
   octokit: Parameters<typeof fetchPRTimelineSupplement>[0],
@@ -79,7 +82,13 @@ async function fetchPRTimelineSupplementForTimeline(
     return await fetchPRTimelineSupplement(octokit, owner, repo, pullNumber);
   } catch (error: unknown) {
     console.warn('Failed to fetch pull request timeline supplement:', error);
-    return { reviewThreads: [], reviewMetadata: new Map(), forcePushRefs: [] };
+    return {
+      reviewThreads: [],
+      reviewMetadata: new Map(),
+      forcePushRefs: [],
+      automaticBaseChanges: [],
+      stackChanges: [],
+    };
   }
 }
 
@@ -157,6 +166,8 @@ export default definePrivateApiCoalescedEventHandler(async (event) => {
       )
     );
     applyPRForcePushRefs(normalizedTimeline, supplement.forcePushRefs);
+    applyPRAutomaticBaseChanges(normalizedTimeline, supplement.automaticBaseChanges);
+    applyPRStackChanges(normalizedTimeline, supplement.stackChanges);
     const timeline = enrichPRTimelineWithReviewData(
       normalizedTimeline,
       pullReviews,

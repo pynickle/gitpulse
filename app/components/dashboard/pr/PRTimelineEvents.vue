@@ -48,6 +48,23 @@
           :created-at="item.createdAt"
         />
 
+        <div
+          v-else-if="isAutomaticBaseChange(item.eventType)"
+          class="pr-timeline-events__row pr-timeline-events__system"
+        >
+          <span class="pr-timeline-events__system-mark">
+            <GitBranchIcon :size="13" aria-hidden="true" />
+          </span>
+          <PRTimelineEventBody
+            :item="item"
+            :repo-owner="repoOwner"
+            :repo-name="repoName"
+            @switch-issue="handleSwitchIssue"
+            @switch-pull-request="handleSwitchPullRequest"
+            @open-stack="openStack"
+          />
+        </div>
+
         <div v-else-if="item.groupedEvents" class="pr-timeline-events__row">
           <TimelineEventActorRow :actor="item.actor" align-start>
             <div>
@@ -82,6 +99,7 @@
               :repo-name="repoName"
               @switch-issue="handleSwitchIssue"
               @switch-pull-request="handleSwitchPullRequest"
+              @open-stack="openStack"
             />
           </TimelineEventActorRow>
         </div>
@@ -105,6 +123,15 @@
       </button>
     </div>
 
+    <PRStackDetail
+      v-if="stackDetailOpen"
+      :stack="stackDetail ?? emptyTimelineStack"
+      :current-pull-number="pullNumber"
+      :loading-label="stackDetailLoading ? t('prReview.stackDetail.loading') : undefined"
+      @close="stackDetailOpen = false"
+      @select="chooseStackLayer"
+    />
+
     <FloatingMarkdownEditor
       class="pr-timeline-events__composer"
       :repo-owner="repoOwner"
@@ -116,8 +143,12 @@
 </template>
 
 <script setup lang="ts">
+import { GitBranchIcon } from '@lucide/vue';
+import { shallowRef } from 'vue';
 import { useI18n } from 'vue-i18n';
 
+import type { PullRequestStack } from '#shared/types/pulls';
+import PRStackDetail from '~/components/dashboard/pr/PRStackDetail.vue';
 import PRTimelineCommentCard from '~/components/dashboard/pr/PRTimelineCommentCard.vue';
 import PRTimelineCommitCard from '~/components/dashboard/pr/PRTimelineCommitCard.vue';
 import PRTimelineEventBody from '~/components/dashboard/pr/PRTimelineEventBody.vue';
@@ -130,12 +161,19 @@ import GitHubProfileLink from '~/components/ui/GitHubProfileLink.vue';
 import LoadingIcon from '~/components/ui/LoadingIcon.vue';
 import { usePRTimelineEvents, type PRTimelineItem } from '~/composables/usePRTimelineEvents';
 
-const { timeline } = defineProps<{
+const {
+  timeline,
+  repoOwner,
+  repoName,
+  pullNumber,
+  stack = null,
+} = defineProps<{
   timeline: PRTimelineItem[];
   loading: boolean;
   repoOwner: string;
   repoName: string;
   pullNumber: number;
+  stack?: PullRequestStack | null;
   hasNextPage?: boolean;
   loadingMore?: boolean;
   resolvingReviewThreadId?: string | null;
@@ -165,6 +203,62 @@ const handleSwitchIssue = (owner: string, repo: string, issueNumber: number) => 
 const handleSwitchPullRequest = (owner: string, repo: string, pullNumber: number) => {
   emit('switch-pull-request', owner, repo, pullNumber);
 };
+
+const automaticBaseChangeTypes = new Set([
+  'automatic_base_change_failed',
+  'automatic_base_change_succeeded',
+]);
+
+const isAutomaticBaseChange = (eventType?: string) =>
+  Boolean(eventType && automaticBaseChangeTypes.has(eventType));
+
+const emptyTimelineStack: PullRequestStack = {
+  trunk: '',
+  count: 0,
+  place: 0,
+  layers: [],
+  history: 'unknown',
+};
+
+const stackDetailOpen = shallowRef(false);
+const stackDetailLoading = shallowRef(false);
+const stackDetail = shallowRef<PullRequestStack | null>(null);
+const apiFetch = useGitPulseApiFetch();
+let stackRequest = 0;
+
+const openStack = async (stackNumber: number) => {
+  const request = ++stackRequest;
+  stackDetailOpen.value = true;
+
+  if (stack?.number === stackNumber && stack.layers.length > 0) {
+    stackDetail.value = stack;
+    stackDetailLoading.value = false;
+    return;
+  }
+
+  stackDetail.value = null;
+  stackDetailLoading.value = true;
+
+  try {
+    const loaded = await apiFetch<PullRequestStack>(
+      `/api/repos/${repoOwner}/${repoName}/stacks/${stackNumber}`,
+      { query: { pull: pullNumber } }
+    );
+    if (request !== stackRequest) return;
+    stackDetail.value = loaded;
+  } catch (error: unknown) {
+    console.warn('Failed to open stack detail:', error);
+    if (request !== stackRequest) return;
+    stackDetail.value = { ...emptyTimelineStack, number: stackNumber };
+  } finally {
+    if (request === stackRequest) stackDetailLoading.value = false;
+  }
+};
+
+const chooseStackLayer = (layerNumber: number) => {
+  stackDetailOpen.value = false;
+  emit('switch-pull-request', repoOwner, repoName, layerNumber);
+};
 </script>
 
 <style scoped lang="scss">
@@ -191,6 +285,25 @@ const handleSwitchPullRequest = (owner: string, repo: string, pullNumber: number
 
 .pr-timeline-events__row {
   margin-inline: 0.5rem;
+}
+
+.pr-timeline-events__system {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.pr-timeline-events__system-mark {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--gitpulse-surface-muted);
+  color: var(--gitpulse-text-muted);
+  box-shadow: var(--gitpulse-shadow-card);
 }
 
 .pr-timeline-events__grouped-heading {

@@ -106,21 +106,52 @@
     >
   </template>
 
+  <template v-else-if="item.eventType === 'automatic_base_change_succeeded'">
+    Base automatically changed<template v-if="item.oldBase && item.newBase">
+      from
+      <span class="gp-tag gp-tag--activity gp-tag--info pr-timeline-state__tag">{{
+        item.oldBase
+      }}</span>
+      to
+      <span class="gp-tag gp-tag--activity gp-tag--info pr-timeline-state__tag">{{
+        item.newBase
+      }}</span>
+    </template>
+  </template>
+
+  <template v-else-if="item.eventType === 'automatic_base_change_failed'">
+    <template v-if="item.oldBase && item.newBase">
+      Automatic base change from
+      <span class="gp-tag gp-tag--activity gp-tag--info pr-timeline-state__tag">{{
+        item.oldBase
+      }}</span>
+      to
+      <span class="gp-tag gp-tag--activity gp-tag--info pr-timeline-state__tag">{{
+        item.newBase
+      }}</span>
+      failed
+    </template>
+    <template v-else>Automatic base change failed</template>
+  </template>
+
   <template
-    v-else-if="
-      item.eventType === 'automatic_base_change_failed' ||
-      item.eventType === 'automatic_base_change_succeeded'
-    "
+    v-else-if="item.eventType === 'added_to_stack' || item.eventType === 'removed_from_stack'"
   >
     {{
-      item.eventType === 'automatic_base_change_failed'
-        ? 'automatic base change failed from'
-        : 'automatic base change succeeded from'
+      item.eventType === 'added_to_stack'
+        ? 'added this pull request to'
+        : 'removed this pull request from'
     }}
-    {{ item.oldBase }}
-    <span v-if="item.newBase" class="gp-tag gp-tag--activity gp-tag--info pr-timeline-state__tag"
-      >to {{ item.newBase }}</span
+    <button
+      v-if="item.stackNumber"
+      type="button"
+      class="gp-tag gp-tag--activity gp-tag--info pr-timeline-state__tag pr-timeline-state__stack"
+      aria-haspopup="dialog"
+      @click="emit('open-stack', item.stackNumber)"
     >
+      stack #{{ item.stackNumber }}
+    </button>
+    <template v-else>a stack</template>
   </template>
 
   <template v-else-if="item.eventType === 'base_ref_changed'">
@@ -430,6 +461,10 @@ const { item } = defineProps<{
   item: PRTimelineItem;
 }>();
 
+const emit = defineEmits<{
+  'open-stack': [stackNumber: number];
+}>();
+
 const { t } = useI18n();
 const reviewer = computed(() => describeRequestedReviewer(item.requestedReviewer));
 const assigneeChanges = computed(() => item.assigneeChanges ?? []);
@@ -486,8 +521,26 @@ const timelineChangeActorLabel = (change: TimelineStateChange) =>
 </script>
 
 <style scoped lang="scss">
+@use '~/assets/scss/pointer' as *;
+
 .pr-timeline-state__tag {
   margin-left: 0.25rem;
+}
+
+.pr-timeline-state__stack {
+  font-family: inherit;
+  cursor: pointer;
+
+  @include hover-only {
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--gitpulse-focus-ring);
+    outline-offset: 2px;
+  }
 }
 
 .pr-timeline-state__label-tag {

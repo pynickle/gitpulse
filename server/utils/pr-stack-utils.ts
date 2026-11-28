@@ -42,14 +42,12 @@ const layerState = (pull: GitHubStackPullRequest): PullRequestStackLayerState =>
   return 'open';
 };
 
-const normalizePullRequestStack = (
-  membership: GitHubStackMembership,
-  resource: GitHubStackResource | null,
-  pullNumber: number
-): PullRequestStack | null => {
+const layersFromPulls = (
+  pulls: GitHubStackPullRequest[] | null | undefined
+): PullRequestStackLayer[] => {
   const layers: PullRequestStackLayer[] = [];
 
-  for (const pull of resource?.pull_requests ?? []) {
+  for (const pull of pulls ?? []) {
     const number = positiveInteger(pull.number ?? null);
     if (number == null) continue;
 
@@ -62,6 +60,16 @@ const normalizePullRequestStack = (
       ...(pull.base?.ref ? { baseRef: pull.base.ref } : {}),
     });
   }
+
+  return layers;
+};
+
+const normalizePullRequestStack = (
+  membership: GitHubStackMembership,
+  resource: GitHubStackResource | null,
+  pullNumber: number
+): PullRequestStack | null => {
+  const layers = layersFromPulls(resource?.pull_requests);
 
   const trunk = (resource?.base?.ref ?? membership.base?.ref ?? '').trim();
   const count = positiveInteger(membership.size) ?? (layers.length >= 1 ? layers.length : null);
@@ -101,38 +109,235 @@ export async function fetchPullRequestStack(
     const stack = normalizePullRequestStack(membership, data, pullNumber);
     if (!stack || stack.count !== stack.layers.length) return stack;
 
-    const active = (data.pull_requests ?? []).filter(
-      (pull) => pull.state === 'open' && !pull.merged_at
-    );
-    if (!active.length) return stack;
-
-    const behindCounts = await Promise.all(
-      active.map(async (pull) =>
-        pull.base?.ref && pull.head?.sha
-          ? fetchBaseBehindCount(octokit, owner, repo, pull.base.ref, pull.head.sha)
-          : null
-      )
-    );
-    const behindByNumber = new Map<number, number | null>();
-    active.forEach((pull, index) => {
-      const number = positiveInteger(pull.number ?? null);
-      if (number != null) {
-        behindByNumber.set(number, behindCounts[index] ?? null);
-      }
-    });
-    for (const layer of stack.layers) {
-      if (behindByNumber.has(layer.number)) {
-        layer.behindBy = behindByNumber.get(layer.number) ?? null;
-      }
-    }
-    if (behindCounts.every((count) => count === 0)) {
-      stack.history = 'linear';
-    } else if (behindCounts.some((count) => count !== null && count > 0)) {
-      stack.history = 'not-linear';
-    }
+    await attachStackHistory(octokit, owner, repo, stack, data.pull_requests ?? []);
     return stack;
   } catch (error: unknown) {
     console.warn('Failed to fetch pull request stack:', error);
     return normalizePullRequestStack(membership, null, pullNumber);
+  }
+}
+
+const PR_STACK_QUERY = `
+  query PullRequestStack($owner: String!, $repo: String!, $number: Int!) {
+    repository(owner: $owner, name: $repo) {
+      pullRequest(number: $number) {
+        stack {
+          number
+          baseRefName
+          entries(first: 100) {
+            nodes {
+              position
+              pullRequest {
+                number
+                title
+                state
+                isDraft
+                mergedAt
+                baseRefName
+                headRefOid
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+interface GraphQLStackPullRequest {
+  number?: number | null;
+  title?: string | null;
+  state?: string | null;
+  isDraft?: boolean | null;
+  mergedAt?: string | null;
+  baseRefName?: string | null;
+  headRefOid?: string | null;
+}
+
+interface GraphQLStackResponse {
+  repository?: {
+    pullRequest?: {
+      stack?: {
+        number?: number | null;
+        baseRefName?: string | null;
+        entries?: {
+          nodes?: Array<{
+            position?: number | null;
+            pullRequest?: GraphQLStackPullRequest | null;
+          } | null> | null;
+        } | null;
+      } | null;
+    } | null;
+  } | null;
+}
+
+const graphQLLayerState = (pull: GraphQLStackPullRequest): PullRequestStackLayerState => {
+  if (pull.mergedAt || pull.state === 'MERGED') return 'merged';
+  if (pull.state === 'CLOSED') return 'closed';
+  if (pull.isDraft) return 'draft';
+  return 'open';
+};
+
+async function fetchStackFromPullRequest(
+  octokit: GitHubClient,
+  owner: string,
+  repo: string,
+  stackNumber: number,
+  viewerPullNumber: number
+): Promise<PullRequestStack | null> {
+  const response = (await octokit.graphql(PR_STACK_QUERY, {
+    owner,
+    repo,
+    number: viewerPullNumber,
+  })) as GraphQLStackResponse;
+  const stack = response.repository?.pullRequest?.stack;
+  if (!stack || stack.number !== stackNumber) return null;
+
+  const trunk = (stack.baseRefName ?? '').trim();
+  const nodes = [...(stack.entries?.nodes ?? [])].sort(
+    (left, right) => (left?.position ?? 0) - (right?.position ?? 0)
+  );
+  const layers: PullRequestStackLayer[] = [];
+  const pulls: GitHubStackPullRequest[] = [];
+
+  for (const node of nodes) {
+    const pull = node?.pullRequest;
+    const number = positiveInteger(pull?.number ?? null);
+    if (!pull || number == null) continue;
+    layers.push({
+      number,
+      title: typeof pull.title === 'string' ? pull.title : '',
+      state: graphQLLayerState(pull),
+      ...(pull.headRefOid ? { headSha: pull.headRefOid } : {}),
+      ...(pull.baseRefName ? { baseRef: pull.baseRefName } : {}),
+    });
+    pulls.push({
+      number,
+      title: pull.title,
+      state: pull.state === 'OPEN' ? 'open' : 'closed',
+      draft: pull.isDraft,
+      merged_at: pull.mergedAt,
+      base: { ref: pull.baseRefName },
+      head: { sha: pull.headRefOid },
+    });
+  }
+
+  if (!trunk || layers.length < 1) return null;
+
+  const listed = layers.findIndex((layer) => layer.number === viewerPullNumber);
+  const normalized: PullRequestStack = {
+    number: stackNumber,
+    trunk,
+    count: layers.length,
+    place: listed >= 0 ? listed + 1 : 0,
+    layers,
+    history: 'unknown',
+  };
+  await attachStackHistory(octokit, owner, repo, normalized, pulls);
+  return normalized;
+}
+
+const emptyRepositoryStack = (stackNumber: number): PullRequestStack => ({
+  number: stackNumber,
+  trunk: '',
+  count: 0,
+  place: 0,
+  layers: [],
+  history: 'unknown',
+});
+
+/**
+ * The stack named by `stackNumber`, including one the viewer has left.
+ * `place` is 0 when the viewer is not a layer, so nothing is marked current
+ * unless the caller finds the viewer in `layers`.
+ */
+export async function fetchRepositoryStack(
+  octokit: GitHubClient,
+  owner: string,
+  repo: string,
+  stackNumber: number,
+  viewerPullNumber?: number
+): Promise<PullRequestStack> {
+  if (positiveInteger(stackNumber) == null) return emptyRepositoryStack(stackNumber);
+
+  if (viewerPullNumber != null && viewerPullNumber >= 1) {
+    try {
+      const fromPull = await fetchStackFromPullRequest(
+        octokit,
+        owner,
+        repo,
+        stackNumber,
+        viewerPullNumber
+      );
+      if (fromPull) return fromPull;
+    } catch (error: unknown) {
+      console.warn('Failed to fetch pull request stack from GraphQL:', error);
+    }
+  }
+
+  try {
+    const { data } = await octokit.request('GET /repos/{owner}/{repo}/stacks/{stack_number}', {
+      owner,
+      repo,
+      stack_number: stackNumber,
+    });
+    const layers = layersFromPulls(data.pull_requests);
+
+    const trunk = (data.base?.ref ?? '').trim();
+    if (!trunk || layers.length < 1) return emptyRepositoryStack(stackNumber);
+
+    const listed =
+      viewerPullNumber == null
+        ? -1
+        : layers.findIndex((layer) => layer.number === viewerPullNumber);
+    const stack: PullRequestStack = {
+      number: stackNumber,
+      trunk,
+      count: layers.length,
+      place: listed >= 0 ? listed + 1 : 0,
+      layers,
+      history: 'unknown',
+    };
+    await attachStackHistory(octokit, owner, repo, stack, data.pull_requests ?? []);
+    return stack;
+  } catch (error: unknown) {
+    console.warn('Failed to fetch repository stack:', error);
+    return emptyRepositoryStack(stackNumber);
+  }
+}
+
+async function attachStackHistory(
+  octokit: GitHubClient,
+  owner: string,
+  repo: string,
+  stack: PullRequestStack,
+  pulls: GitHubStackPullRequest[]
+) {
+  const active = pulls.filter((pull) => pull.state === 'open' && !pull.merged_at);
+  if (!active.length) return;
+
+  const behindCounts = await Promise.all(
+    active.map(async (pull) =>
+      pull.base?.ref && pull.head?.sha
+        ? fetchBaseBehindCount(octokit, owner, repo, pull.base.ref, pull.head.sha)
+        : null
+    )
+  );
+  const behindByNumber = new Map<number, number | null>();
+  active.forEach((pull, index) => {
+    const number = positiveInteger(pull.number ?? null);
+    if (number != null) {
+      behindByNumber.set(number, behindCounts[index] ?? null);
+    }
+  });
+  for (const layer of stack.layers) {
+    if (behindByNumber.has(layer.number)) {
+      layer.behindBy = behindByNumber.get(layer.number) ?? null;
+    }
+  }
+  if (behindCounts.every((count) => count === 0)) {
+    stack.history = 'linear';
+  } else if (behindCounts.some((count) => count !== null && count > 0)) {
+    stack.history = 'not-linear';
   }
 }

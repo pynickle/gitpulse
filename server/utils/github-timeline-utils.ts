@@ -441,11 +441,48 @@ const PR_FORCE_PUSH_FIELDS = `
   }
 `;
 
+const PR_AUTOMATIC_BASE_CHANGE_FIELDS = `
+  nodes {
+    ... on AutomaticBaseChangeSucceededEvent {
+      id
+      oldBase
+      newBase
+    }
+    ... on AutomaticBaseChangeFailedEvent {
+      id
+      oldBase
+      newBase
+    }
+  }
+  pageInfo {
+    hasNextPage
+    endCursor
+  }
+`;
+
+const PR_STACK_CHANGE_FIELDS = `
+  nodes {
+    ... on AddedToStackEvent {
+      id
+      stackNumber
+    }
+    ... on RemovedFromStackEvent {
+      id
+      stackNumber
+    }
+  }
+  pageInfo {
+    hasNextPage
+    endCursor
+  }
+`;
+
 /**
- * One round trip for the three connections the timeline needs beyond REST: review
- * threads, review provenance, and force-push refs. They share no pagination state,
- * so each brings its own `pageInfo`; a connection that overflows its first page is
- * finished by the single-purpose fetchers below.
+ * One round trip for the connections the timeline needs beyond REST: review
+ * threads, review provenance, force-push refs, automatic base changes, and
+ * stack membership. They share no pagination state, so each brings its own
+ * `pageInfo`; a connection that overflows its first page is finished by the
+ * single-purpose fetchers below.
  */
 const PR_TIMELINE_SUPPLEMENT_QUERY = `
   query PullRequestTimelineSupplement(
@@ -466,6 +503,18 @@ const PR_TIMELINE_SUPPLEMENT_QUERY = `
           itemTypes: [HEAD_REF_FORCE_PUSHED_EVENT, BASE_REF_FORCE_PUSHED_EVENT]
         ) {
           ${PR_FORCE_PUSH_FIELDS}
+        }
+        automaticBaseChanges: timelineItems(
+          first: 100
+          itemTypes: [AUTOMATIC_BASE_CHANGE_SUCCEEDED_EVENT, AUTOMATIC_BASE_CHANGE_FAILED_EVENT]
+        ) {
+          ${PR_AUTOMATIC_BASE_CHANGE_FIELDS}
+        }
+        stackChanges: timelineItems(
+          first: 100
+          itemTypes: [ADDED_TO_STACK_EVENT, REMOVED_FROM_STACK_EVENT]
+        ) {
+          ${PR_STACK_CHANGE_FIELDS}
         }
       }
     }
@@ -675,12 +724,75 @@ const PR_FORCE_PUSH_QUERY = `
   }
 `;
 
+/**
+ * REST records an automatic base change with no branch names. `id` matches the
+ * node id REST reports as `node_id`.
+ */
+const PR_AUTOMATIC_BASE_CHANGE_QUERY = `
+  query PullRequestAutomaticBaseChanges(
+    $owner: String!
+    $repo: String!
+    $pullNumber: Int!
+    $cursor: String
+  ) {
+    repository(owner: $owner, name: $repo) {
+      pullRequest(number: $pullNumber) {
+        automaticBaseChanges: timelineItems(
+          first: 100
+          after: $cursor
+          itemTypes: [AUTOMATIC_BASE_CHANGE_SUCCEEDED_EVENT, AUTOMATIC_BASE_CHANGE_FAILED_EVENT]
+        ) {
+          ${PR_AUTOMATIC_BASE_CHANGE_FIELDS}
+        }
+      }
+    }
+  }
+`;
+
+/**
+ * REST records a stack membership change with no stack number. `id` matches the
+ * node id REST reports as `node_id`.
+ */
+const PR_STACK_CHANGE_QUERY = `
+  query PullRequestStackChanges(
+    $owner: String!
+    $repo: String!
+    $pullNumber: Int!
+    $cursor: String
+  ) {
+    repository(owner: $owner, name: $repo) {
+      pullRequest(number: $pullNumber) {
+        stackChanges: timelineItems(
+          first: 100
+          after: $cursor
+          itemTypes: [ADDED_TO_STACK_EVENT, REMOVED_FROM_STACK_EVENT]
+        ) {
+          ${PR_STACK_CHANGE_FIELDS}
+        }
+      }
+    }
+  }
+`;
+
 /** One force push, as GraphQL reports it. `id` matches REST's `node_id`. */
 export interface TimelineForcePushRef {
   id: string;
   refName?: string;
   beforeOid?: string;
   afterOid?: string;
+}
+
+/** One automatic base change. `id` matches REST's `node_id`. */
+export interface TimelineAutomaticBaseChange {
+  id: string;
+  oldBase: string;
+  newBase: string;
+}
+
+/** One stack membership change. `id` matches REST's `node_id`. */
+export interface TimelineStackChange {
+  id: string;
+  stackNumber?: number;
 }
 
 interface PRForcePushGraphQLNode {
@@ -704,9 +816,49 @@ interface PRForcePushesGraphQLResponse {
   } | null;
 }
 
+interface PRAutomaticBaseChangeGraphQLNode {
+  id?: string | null;
+  oldBase?: string | null;
+  newBase?: string | null;
+}
+
+interface PRStackChangeGraphQLNode {
+  id?: string | null;
+  stackNumber?: number | null;
+}
+
+interface PRTimelinePageInfo {
+  hasNextPage?: boolean;
+  endCursor?: string | null;
+}
+
+interface PRAutomaticBaseChangesGraphQLResponse {
+  repository?: {
+    pullRequest?: {
+      automaticBaseChanges?: {
+        nodes?: Array<PRAutomaticBaseChangeGraphQLNode | null> | null;
+        pageInfo?: PRTimelinePageInfo | null;
+      } | null;
+    } | null;
+  } | null;
+}
+
+interface PRStackChangesGraphQLResponse {
+  repository?: {
+    pullRequest?: {
+      stackChanges?: {
+        nodes?: Array<PRStackChangeGraphQLNode | null> | null;
+        pageInfo?: PRTimelinePageInfo | null;
+      } | null;
+    } | null;
+  } | null;
+}
+
 type PRTimelineSupplementGraphQLResponse = PRReviewThreadsGraphQLResponse &
   PRReviewMetadataGraphQLResponse &
-  PRForcePushesGraphQLResponse;
+  PRForcePushesGraphQLResponse &
+  PRAutomaticBaseChangesGraphQLResponse &
+  PRStackChangesGraphQLResponse;
 
 /**
  * The branch and both ends of every force push on a pull request. REST omits all
@@ -740,10 +892,70 @@ export async function fetchPRForcePushRefs(
   }
 }
 
+/** Both bases of every automatic base change. REST omits them. */
+export async function fetchPRAutomaticBaseChanges(
+  octokit: GitHubClient,
+  owner: string,
+  repo: string,
+  pullNumber: number,
+  startCursor?: string | null
+): Promise<TimelineAutomaticBaseChange[]> {
+  const changes: TimelineAutomaticBaseChange[] = [];
+  let cursor: string | null = startCursor ?? null;
+
+  while (true) {
+    const response = (await octokit.graphql(PR_AUTOMATIC_BASE_CHANGE_QUERY, {
+      owner,
+      repo,
+      pullNumber,
+      cursor,
+    })) as PRAutomaticBaseChangesGraphQLResponse;
+    const items = response.repository?.pullRequest?.automaticBaseChanges;
+    changes.push(...toAutomaticBaseChanges(items?.nodes));
+
+    if (!items?.pageInfo?.hasNextPage || !items.pageInfo.endCursor) {
+      return changes;
+    }
+
+    cursor = items.pageInfo.endCursor;
+  }
+}
+
+/** The stack number of every membership change. REST omits it. */
+export async function fetchPRStackChanges(
+  octokit: GitHubClient,
+  owner: string,
+  repo: string,
+  pullNumber: number,
+  startCursor?: string | null
+): Promise<TimelineStackChange[]> {
+  const changes: TimelineStackChange[] = [];
+  let cursor: string | null = startCursor ?? null;
+
+  while (true) {
+    const response = (await octokit.graphql(PR_STACK_CHANGE_QUERY, {
+      owner,
+      repo,
+      pullNumber,
+      cursor,
+    })) as PRStackChangesGraphQLResponse;
+    const items = response.repository?.pullRequest?.stackChanges;
+    changes.push(...toStackChanges(items?.nodes));
+
+    if (!items?.pageInfo?.hasNextPage || !items.pageInfo.endCursor) {
+      return changes;
+    }
+
+    cursor = items.pageInfo.endCursor;
+  }
+}
+
 export interface PRTimelineSupplement {
   reviewThreads: TimelineReviewThreadPayload[];
   reviewMetadata: Map<string, TimelineReviewMetadata>;
   forcePushRefs: TimelineForcePushRef[];
+  automaticBaseChanges: TimelineAutomaticBaseChange[];
+  stackChanges: TimelineStackChange[];
 }
 
 /**
@@ -777,37 +989,62 @@ export async function fetchPRTimelineSupplement(
   const reviewMetadata = new Map<string, TimelineReviewMetadata>();
   collectReviewMetadata(pullRequest?.reviews?.nodes, reviewMetadata);
   const forcePushRefs = toForcePushRefs(pullRequest?.timelineItems?.nodes);
+  const automaticBaseChanges = toAutomaticBaseChanges(pullRequest?.automaticBaseChanges?.nodes);
+  const stackChanges = toStackChanges(pullRequest?.stackChanges?.nodes);
 
   const threadsPage = pullRequest?.reviewThreads?.pageInfo;
   const reviewsPage = pullRequest?.reviews?.pageInfo;
   const forcePushesPage = pullRequest?.timelineItems?.pageInfo;
+  const baseChangesPage = pullRequest?.automaticBaseChanges?.pageInfo;
+  const stackChangesPage = pullRequest?.stackChanges?.pageInfo;
 
-  const [moreThreads, moreMetadata, moreForcePushes] = await Promise.all([
-    threadsPage?.hasNextPage && threadsPage.endCursor
-      ? fetchPRReviewThreads(octokit, owner, repo, pullNumber, threadsPage.endCursor).catch(
-          (error) => {
-            console.warn('[Timeline] Failed to paginate review threads:', error);
-            return [] as TimelineReviewThreadPayload[];
-          }
-        )
-      : [],
-    reviewsPage?.hasNextPage && reviewsPage.endCursor
-      ? fetchPRReviewMetadata(octokit, owner, repo, pullNumber, reviewsPage.endCursor).catch(
-          (error) => {
-            console.warn('[Timeline] Failed to paginate review metadata:', error);
-            return new Map<string, TimelineReviewMetadata>();
-          }
-        )
-      : new Map<string, TimelineReviewMetadata>(),
-    forcePushesPage?.hasNextPage && forcePushesPage.endCursor
-      ? fetchPRForcePushRefs(octokit, owner, repo, pullNumber, forcePushesPage.endCursor).catch(
-          (error) => {
-            console.warn('[Timeline] Failed to paginate force-push refs:', error);
-            return [] as TimelineForcePushRef[];
-          }
-        )
-      : [],
-  ]);
+  const [moreThreads, moreMetadata, moreForcePushes, moreBaseChanges, moreStackChanges] =
+    await Promise.all([
+      threadsPage?.hasNextPage && threadsPage.endCursor
+        ? fetchPRReviewThreads(octokit, owner, repo, pullNumber, threadsPage.endCursor).catch(
+            (error) => {
+              console.warn('[Timeline] Failed to paginate review threads:', error);
+              return [] as TimelineReviewThreadPayload[];
+            }
+          )
+        : [],
+      reviewsPage?.hasNextPage && reviewsPage.endCursor
+        ? fetchPRReviewMetadata(octokit, owner, repo, pullNumber, reviewsPage.endCursor).catch(
+            (error) => {
+              console.warn('[Timeline] Failed to paginate review metadata:', error);
+              return new Map<string, TimelineReviewMetadata>();
+            }
+          )
+        : new Map<string, TimelineReviewMetadata>(),
+      forcePushesPage?.hasNextPage && forcePushesPage.endCursor
+        ? fetchPRForcePushRefs(octokit, owner, repo, pullNumber, forcePushesPage.endCursor).catch(
+            (error) => {
+              console.warn('[Timeline] Failed to paginate force-push refs:', error);
+              return [] as TimelineForcePushRef[];
+            }
+          )
+        : [],
+      baseChangesPage?.hasNextPage && baseChangesPage.endCursor
+        ? fetchPRAutomaticBaseChanges(
+            octokit,
+            owner,
+            repo,
+            pullNumber,
+            baseChangesPage.endCursor
+          ).catch((error) => {
+            console.warn('[Timeline] Failed to paginate automatic base changes:', error);
+            return [] as TimelineAutomaticBaseChange[];
+          })
+        : [],
+      stackChangesPage?.hasNextPage && stackChangesPage.endCursor
+        ? fetchPRStackChanges(octokit, owner, repo, pullNumber, stackChangesPage.endCursor).catch(
+            (error) => {
+              console.warn('[Timeline] Failed to paginate stack changes:', error);
+              return [] as TimelineStackChange[];
+            }
+          )
+        : [],
+    ]);
 
   for (const [id, metadata] of moreMetadata) {
     if (!reviewMetadata.has(id)) reviewMetadata.set(id, metadata);
@@ -817,6 +1054,8 @@ export async function fetchPRTimelineSupplement(
     reviewThreads: mergeById(reviewThreads, moreThreads),
     reviewMetadata,
     forcePushRefs: mergeById(forcePushRefs, moreForcePushes),
+    automaticBaseChanges: mergeById(automaticBaseChanges, moreBaseChanges),
+    stackChanges: mergeById(stackChanges, moreStackChanges),
   };
 }
 
@@ -842,6 +1081,31 @@ function toForcePushRefs(
         ]
       : []
   );
+}
+
+function toAutomaticBaseChanges(
+  nodes: Array<PRAutomaticBaseChangeGraphQLNode | null> | null | undefined
+): TimelineAutomaticBaseChange[] {
+  return (nodes ?? []).flatMap((node) =>
+    node?.id && node.oldBase && node.newBase
+      ? [{ id: node.id, oldBase: node.oldBase, newBase: node.newBase }]
+      : []
+  );
+}
+
+function toStackChanges(
+  nodes: Array<PRStackChangeGraphQLNode | null> | null | undefined
+): TimelineStackChange[] {
+  return (nodes ?? []).flatMap((node) => {
+    if (!node?.id) return [];
+    const stackNumber =
+      typeof node.stackNumber === 'number' &&
+      Number.isInteger(node.stackNumber) &&
+      node.stackNumber >= 1
+        ? node.stackNumber
+        : undefined;
+    return [{ id: node.id, ...(stackNumber ? { stackNumber } : {}) }];
+  });
 }
 
 /**
@@ -871,6 +1135,56 @@ export function applyPRForcePushRefs(items: SortableTimelineItem[], refs: Timeli
     if (ref.afterOid) {
       item.afterCommit = mapOptionalCommit(ref.afterOid, item.afterCommit?.commitUrl);
     }
+  }
+}
+
+/**
+ * Writes the GraphQL bases onto the automatic base-change events REST already
+ * placed, keyed by the node id both APIs share. An unmatched event keeps its
+ * empty bases, and the row omits the from/to clause.
+ */
+export function applyPRAutomaticBaseChanges(
+  items: SortableTimelineItem[],
+  changes: TimelineAutomaticBaseChange[]
+) {
+  if (!changes.length) return;
+
+  const byId = new Map(changes.map((change) => [change.id, change]));
+
+  for (const item of items) {
+    if (
+      item.eventType !== 'automatic_base_change_succeeded' &&
+      item.eventType !== 'automatic_base_change_failed'
+    ) {
+      continue;
+    }
+
+    const change = item.nodeId ? byId.get(item.nodeId) : undefined;
+    if (!change) continue;
+
+    item.oldBase = change.oldBase;
+    item.newBase = change.newBase;
+  }
+}
+
+/**
+ * Writes the GraphQL stack number onto the membership events REST already placed.
+ * An unmatched event stays a row with no number.
+ */
+export function applyPRStackChanges(items: SortableTimelineItem[], changes: TimelineStackChange[]) {
+  if (!changes.length) return;
+
+  const byId = new Map(changes.map((change) => [change.id, change]));
+
+  for (const item of items) {
+    if (item.eventType !== 'added_to_stack' && item.eventType !== 'removed_from_stack') {
+      continue;
+    }
+
+    const change = item.nodeId ? byId.get(item.nodeId) : undefined;
+    if (!change?.stackNumber) continue;
+
+    item.stackNumber = change.stackNumber;
   }
 }
 
@@ -1664,6 +1978,14 @@ export function normalizePRIssueTimelineEvent(
         eventType: eventName,
         oldBase: rawEvent.previous_base_ref_name ?? rawEvent.old_base,
         newBase: rawEvent.current_base_ref_name ?? rawEvent.new_base ?? rawEvent.base_ref,
+      };
+    // REST names the actor and nothing else. The stack number arrives from GraphQL.
+    case 'added_to_stack':
+    case 'removed_from_stack':
+      return {
+        ...buildBaseTimelineItem(rawEvent),
+        kind: 'event',
+        eventType: eventName,
       };
     case 'deployed':
       return {

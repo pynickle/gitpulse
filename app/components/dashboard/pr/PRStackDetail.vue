@@ -8,6 +8,7 @@ import PRStackLayerList from '~/components/dashboard/pr/PRStackLayerList.vue';
 defineProps<{
   stack: PullRequestStack;
   currentPullNumber?: number;
+  loadingLabel?: string;
 }>();
 
 const emit = defineEmits<{
@@ -23,10 +24,14 @@ const { t } = useI18n();
     :is-visible="true"
     :title="t('prReview.stackDetail.title')"
     :close-label="t('prReview.stackDetail.close')"
-    :empty-label="!stack.layers.length ? t('prReview.stackDetail.unavailable') : undefined"
+    :loading-label="loadingLabel"
+    :empty-label="
+      !loadingLabel && !stack.layers.length ? t('prReview.stackDetail.unavailable') : undefined
+    "
     @close="emit('close')"
   >
     <PRStackLayerList
+      v-if="!loadingLabel"
       :stack="stack"
       :current-pull-number="currentPullNumber"
       picker-mode

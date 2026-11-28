@@ -12,7 +12,9 @@ mock.module('#shared/types/comment-moderation', () => import('../shared/types/co
 
 const {
   assignCommitCheckRollups,
+  applyPRAutomaticBaseChanges,
   applyPRForcePushRefs,
+  applyPRStackChanges,
   enrichPRTimelineWithReviewData,
   fetchPRReviewMetadata,
   fetchPRTimelineSupplement,
@@ -841,6 +843,80 @@ describe('force-push events', () => {
   });
 });
 
+describe('automatic base changes and stack membership', () => {
+  const restEvent = (event: string, nodeId: string) => ({
+    event,
+    id: 37368257702,
+    node_id: nodeId,
+    created_at: '2026-11-26T12:44:29Z',
+    actor: user('Chiloven945'),
+    commit_id: null,
+    commit_url: null,
+  });
+
+  test('fills an automatic base change from the GraphQL bases', () => {
+    const timeline = normalizePullTimeline([
+      restEvent('automatic_base_change_succeeded', 'ABCSE_one'),
+      restEvent('automatic_base_change_failed', 'ABCFE_two'),
+    ]);
+
+    applyPRAutomaticBaseChanges(timeline, [
+      { id: 'ABCSE_one', oldBase: 'feat/video-background', newBase: 'dev' },
+      { id: 'ABCFE_two', oldBase: 'feat/old', newBase: 'dev' },
+    ]);
+
+    const succeeded = timeline.find((item) => item.eventType === 'automatic_base_change_succeeded');
+    const failed = timeline.find((item) => item.eventType === 'automatic_base_change_failed');
+    expect(succeeded?.kind).toBe('event');
+    expect(succeeded?.oldBase).toBe('feat/video-background');
+    expect(succeeded?.newBase).toBe('dev');
+    expect(failed?.oldBase).toBe('feat/old');
+    expect(failed?.newBase).toBe('dev');
+  });
+
+  test('leaves an automatic base change without branches when GraphQL named no match', () => {
+    const timeline = normalizePullTimeline([
+      restEvent('automatic_base_change_succeeded', 'ABCSE_unmatched'),
+    ]);
+
+    applyPRAutomaticBaseChanges(timeline, []);
+
+    const [item] = timeline;
+    expect(item?.oldBase).toBeUndefined();
+    expect(item?.newBase).toBeUndefined();
+    expect(item?.displayText).toBeUndefined();
+  });
+
+  test('fills a stack membership change and does not treat it as an unsupported stub', () => {
+    const timeline = normalizePullTimeline([
+      restEvent('added_to_stack', 'ATSE_one'),
+      restEvent('removed_from_stack', 'RFSE_two'),
+    ]);
+
+    applyPRStackChanges(timeline, [
+      { id: 'ATSE_one', stackNumber: 3855 },
+      { id: 'RFSE_two', stackNumber: 3855 },
+    ]);
+
+    const added = timeline.find((item) => item.eventType === 'added_to_stack');
+    const removed = timeline.find((item) => item.eventType === 'removed_from_stack');
+    expect(added?.kind).toBe('event');
+    expect(added?.displayText).toBeUndefined();
+    expect(added?.stackNumber).toBe(3855);
+    expect(removed?.stackNumber).toBe(3855);
+  });
+
+  test('leaves a stack membership change without a number when GraphQL named no match', () => {
+    const timeline = normalizePullTimeline([restEvent('added_to_stack', 'ATSE_unmatched')]);
+
+    applyPRStackChanges(timeline, []);
+
+    expect(timeline[0]?.kind).toBe('event');
+    expect(timeline[0]?.stackNumber).toBeUndefined();
+    expect(timeline[0]?.displayText).toBeUndefined();
+  });
+});
+
 describe('timeline supplement', () => {
   const supplementNode = (overrides: Record<string, any> = {}) => ({
     repository: {
@@ -901,6 +977,36 @@ describe('timeline supplement', () => {
         afterOid: '06e80370cd900edd211dc580a990e3a6b216b3ab',
       },
     ]);
+    expect(supplement.automaticBaseChanges).toEqual([]);
+    expect(supplement.stackChanges).toEqual([]);
+  });
+
+  test('reads automatic base changes and stack numbers from the same request', async () => {
+    const octokit = {
+      graphql: async () =>
+        supplementNode({
+          automaticBaseChanges: {
+            nodes: [{ id: 'ABCSE_one', oldBase: 'feat/video-background', newBase: 'dev' }],
+            pageInfo: { hasNextPage: false, endCursor: null },
+          },
+          stackChanges: {
+            nodes: [{ id: 'ATSE_one', stackNumber: 3855 }],
+            pageInfo: { hasNextPage: false, endCursor: null },
+          },
+        }),
+    };
+
+    const supplement = await fetchPRTimelineSupplement(
+      octokit as never,
+      'PCL-Community',
+      'PCL-CE',
+      3853
+    );
+
+    expect(supplement.automaticBaseChanges).toEqual([
+      { id: 'ABCSE_one', oldBase: 'feat/video-background', newBase: 'dev' },
+    ]);
+    expect(supplement.stackChanges).toEqual([{ id: 'ATSE_one', stackNumber: 3855 }]);
   });
 
   test('finishes an overflowing connection from its endCursor instead of page 1', async () => {

@@ -92,6 +92,7 @@
                 :repo-owner="repoOwner"
                 :repo-name="repoName"
                 :pull-number="currentPullRequest?.number || 0"
+                :stack="currentPullRequest?.stack ?? null"
                 :has-next-page="hasNextTimelinePage"
                 :loading-more="loadingMoreTimeline"
                 :resolving-review-thread-id="resolvingReviewThreadId"

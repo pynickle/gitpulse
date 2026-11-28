@@ -1077,6 +1077,7 @@
       "behindMany": "落后 {count}",
       "historyLinear": "线性",
       "historyNeedsRebase": "需变基",
+      "loading": "正在加载堆叠…",
       "unavailable": "无法加载堆叠层列表。",
       "state": {
         "open": "打开",

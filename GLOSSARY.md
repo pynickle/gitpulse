@@ -221,10 +221,14 @@ _Avoid_: mentioned this PR, mentioned PR
 Consecutive events of the same type by the same GitHub user, presented together with a shared actor and a separate target and time for each event.
 _Avoid_: merged event, when individual actions remain distinct
 
+**Automatic Base Change**:
+GitHub retargets a pull request onto a new base on its own. The timeline line names the previous base and the new base, and it names no person.
+_Avoid_: the person on the event, a manual base change, Trunk
+
 ## Stack
 
 **Stack**:
-An ordered set of pull requests in one repository that GitHub has linked. Each one targets the branch of the pull request below it, and the set lands on a single Trunk.
+An ordered set of pull requests in one repository that GitHub has linked, each targeting the branch of the pull request below it and landing on a single Trunk. Its number identifies that set in the repository and is not a pull request number.
 _Avoid_: chain, stacked branch, Graphite stack
 
 **Layer**:
@@ -240,7 +244,7 @@ The control on a Layer that shows this pull request's place in its Stack and ope
 _Avoid_: stack badge, stack icon, stack label
 
 **Stack Detail**:
-The modal opened from a Stack Chip that lists the Stack's Trunk, its linearity, and its Layers from the first Layer to the top, showing each Layer's state and whether an active Layer is behind its base. The current Layer is marked, choosing another Layer opens that pull request, and the modal does not land or rebase the Stack.
+The modal that lists a Stack's Trunk, its linearity, and its Layers from the first Layer to the top, showing each Layer's state and whether an active Layer is behind its base. A Stack Chip opens the Stack this pull request belongs to, and a timeline stack number opens the Stack that number names, including one this pull request has left; the current Layer is marked only while this pull request is still listed, choosing another Layer opens that pull request, and the modal does not land or rebase the Stack.
 _Avoid_: stack map, stack popover, stack panel
 
 **Stack Merge**:

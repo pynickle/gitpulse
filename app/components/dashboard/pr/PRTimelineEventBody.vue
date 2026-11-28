@@ -21,6 +21,7 @@
     <PRTimelineStateEvents
       v-else-if="item.eventType && stateEventTypes.has(item.eventType)"
       :item="item"
+      @open-stack="emit('open-stack', $event)"
     />
 
     <TimelineUnavailableEvent
@@ -69,6 +70,7 @@ const {
 const emit = defineEmits<{
   (e: 'switch-issue', owner: string, repo: string, issueNumber: number): void;
   (e: 'switch-pull-request', owner: string, repo: string, pullNumber: number): void;
+  (e: 'open-stack', stackNumber: number): void;
 }>();
 
 const { locale } = useI18n();
@@ -76,8 +78,17 @@ const localeCode = computed(() => locale.value);
 const relativeTimeNow = useRelativeTimeNow();
 const repoFullName = computed(() => `${repoOwner}/${repoName}`);
 const eventDate = computed(() => item.createdAt || item.commit?.committedDate || '');
+const automaticBaseChangeTypes = new Set([
+  'automatic_base_change_failed',
+  'automatic_base_change_succeeded',
+]);
+
 const shouldRenderActorPrefix = computed(
-  () => !grouped && !item.hasMixedActors && !item.eventType?.startsWith('copilot_work_')
+  () =>
+    !grouped &&
+    !item.hasMixedActors &&
+    !item.eventType?.startsWith('copilot_work_') &&
+    !automaticBaseChangeTypes.has(item.eventType ?? '')
 );
 
 const referenceEventTypes = new Set([
@@ -97,6 +108,7 @@ const referenceEventTypes = new Set([
 
 const stateEventTypes = new Set([
   'added_to_merge_queue',
+  'added_to_stack',
   'added_to_project',
   'added_to_project_v2',
   'archived',
@@ -145,6 +157,7 @@ const stateEventTypes = new Set([
   'ready_for_review',
   'referenced',
   'removed_from_merge_queue',
+  'removed_from_stack',
   'removed_from_project',
   'removed_from_project_v2',
   'reopened',

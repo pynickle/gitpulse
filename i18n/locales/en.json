@@ -1077,6 +1077,7 @@
       "behindMany": "Behind {count}",
       "historyLinear": "Linear",
       "historyNeedsRebase": "Needs rebase",
+      "loading": "Loading stack…",
       "unavailable": "Stack layers could not be loaded.",
       "state": {
         "open": "Open",

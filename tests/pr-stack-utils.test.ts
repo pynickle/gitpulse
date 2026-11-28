@@ -14,7 +14,8 @@ mock.module('#server/utils/pr-merge-status-utils', () => ({
   ) => compareResults.get(`${baseRef}...${headOid}`) ?? null,
 }));
 
-const { fetchPullRequestStack } = await import('../server/utils/pr-stack-utils');
+const { fetchPullRequestStack, fetchRepositoryStack } =
+  await import('../server/utils/pr-stack-utils');
 const { isSoleActiveStackLayer, hasMultiActiveStackDependencies } =
   await import('../shared/utils/pr-stack');
 
@@ -254,6 +255,160 @@ describe('fetchPullRequestStack', () => {
         trunk: 'main',
         count: 3,
         place: 2,
+        layers: [],
+        history: 'unknown',
+      });
+    } finally {
+      console.warn = originalWarn;
+    }
+  });
+});
+
+describe('fetchRepositoryStack', () => {
+  test('uses the pull request GraphQL stack when that stack is the one requested', async () => {
+    const request = mock(() => Promise.reject(new Error('REST should not run')));
+    const graphql = mock(() =>
+      Promise.resolve({
+        repository: {
+          pullRequest: {
+            stack: {
+              number: 3855,
+              baseRefName: 'dev',
+              entries: {
+                nodes: [
+                  {
+                    position: 1,
+                    pullRequest: {
+                      number: 3848,
+                      title: 'Lower',
+                      state: 'MERGED',
+                      isDraft: false,
+                      mergedAt: '2026-11-26T12:44:27Z',
+                      baseRefName: 'dev',
+                      headRefOid: 'sha-3848',
+                    },
+                  },
+                  {
+                    position: 2,
+                    pullRequest: {
+                      number: 3853,
+                      title: 'Open layer',
+                      state: 'OPEN',
+                      isDraft: false,
+                      mergedAt: null,
+                      baseRefName: 'dev',
+                      headRefOid: 'sha-3853',
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      })
+    );
+    const octokit = { request, graphql } as unknown as Octokit;
+
+    const stack = await fetchRepositoryStack(octokit, 'PCL-Community', 'PCL-CE', 3855, 3853);
+
+    expect(request).not.toHaveBeenCalled();
+    expect(stack.trunk).toBe('dev');
+    expect(stack.place).toBe(2);
+    expect(stack.layers.map((layer) => [layer.number, layer.state])).toEqual([
+      [3848, 'merged'],
+      [3853, 'open'],
+    ]);
+  });
+
+  test('returns the layers of a stack the viewer has left, with nothing marked by place', async () => {
+    compareResults.clear();
+    compareResults.set('dev...sha-3853', 2);
+
+    const request = mock(() =>
+      Promise.resolve({
+        data: {
+          base: { ref: 'dev' },
+          pull_requests: [
+            {
+              number: 3848,
+              title: 'Lower merged layer',
+              state: 'closed',
+              merged_at: '2026-11-26T10:00:00Z',
+              base: { ref: 'dev', sha: 'base-0' },
+              head: { sha: 'sha-3848' },
+            },
+            {
+              number: 3853,
+              title: 'Open layer',
+              state: 'open',
+              merged_at: null,
+              base: { ref: 'dev', sha: 'base-1' },
+              head: { sha: 'sha-3853' },
+            },
+          ],
+        },
+      })
+    );
+    const octokit = { request, graphql: mock(() => Promise.resolve({})) } as unknown as Octokit;
+
+    const stack = await fetchRepositoryStack(octokit, 'PCL-Community', 'PCL-CE', 3855, 9999);
+
+    expect(request).toHaveBeenCalledWith('GET /repos/{owner}/{repo}/stacks/{stack_number}', {
+      owner: 'PCL-Community',
+      repo: 'PCL-CE',
+      stack_number: 3855,
+    });
+    expect(stack.number).toBe(3855);
+    expect(stack.trunk).toBe('dev');
+    expect(stack.place).toBe(0);
+    expect(stack.layers.map((layer) => layer.number)).toEqual([3848, 3853]);
+    expect(stack.history).toBe('not-linear');
+    expect(stack.layers[1]?.behindBy).toBe(2);
+  });
+
+  test('marks the viewer place when that pull request is still a layer', async () => {
+    compareResults.clear();
+    const request = mock(() =>
+      Promise.resolve({
+        data: {
+          base: { ref: 'dev' },
+          pull_requests: [
+            {
+              number: 3853,
+              title: 'Open layer',
+              state: 'closed',
+              merged_at: '2026-11-26T10:00:00Z',
+              base: { ref: 'dev' },
+              head: { sha: 'sha-3853' },
+            },
+          ],
+        },
+      })
+    );
+    const octokit = { request, graphql: mock(() => Promise.resolve({})) } as unknown as Octokit;
+
+    const stack = await fetchRepositoryStack(octokit, 'PCL-Community', 'PCL-CE', 3855, 3853);
+
+    expect(stack.place).toBe(1);
+    expect(stack.history).toBe('unknown');
+  });
+
+  test('returns an empty stack when the stack cannot be loaded', async () => {
+    const originalWarn = console.warn;
+    console.warn = () => {};
+    try {
+      const octokit = {
+        request: mock(() => Promise.reject(new Error('GitHub 404'))),
+        graphql: mock(() => Promise.resolve({})),
+      } as unknown as Octokit;
+
+      const stack = await fetchRepositoryStack(octokit, 'PCL-Community', 'PCL-CE', 3855);
+
+      expect(stack).toEqual({
+        number: 3855,
+        trunk: '',
+        count: 0,
+        place: 0,
         layers: [],
         history: 'unknown',
       });

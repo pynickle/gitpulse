@@ -175,6 +175,7 @@ export interface PRTimelineItem {
   previousRefName?: string;
   oldBase?: string;
   newBase?: string;
+  stackNumber?: number;
   baseRefName?: string;
   discussion?: { title?: string };
   deployment?: { environment?: string };

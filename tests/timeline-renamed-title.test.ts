@@ -78,15 +78,23 @@ const IssueTimelineEvents = await compileVue(
   }
 );
 
-const PRTimelineEvents = await compileVue('app/components/dashboard/pr/PRTimelineEvents.vue', {
-  ...renamedModules,
-  '~/components/dashboard/pr/PRTimelineCommentCard.vue': { default: empty },
-  '~/components/dashboard/pr/PRTimelineCommitCard.vue': { default: empty },
-  '~/components/dashboard/pr/PRTimelineEventBody.vue': { default: eventBodyStub },
-  '~/components/dashboard/pr/PRTimelineMergeCard.vue': { default: empty },
-  '~/components/dashboard/pr/PRTimelineReviewCard.vue': { default: empty },
-  '~/composables/usePRTimelineEvents': prTimelineEvents,
-});
+const icon = defineComponent({ render: () => h('svg') });
+
+const PRTimelineEvents = await compileVue(
+  'app/components/dashboard/pr/PRTimelineEvents.vue',
+  {
+    ...renamedModules,
+    '@lucide/vue': new Proxy({}, { get: () => icon }),
+    'virtual:api': { useGitPulseApiFetch: () => async () => ({}) },
+    '~/components/dashboard/pr/PRTimelineCommentCard.vue': { default: empty },
+    '~/components/dashboard/pr/PRTimelineCommitCard.vue': { default: empty },
+    '~/components/dashboard/pr/PRTimelineEventBody.vue': { default: eventBodyStub },
+    '~/components/dashboard/pr/PRTimelineMergeCard.vue': { default: empty },
+    '~/components/dashboard/pr/PRTimelineReviewCard.vue': { default: empty },
+    '~/composables/usePRTimelineEvents': prTimelineEvents,
+  },
+  { useGitPulseApiFetch: 'virtual:api' }
+);
 
 const actor = {
   login: 'Chiloven945',
