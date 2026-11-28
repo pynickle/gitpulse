@@ -77,8 +77,8 @@ const toggleSection = (section: string) => {
         <div class="pr-review-submit-bar__header-title">
           <MessageSquareIcon :size="16" aria-hidden="true" />
           <div>
-            <h2 class="pr-review-submit-bar__title mb-0">{{ t('prReview.reviewPanel') }}</h2>
-            <p class="is-size-7 has-text-grey mb-0">
+            <h2 class="pr-review-submit-bar__title">{{ t('prReview.reviewPanel') }}</h2>
+            <p class="pr-review-submit-bar__subtitle">
               {{ t('prReview.pendingComments', { count: pendingCommentCount }) }}
             </p>
           </div>
@@ -166,7 +166,7 @@ const toggleSection = (section: string) => {
               compact
               @update:model-value="emit('update:body', $event)"
             />
-            <p class="gp-help mb-0">{{ t('prReview.bodyRequiredHint') }}</p>
+            <p class="gp-help pr-review-submit-bar__hint">{{ t('prReview.bodyRequiredHint') }}</p>
           </div>
         </section>
 
@@ -190,7 +190,7 @@ const toggleSection = (section: string) => {
             <span class="pr-review-submit-bar__count">{{ draftComments.length }}</span>
           </button>
           <div v-if="isSectionExpanded('drafts')" class="pr-review-submit-bar__section-body">
-            <p v-if="!draftComments.length" class="pr-review-submit-bar__empty mb-0">
+            <p v-if="!draftComments.length" class="pr-review-submit-bar__empty">
               {{ t('prReview.noPendingDrafts') }}
             </p>
             <div
@@ -199,10 +199,10 @@ const toggleSection = (section: string) => {
               class="pr-review-submit-bar__draft"
             >
               <div class="pr-review-submit-bar__draft-copy">
-                <p class="pr-review-submit-bar__draft-path mb-1">
+                <p class="pr-review-submit-bar__draft-path">
                   {{ comment.path }}:{{ comment.line }}
                 </p>
-                <p class="pr-review-submit-bar__draft-body mb-0">{{ comment.body }}</p>
+                <p class="pr-review-submit-bar__draft-body">{{ comment.body }}</p>
               </div>
               <button
                 class="pr-review-submit-bar__delete-button"
@@ -221,10 +221,10 @@ const toggleSection = (section: string) => {
       <div class="pr-review-submit-bar__footer">
         <div
           v-if="errorMessage"
-          class="gp-notice gp-notice--danger gp-notice--compact mb-3"
+          class="gp-notice gp-notice--danger gp-notice--compact pr-review-submit-bar__error"
           role="alert"
         >
-          <p class="is-size-7">{{ errorMessage }}</p>
+          <p class="pr-review-submit-bar__error-text">{{ errorMessage }}</p>
         </div>
         <Button
           variant="link"
@@ -331,10 +331,29 @@ const toggleSection = (section: string) => {
 }
 
 .pr-review-submit-bar__title {
+  margin-bottom: 0;
   color: var(--gitpulse-text-strong);
   font-size: 0.88rem;
   font-weight: 800;
   line-height: 1.125;
+}
+
+.pr-review-submit-bar__subtitle {
+  margin-bottom: 0;
+  color: var(--gitpulse-text-muted);
+  font-size: 0.75rem;
+}
+
+.pr-review-submit-bar__hint {
+  margin-bottom: 0;
+}
+
+.pr-review-submit-bar__error {
+  margin-bottom: 0.75rem;
+}
+
+.pr-review-submit-bar__error-text {
+  font-size: 0.75rem;
 }
 
 .pr-review-submit-bar__collapse-button,
@@ -559,17 +578,20 @@ const toggleSection = (section: string) => {
 }
 
 .pr-review-submit-bar__draft-path {
+  margin-bottom: 0.25rem;
   color: var(--gitpulse-text-muted);
   font-family: var(--gitpulse-code-font-family);
   font-size: 0.7rem;
 }
 
 .pr-review-submit-bar__draft-body {
+  margin-bottom: 0;
   color: var(--gitpulse-text-strong);
   font-size: 0.78rem;
 }
 
 .pr-review-submit-bar__empty {
+  margin-bottom: 0;
   color: var(--gitpulse-text-muted);
   font-size: 0.78rem;
 }

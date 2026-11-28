@@ -395,7 +395,7 @@ watch(
               @select="handleSelectStackPullRequest"
             />
           </div>
-          <h1 class="pr-review-workspace__title mb-0">{{ workspaceTitle }}</h1>
+          <h1 class="pr-review-workspace__title">{{ workspaceTitle }}</h1>
         </div>
       </div>
 
@@ -445,7 +445,7 @@ watch(
 
     <div v-if="review.errorMessage.value && !hasFiles" class="pr-review-workspace__notice">
       <div class="gp-notice gp-notice--danger" role="alert">
-        <p class="mb-3">{{ review.errorMessage.value }}</p>
+        <p class="pr-review-workspace__error-text">{{ review.errorMessage.value }}</p>
         <button class="gp-btn gp-btn--small gp-btn--danger" type="button" @click="review.retryLoad">
           {{ t('prReview.retry') }}
         </button>
@@ -453,9 +453,9 @@ watch(
     </div>
 
     <div v-else-if="review.loading.value" class="pr-review-workspace__notice">
-      <div class="is-flex is-align-items-center is-justify-content-center">
+      <div class="pr-review-workspace__loading">
         <span
-          class="gp-btn gp-btn--loading gp-btn--light pr-review-workspace__loading-btn mr-2"
+          class="gp-btn gp-btn--loading gp-btn--light pr-review-workspace__loading-btn"
           aria-hidden="true"
         ></span>
         <span>{{ t('prReview.loadingFiles') }}</span>
@@ -463,7 +463,7 @@ watch(
     </div>
 
     <div v-else-if="!hasFiles" class="pr-review-workspace__notice">
-      <p class="has-text-grey">{{ t('prReview.noFiles') }}</p>
+      <p class="pr-review-workspace__empty">{{ t('prReview.noFiles') }}</p>
     </div>
 
     <div
@@ -727,6 +727,7 @@ watch(
 
 .pr-review-workspace__title {
   min-width: 0;
+  margin-bottom: 0;
   color: var(--gitpulse-text-strong);
   font-size: 0.9rem;
   font-weight: 700;
@@ -878,6 +879,21 @@ watch(
   align-items: center;
   justify-content: center;
   padding: 2rem;
+}
+
+.pr-review-workspace__error-text {
+  margin-bottom: 0.75rem;
+}
+
+.pr-review-workspace__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.pr-review-workspace__empty {
+  color: var(--gitpulse-text-muted);
 }
 
 .pr-review-discard-dialog {

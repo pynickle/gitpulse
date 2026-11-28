@@ -3,10 +3,13 @@
     v-if="canNavigate"
     href="#"
     @click.prevent="handleClick"
-    class="gp-tags gp-tags--addons gp-tags--inline reference-subject ml-1"
+    class="gp-tags gp-tags--addons gp-tags--inline reference-subject"
   >
     <span class="gp-tag gp-tag--activity gp-tag--danger">
-      <span v-if="crossRepository && refSubject?.repository?.nameWithOwner" class="mr-1">
+      <span
+        v-if="crossRepository && refSubject?.repository?.nameWithOwner"
+        class="reference-subject__repo"
+      >
         {{ refSubject.repository.nameWithOwner }}
       </span>
       {{ formatReferenceType(resolvedResourceType) }}
@@ -18,7 +21,7 @@
     </span>
   </a>
 
-  <span v-else class="gp-tags gp-tags--addons gp-tags--inline reference-subject ml-1">
+  <span v-else class="gp-tags gp-tags--addons gp-tags--inline reference-subject">
     <span class="gp-tag gp-tag--activity gp-tag--danger">
       {{ formatReferenceType(resolvedResourceType) }} #{{ refSubject?.number ?? '?' }}
     </span>
@@ -95,3 +98,13 @@ const switchToPullRequest = (owner: string, repo: string, pullNumber: number) =>
   emit('switch-pull-request', owner, repo, pullNumber);
 };
 </script>
+
+<style scoped lang="scss">
+.reference-subject {
+  margin-left: 0.25rem;
+}
+
+.reference-subject__repo {
+  margin-right: 0.25rem;
+}
+</style>

@@ -50,14 +50,14 @@ const hasReplies = computed(() => visibleReplies.value.length > 0);
             v-if="reply.author?.login || reply.author?.url"
             :login="reply.author.login"
             :github-href="reply.author.url"
-            class="has-text-weight-medium has-text-link is-size-7"
+            class="discussion-replies__author discussion-replies__author--link"
           >
             {{ reply.author.login }}
           </GitHubProfileLink>
-          <span v-else class="has-text-weight-medium is-size-7">
+          <span v-else class="discussion-replies__author">
             {{ reply.author?.login || t('discussionDetail.authorFallback') }}
           </span>
-          <span class="is-size-7 has-text-grey">
+          <span class="discussion-replies__meta">
             {{ formatDurationFromNow(reply.createdAt || '', localeCode, relativeTimeNow) }}
           </span>
           <CommentActions :target="reply.moderation" />
@@ -71,7 +71,7 @@ const hasReplies = computed(() => visibleReplies.value.length > 0);
               :repo-owner="repoOwner"
               :repo-name="repoName"
             />
-            <p v-else class="has-text-grey is-size-7">
+            <p v-else class="discussion-replies__empty-body">
               {{ t('discussionDetail.noCommentBody') }}
             </p>
           </div>
@@ -79,13 +79,13 @@ const hasReplies = computed(() => visibleReplies.value.length > 0);
       </article>
     </div>
 
-    <p v-else class="discussion-replies__empty is-size-7 has-text-grey">
+    <p v-else class="discussion-replies__empty">
       {{ t('discussionDetail.noReplies') }}
     </p>
 
     <p
       v-if="error"
-      class="gp-notice gp-notice--danger gp-notice--compact is-size-7 mt-3"
+      class="gp-notice gp-notice--danger gp-notice--compact discussion-replies__error"
       role="alert"
     >
       {{ error }}
@@ -93,7 +93,7 @@ const hasReplies = computed(() => visibleReplies.value.length > 0);
 
     <button
       v-if="replies.pageInfo.hasNextPage"
-      class="gp-btn gp-btn--light gp-btn--small mt-3"
+      class="gp-btn gp-btn--light gp-btn--small discussion-replies__load-more"
       type="button"
       :class="{ 'gp-btn--loading': loadingMore }"
       :disabled="loadingMore"
@@ -138,12 +138,38 @@ const hasReplies = computed(() => visibleReplies.value.length > 0);
   margin-bottom: 0.5rem;
 }
 
+.discussion-replies__author {
+  font-size: 0.75rem;
+  font-weight: 500;
+
+  &--link {
+    color: var(--gitpulse-link);
+  }
+}
+
+.discussion-replies__meta,
+.discussion-replies__empty-body {
+  color: var(--gitpulse-text-muted);
+  font-size: 0.75rem;
+}
+
 .discussion-replies__body {
   overflow-wrap: anywhere;
 }
 
 .discussion-replies__empty {
   margin-bottom: 0;
+  color: var(--gitpulse-text-muted);
+  font-size: 0.75rem;
+}
+
+.discussion-replies__error {
+  margin-top: 0.75rem;
+  font-size: 0.75rem;
+}
+
+.discussion-replies__load-more {
+  margin-top: 0.75rem;
 }
 
 @media (max-width: 768px) {

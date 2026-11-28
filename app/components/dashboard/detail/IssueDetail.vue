@@ -42,7 +42,7 @@
 
         <hr />
 
-        <div class="issue-detail__timeline mt-4">
+        <div class="issue-detail__timeline">
           <IssueTimelineEvents
             :timeline="timeline"
             :loading="loadingTimeline"
@@ -522,6 +522,7 @@ watch(
 }
 
 .issue-detail__timeline {
+  margin-top: 1rem;
   padding-bottom: 5rem;
 }
 

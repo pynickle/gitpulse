@@ -1,5 +1,5 @@
 <template>
-  <div class="sidebar-card mb-4">
+  <div class="sidebar-card">
     <div class="sidebar-card__header">
       <div class="sidebar-card__header-left">
         <UserRoundIcon :size="14" class="sidebar-card__icon" />
@@ -492,6 +492,7 @@ onUnmounted(() => {
 @use '~/assets/scss/pointer' as *;
 
 .sidebar-card {
+  margin-bottom: 1rem;
   background: var(--gitpulse-surface-muted);
   border: 1px solid var(--gitpulse-border);
   border-radius: 8px;

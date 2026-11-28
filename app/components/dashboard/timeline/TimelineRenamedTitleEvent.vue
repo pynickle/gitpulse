@@ -9,26 +9,23 @@
       :src="actor?.avatarUrl || ''"
       :alt="actor?.login || ''"
     />
-    <p class="timeline-renamed__action is-size-7">
+    <p class="timeline-renamed__action">
       <GitHubProfileLink
         v-if="actor?.login"
         :login="actor?.login"
         :github-href="actor?.url"
-        class="has-text-weight-medium has-text-link"
+        class="timeline-renamed__actor"
         >{{ actor?.login }}</GitHubProfileLink
       >{{ actorTail }}
-      <span class="timeline-renamed__time has-text-grey">
+      <span class="timeline-renamed__time">
         {{ formatDurationFromNow(createdAt, localeCode, relativeTimeNow) }}
       </span>
     </p>
     <div v-if="previousTitle || currentTitle" class="timeline-renamed__titles">
-      <del
-        v-if="previousTitle"
-        class="timeline-renamed__title timeline-renamed__title--previous is-size-7"
-      >
+      <del v-if="previousTitle" class="timeline-renamed__title timeline-renamed__title--previous">
         {{ previousTitle }}
       </del>
-      <p v-if="currentTitle" class="timeline-renamed__title is-size-7">{{ currentTitle }}</p>
+      <p v-if="currentTitle" class="timeline-renamed__title">{{ currentTitle }}</p>
     </div>
   </div>
 </template>
@@ -80,12 +77,19 @@ const actorTail = computed(() => {
   grid-row: 1;
   margin: 0;
   min-width: 0;
+  font-size: 0.75rem;
   line-height: 1.5;
   text-box: trim-both cap alphabetic;
 }
 
+.timeline-renamed__actor {
+  color: var(--gitpulse-link);
+  font-weight: 500;
+}
+
 .timeline-renamed__time {
   margin-left: 0.5rem;
+  color: var(--gitpulse-text-muted);
 }
 
 .timeline-renamed__titles {
@@ -98,6 +102,7 @@ const actorTail = computed(() => {
 
 .timeline-renamed__title {
   margin: 0;
+  font-size: 0.75rem;
   line-height: 1.45;
   overflow-wrap: anywhere;
   text-wrap: pretty;

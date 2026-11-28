@@ -197,6 +197,92 @@ test('a ready detail module still waits for data before replacing the loading vi
   }
 });
 
+const DashboardOverlayFrame = await compileVue(
+  'app/components/dashboard/overlay/DashboardOverlayFrame.vue',
+  {
+    '@lucide/vue': { LoaderCircleIcon: empty },
+    '~/components/dashboard/overlay/DashboardTopHeader.vue': { default: empty },
+    '~/components/ui/ScrollArea.vue': { default: ScrollArea },
+  }
+);
+const HostWithRealFrame = await compileVue(
+  'app/components/dashboard/detail/DetailOverlayHost.vue',
+  {
+    '~/composables/useCommentModeration': commentModerationComposable,
+    '@lucide/vue': { LoaderCircleIcon: empty },
+    'vue-i18n': { useI18n: () => ({ t: (key: string) => key }) },
+    '~/components/dashboard/overlay/DashboardOverlayFrame.vue': { default: DashboardOverlayFrame },
+    '~/components/ui/PageErrorState.vue': { default: PageErrorState },
+    '~/components/ui/ScrollArea.vue': { default: ScrollArea },
+    '~/composables/useComposerBleedPosition': { COMPOSER_BLEED_LAYER_ID: 'test-bleed' },
+    '~/composables/useDetailOverlayChrome': detailOverlayChromeStub,
+  }
+);
+
+test('DashboardOverlayFrame disables outer ScrollArea via contentClipped without Bulma helper classes', async () => {
+  const dom = createDom();
+  const clipped = shallowRef(false);
+  const unpadded = shallowRef(false);
+  try {
+    const view = dom.mount(
+      defineComponent({
+        setup: () => () =>
+          h(
+            DashboardOverlayFrame,
+            {
+              loading: false,
+              loadingTitle: 'Loading',
+              loadingSubtitle: 'Syncing',
+              backLabel: 'Back',
+              homeLabel: 'Home',
+              showHomeButton: false,
+              contentClipped: clipped.value,
+              contentUnpadded: unpadded.value,
+            },
+            { default: () => h('div', 'Body') }
+          ),
+      })
+    );
+    await nextTick();
+    const content = view.root.querySelector<HTMLElement>('.detail-frame__content')!;
+    expect(content).not.toBeNull();
+    expect(content.classList.contains('scroll-area--disabled')).toBe(false);
+    expect(content.classList.contains('detail-frame__content--clipped')).toBe(false);
+    expect(content.classList.contains('detail-frame__content--unpadded')).toBe(false);
+
+    clipped.value = true;
+    unpadded.value = true;
+    await nextTick();
+    expect(content.classList.contains('scroll-area--disabled')).toBe(true);
+    expect(content.classList.contains('detail-frame__content--clipped')).toBe(true);
+    expect(content.classList.contains('detail-frame__content--unpadded')).toBe(true);
+    expect(content.classList.contains('is-clipped')).toBe(false);
+    expect(content.classList.contains('p-0')).toBe(false);
+  } finally {
+    await dom.cleanup();
+  }
+});
+
+test('DetailOverlayHost disables DashboardOverlayFrame ScrollArea cleanly without p-0 or is-clipped', async () => {
+  const dom = createDom();
+  const props = createProps();
+  try {
+    const view = dom.mount(defineComponent({ setup: () => () => h(HostWithRealFrame, props) }));
+    await nextTick();
+    const frameContent = view.root.querySelector<HTMLElement>('.detail-frame__content')!;
+    const stage = view.root.querySelector<HTMLElement>('.detail-pane-stage')!;
+    expect(frameContent).not.toBeNull();
+    expect(frameContent.classList.contains('scroll-area--disabled')).toBe(true);
+    expect(frameContent.classList.contains('detail-frame__content--clipped')).toBe(true);
+    expect(frameContent.classList.contains('detail-frame__content--unpadded')).toBe(true);
+    expect(frameContent.classList.contains('is-clipped')).toBe(false);
+    expect(frameContent.classList.contains('p-0')).toBe(false);
+    expect(stage.classList.contains('is-clipped')).toBe(false);
+  } finally {
+    await dom.cleanup();
+  }
+});
+
 test('a late module cannot replace the newly selected detail or clear its loading feedback', async () => {
   let resolveRepo!: (component: Component) => void;
   let resolveRelease!: (component: Component) => void;

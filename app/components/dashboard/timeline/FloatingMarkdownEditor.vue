@@ -51,7 +51,7 @@
             <ScrollArea class="detail-composer-sheet__scroll" axis="y">
               <div
                 v-if="errorMessage"
-                class="gp-notice gp-notice--danger gp-notice--compact mb-3"
+                class="gp-notice gp-notice--danger gp-notice--compact floating-markdown-editor__error"
                 role="alert"
               >
                 <button
@@ -60,7 +60,7 @@
                   :aria-label="t('floatingMarkdownEditor.dismissError')"
                   @click="errorMessage = ''"
                 />
-                <p class="is-size-7">{{ errorMessage }}</p>
+                <p class="floating-markdown-editor__error-text">{{ errorMessage }}</p>
               </div>
 
               <div class="detail-composer-sheet__body">
@@ -78,9 +78,7 @@
                   @update:bleed="composerBleed = $event"
                 >
                   <template #header-meta>
-                    <span class="is-size-7 has-text-weight-medium has-text-grey">{{
-                      currentUserLogin
-                    }}</span>
+                    <span class="floating-markdown-editor__login">{{ currentUserLogin }}</span>
                     <GitHubAvatar
                       variant="raised"
                       interactive
@@ -125,7 +123,7 @@
     <template v-else>
       <div
         v-if="errorMessage"
-        class="gp-notice gp-notice--danger gp-notice--compact mb-3"
+        class="gp-notice gp-notice--danger gp-notice--compact floating-markdown-editor__error"
         role="alert"
       >
         <button
@@ -134,7 +132,7 @@
           :aria-label="t('floatingMarkdownEditor.dismissError')"
           @click="errorMessage = ''"
         />
-        <p class="is-size-7">{{ errorMessage }}</p>
+        <p class="floating-markdown-editor__error-text">{{ errorMessage }}</p>
       </div>
 
       <button
@@ -152,7 +150,7 @@
           :alt="currentUserLogin"
           class="floating-markdown-editor__capsule-avatar"
         />
-        <span class="floating-markdown-editor__capsule-placeholder has-text-grey">
+        <span class="floating-markdown-editor__capsule-placeholder">
           {{ resolvedPlaceholder }}
         </span>
         <span class="gp-btn gp-btn--link gp-btn--small floating-markdown-editor__capsule-submit">
@@ -193,7 +191,7 @@
             @update:bleed="composerBleed = $event"
           >
             <template #header-meta>
-              <span v-if="!compact" class="is-size-7 has-text-weight-medium has-text-grey">{{
+              <span v-if="!compact" class="floating-markdown-editor__login">{{
                 currentUserLogin
               }}</span>
               <GitHubAvatar
@@ -678,9 +676,24 @@ defineExpose({ focus });
 .floating-markdown-editor__capsule-placeholder {
   flex: 1;
   min-width: 0;
+  color: var(--gitpulse-text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.floating-markdown-editor__error {
+  margin-bottom: 0.75rem;
+}
+
+.floating-markdown-editor__error-text {
+  font-size: 0.75rem;
+}
+
+.floating-markdown-editor__login {
+  color: var(--gitpulse-text-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
 }
 
 .floating-markdown-editor__capsule-submit {

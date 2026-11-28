@@ -44,7 +44,7 @@
         :alt="currentUserLogin"
         class="deferred-floating-markdown-editor__capsule-avatar"
       />
-      <span class="deferred-floating-markdown-editor__capsule-placeholder has-text-grey">
+      <span class="deferred-floating-markdown-editor__capsule-placeholder">
         {{ resolvedPlaceholder }}
       </span>
       <span
@@ -202,6 +202,7 @@ watch(
 .deferred-floating-markdown-editor__capsule-placeholder {
   flex: 1;
   min-width: 0;
+  color: var(--gitpulse-text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

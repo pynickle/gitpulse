@@ -263,14 +263,12 @@ describe('global SCSS architecture (#196)', () => {
     });
     expect(bulmaTokens).toEqual([]);
 
-    expect(collectTopLevelDecls(root, '.has-text-weight-semibold').get('color')).toBe(
-      'var(--gitpulse-text-strong)'
-    );
-    expect(collectTopLevelDecls(root, '.has-background-grey-lighter').get('background-color')).toBe(
-      'var(--gitpulse-surface-muted)'
-    );
     expect(collectTopLevelDecls(root, '.has-text-primary').get('color')).toBe(
       'var(--gitpulse-accent)'
+    );
+    expect(collectTopLevelDecls(root, '.has-text-info').get('color')).toBe('var(--gitpulse-info)');
+    expect(collectTopLevelDecls(root, '.has-text-warning').get('color')).toBe(
+      'var(--gitpulse-warning)'
     );
     expect(findUngatedHoverSelectors(root)).toEqual([]);
   });
@@ -695,25 +693,19 @@ describe('layered Bulma stopgap, in-house reset, and non-important helpers (#198
       }
     });
 
-    // Active non-!important compatibility helpers
+    // Active non-!important compatibility helpers still consumed by #204 surfaces
     for (const helperClass of [
       '.mb-0',
       '.mb-4',
       '.mr-4',
       '.p-0',
-      '.px-6',
       '.is-flex',
       '.is-align-items-center',
       '.is-justify-content-center',
       '.is-size-7',
-      '.is-sr-only',
       '.is-hidden',
-      '.is-clipped',
-      '.is-overlay',
-      '.is-radiusless',
       '.has-text-grey',
-      '.has-text-link',
-      '.has-background-grey-lighter',
+      '.has-text-primary',
     ]) {
       expect(bulmaLayeredClasses.has(helperClass), `expected ${helperClass} in @layer bulma`).toBe(
         true
@@ -737,11 +729,9 @@ describe('layered Bulma stopgap, in-house reset, and non-important helpers (#198
     expect(collectTopLevelDecls(root, '.has-text-primary').get('color')).toBe(
       'var(--gitpulse-accent)'
     );
-    expect(collectTopLevelDecls(root, '.has-text-danger').get('color')).toBe(
-      'var(--gitpulse-danger)'
-    );
-    expect(collectTopLevelDecls(root, '.has-background-grey-lighter').get('background-color')).toBe(
-      'var(--gitpulse-surface-muted)'
+    expect(collectTopLevelDecls(root, '.has-text-info').get('color')).toBe('var(--gitpulse-info)');
+    expect(collectTopLevelDecls(root, '.has-text-warning').get('color')).toBe(
+      'var(--gitpulse-warning)'
     );
   });
 
@@ -1459,5 +1449,127 @@ describe('Bulma tag, title, subtitle, icon, and image retirement (#203)', () => 
     expect(issueStateSelectors.some((selector) => selector.includes('.tag.issue-type-tag'))).toBe(
       false
     );
+  });
+});
+
+describe('Bulma utility helper retirement — Detail Overlays, PR Review, Timeline, Releases (#205)', () => {
+  test('base.scss emits global .sr-only accessibility utility', () => {
+    const root = postcss.parse(compileScssFile('base.scss'));
+    const srOnlyDecls = collectTopLevelDecls(root, '.sr-only');
+
+    expect(srOnlyDecls.get('position')).toBe('absolute');
+    expect(srOnlyDecls.get('width')).toBe('1px');
+    expect(srOnlyDecls.get('height')).toBe('1px');
+    expect(srOnlyDecls.get('overflow')).toBe('hidden');
+    expect(srOnlyDecls.get('white-space')).toBe('nowrap');
+    expect(srOnlyDecls.get('clip-path')).toBe('inset(50%)');
+  });
+
+  test('compiled global CSS emits zero rules for zero-caller Bulma helpers retired in #205', async () => {
+    const root = await getProcessedMainRoot();
+
+    const retiredHelpers = [
+      '.has-background-grey-lighter',
+      '.has-text-danger',
+      '.has-text-grey-light',
+      '.has-text-link',
+      '.has-text-success',
+      '.has-text-weight-medium',
+      '.has-text-weight-semibold',
+      '.is-clipped',
+      '.is-family-monospace',
+      '.is-flex-wrap-wrap',
+      '.is-inline',
+      '.is-overlay',
+      '.is-radiusless',
+      '.is-size-5',
+      '.is-size-6',
+      '.is-sr-only',
+      '.ml-1',
+      '.ml-auto',
+      '.mt-4',
+      '.mx-2',
+      '.pb-1',
+      '.pb-3',
+      '.pt-2',
+      '.pt-3',
+      '.px-3',
+      '.px-4',
+      '.px-6',
+      '.py-2',
+      '.py-5',
+    ];
+
+    const emittedArms = new Set<string>();
+    root.walkRules((rule) => {
+      for (const arm of rule.selector.split(',')) {
+        emittedArms.add(arm.replace(/\s+/g, ' ').trim());
+      }
+    });
+
+    const unexpected = retiredHelpers.filter((sel) => emittedArms.has(sel));
+    expect(unexpected).toEqual([]);
+  });
+
+  test('all 48 migrated #205 SFCs compile cleanly with ADR 0049 hover gating and zero --bulma-* references', () => {
+    const migratedSfcs = [
+      'components/dashboard/overlay/DashboardOverlayFrame.vue',
+      'components/dashboard/overlay/DashboardTopHeader.vue',
+      'components/dashboard/detail/DetailAssignees.vue',
+      'components/dashboard/detail/DetailLabels.vue',
+      'components/dashboard/detail/DetailOverlayHost.vue',
+      'components/dashboard/detail/IssueDetail.vue',
+      'components/dashboard/detail/PRDetail.vue',
+      'components/dashboard/detail/ReleaseDetail.vue',
+      'components/dashboard/detail/RepoContributorsCard.vue',
+      'components/dashboard/detail/RepoDetail.vue',
+      'components/dashboard/detail/RepoLatestCommitBar.vue',
+      'components/dashboard/composer/MarkdownComposer.vue',
+      'components/dashboard/repo-files/RepoFileView.vue',
+      'components/dashboard/discussion/DiscussionAnswerCard.vue',
+      'components/dashboard/discussion/DiscussionCommentCard.vue',
+      'components/dashboard/discussion/DiscussionComments.vue',
+      'components/dashboard/discussion/DiscussionHeader.vue',
+      'components/dashboard/discussion/DiscussionReplyList.vue',
+      'components/dashboard/issue/IssueHeader.vue',
+      'components/dashboard/issue/IssueTimelineEventBody.vue',
+      'components/dashboard/issue/IssueTimelineEvents.vue',
+      'components/dashboard/issue/IssueTimelineReferencedEventCard.vue',
+      'components/dashboard/issue/IssueTimelineStateEvents.vue',
+      'components/dashboard/issue/IssueTypeCard.vue',
+      'components/dashboard/issue/LinkedPullRequestList.vue',
+      'components/dashboard/issue/SubIssuePickerModal.vue',
+      'components/dashboard/pr/PRHeader.vue',
+      'components/dashboard/pr/PRMergeBox.vue',
+      'components/dashboard/pr/PRReviewDiffReviewThreads.vue',
+      'components/dashboard/pr/PRReviewDiffViewer.vue',
+      'components/dashboard/pr/PRReviewFileSidebar.vue',
+      'components/dashboard/pr/PRReviewSubmitBar.vue',
+      'components/dashboard/pr/PRReviewWorkspace.vue',
+      'components/dashboard/pr/PRStackRebaseDialog.vue',
+      'components/dashboard/pr/PRTimelineEventBody.vue',
+      'components/dashboard/pr/PRTimelineEvents.vue',
+      'components/dashboard/pr/PRTimelineMergeCard.vue',
+      'components/dashboard/pr/PRTimelineReferenceEvents.vue',
+      'components/dashboard/pr/PRTimelineReviewCard.vue',
+      'components/dashboard/pr/PRTimelineStateEvents.vue',
+      'components/dashboard/timeline/DeferredFloatingMarkdownEditor.vue',
+      'components/dashboard/timeline/FloatingMarkdownEditor.vue',
+      'components/dashboard/timeline/ProjectTag.vue',
+      'components/dashboard/timeline/ReferenceSubject.vue',
+      'components/dashboard/timeline/TimelineCardHeader.vue',
+      'components/dashboard/timeline/TimelineCommentCard.vue',
+      'components/dashboard/timeline/TimelineEventActorRow.vue',
+      'components/dashboard/timeline/TimelineRenamedTitleEvent.vue',
+    ];
+
+    for (const sfc of migratedSfcs) {
+      const root = compileSfcStyles(sfc);
+      expect(
+        collectBulmaCustomPropertyUsages(root),
+        `${sfc} must not emit --bulma-* custom properties`
+      ).toEqual([]);
+      expect(findUngatedHoverSelectors(root), `${sfc} hover gating`).toEqual([]);
+    }
   });
 });

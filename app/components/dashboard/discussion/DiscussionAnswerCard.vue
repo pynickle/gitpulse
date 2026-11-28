@@ -44,14 +44,14 @@ const localeCode = computed(() => locale.value);
         v-if="answer.author?.login || answer.author?.url"
         :login="answer.author.login"
         :github-href="answer.author.url"
-        class="has-text-weight-medium has-text-link"
+        class="discussion-answer__author discussion-answer__author--link"
       >
         {{ answer.author.login }}
       </GitHubProfileLink>
-      <span v-else class="has-text-weight-medium">
+      <span v-else class="discussion-answer__author">
         {{ answer.author?.login || t('discussionDetail.authorFallback') }}
       </span>
-      <span class="is-size-7 has-text-grey">
+      <span class="discussion-answer__meta">
         {{ formatDurationFromNow(answer.createdAt || '', localeCode, relativeTimeNow) }}
       </span>
       <CommentActions :target="answer.moderation" />
@@ -60,7 +60,7 @@ const localeCode = computed(() => locale.value);
     <CommentBody v-slot="{ body }" :target="answer.moderation" :body="answer.body">
       <div class="discussion-answer__body">
         <MarkdownRenderer v-if="body" :value="body" :repo-owner="repoOwner" :repo-name="repoName" />
-        <p v-else class="has-text-grey is-size-7">
+        <p v-else class="discussion-answer__empty">
           {{ t('discussionDetail.noCommentBody') }}
         </p>
       </div>
@@ -90,6 +90,20 @@ const localeCode = computed(() => locale.value);
   font-size: 0.8125rem;
   font-weight: 600;
   margin-bottom: 0.75rem;
+}
+
+.discussion-answer__author {
+  font-weight: 500;
+
+  &--link {
+    color: var(--gitpulse-link);
+  }
+}
+
+.discussion-answer__meta,
+.discussion-answer__empty {
+  color: var(--gitpulse-text-muted);
+  font-size: 0.75rem;
 }
 
 .discussion-answer__body {

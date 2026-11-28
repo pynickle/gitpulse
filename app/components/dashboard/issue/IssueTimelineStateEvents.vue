@@ -1,7 +1,7 @@
 <template>
   <template v-if="item.eventType === 'labeled' || item.eventType === 'unlabeled'">
     {{ item.eventType === 'labeled' ? 'added label' : 'removed label' }}
-    <span class="gp-tag gp-tag--activity ml-1" :style="labelStyle(item.label?.color)">
+    <span class="gp-tag gp-tag--activity" :style="labelStyle(item.label?.color)">
       {{ item.label?.name }}
     </span>
   </template>
@@ -16,14 +16,14 @@
           <GitHubProfileLink
             :login="change.actor?.login"
             :github-href="change.actor?.url"
-            class="has-text-weight-medium mr-1"
-            :class="{ 'has-text-link': change.actor?.login || change.actor?.url }"
+            class="timeline-state-actor"
+            :class="{ 'timeline-state-actor--link': change.actor?.login || change.actor?.url }"
           >
             {{ timelineChangeActorLabel(change) }}
           </GitHubProfileLink>
         </template>
         {{ change.action }}
-        <span class="gp-tag gp-tag--activity ml-1" :style="labelStyle(change.label?.color)">
+        <span class="gp-tag gp-tag--activity" :style="labelStyle(change.label?.color)">
           {{ labelChangeLabel(change) }}
         </span>
         {{
@@ -38,7 +38,7 @@
     added issue type
     <span
       v-if="item.issueType?.name"
-      class="gp-tag gp-tag--activity issue-type-tag ml-1"
+      class="gp-tag gp-tag--activity issue-type-tag"
       :style="issueTypeTagStyle(item.issueType.color)"
     >
       {{ item.issueType.name }}
@@ -50,7 +50,7 @@
     <template v-if="item.prevIssueType?.name">
       from
       <span
-        class="gp-tag gp-tag--activity issue-type-tag ml-1"
+        class="gp-tag gp-tag--activity issue-type-tag"
         :style="issueTypeTagStyle(item.prevIssueType.color)"
       >
         {{ item.prevIssueType.name }}
@@ -59,7 +59,7 @@
     <template v-if="item.issueType?.name">
       to
       <span
-        class="gp-tag gp-tag--activity issue-type-tag ml-1"
+        class="gp-tag gp-tag--activity issue-type-tag"
         :style="issueTypeTagStyle(item.issueType.color)"
       >
         {{ item.issueType.name }}
@@ -71,7 +71,7 @@
     removed issue type
     <span
       v-if="item.issueType?.name"
-      class="gp-tag gp-tag--activity issue-type-tag ml-1"
+      class="gp-tag gp-tag--activity issue-type-tag"
       :style="issueTypeTagStyle(item.issueType.color)"
     >
       {{ item.issueType.name }}
@@ -88,7 +88,7 @@
       :href="`https://github.com/${repoOwner}/${repoName}/milestone/${item.milestoneTitle}`"
       target="_blank"
       rel="noopener"
-      class="gp-tag gp-tag--activity gp-tag--primary ml-1"
+      class="gp-tag gp-tag--activity gp-tag--primary"
     >
       {{ item.milestoneTitle }}
     </a>
@@ -96,10 +96,7 @@
 
   <template v-else-if="item.eventType === 'locked' || item.eventType === 'unlocked'">
     {{ item.eventType === 'locked' ? 'locked this issue' : 'unlocked this issue' }}
-    <span
-      v-if="formatLockReason(item.lockReason)"
-      class="gp-tag gp-tag--activity gp-tag--danger ml-1"
-    >
+    <span v-if="formatLockReason(item.lockReason)" class="gp-tag gp-tag--activity gp-tag--danger">
       {{ formatLockReason(item.lockReason) }}
     </span>
   </template>
@@ -115,11 +112,11 @@
       :href="item.project.url"
       target="_blank"
       rel="noopener"
-      class="gp-tag gp-tag--activity gp-tag--link ml-1"
+      class="gp-tag gp-tag--activity gp-tag--link"
     >
       {{ item.project?.title }}
     </a>
-    <span v-else class="gp-tag gp-tag--activity gp-tag--link ml-1">
+    <span v-else class="gp-tag gp-tag--activity gp-tag--link">
       {{
         item.project?.title ||
         item.project?.name ||
@@ -137,7 +134,7 @@
         v-if="assigneeLabel || item.assignee?.url"
         :login="item.assignee?.login"
         :github-href="item.assignee?.url"
-        class="gp-tag gp-tag--activity gp-tag--warning ml-1"
+        class="gp-tag gp-tag--activity gp-tag--warning"
       >
         {{ assigneeLabel }}
       </GitHubProfileLink>
@@ -154,8 +151,8 @@
           <GitHubProfileLink
             :login="change.actor?.login"
             :github-href="change.actor?.url"
-            class="has-text-weight-medium mr-1"
-            :class="{ 'has-text-link': change.actor?.login || change.actor?.url }"
+            class="timeline-state-actor"
+            :class="{ 'timeline-state-actor--link': change.actor?.login || change.actor?.url }"
           >
             {{ timelineChangeActorLabel(change) }}
           </GitHubProfileLink>
@@ -164,7 +161,7 @@
         <GitHubProfileLink
           :login="change.assignee?.login"
           :github-href="change.assignee?.url"
-          class="gp-tag gp-tag--activity gp-tag--warning ml-1"
+          class="gp-tag gp-tag--activity gp-tag--warning"
         >
           {{ assigneeChangeLabel(change) }}
         </GitHubProfileLink>
@@ -184,7 +181,7 @@
     closed this issue
     <span
       v-if="formatStateReason(item.stateReason)"
-      :class="['gp-tag', 'gp-tag--activity', 'ml-1', getStateReasonClass(item.stateReason)]"
+      :class="['gp-tag', 'gp-tag--activity', getStateReasonClass(item.stateReason)]"
     >
       {{ formatStateReason(item.stateReason) }}
     </span>
@@ -196,7 +193,7 @@
     deleted a comment by
     <GitHubProfileLink
       :login="item.deletedCommentAuthor?.login"
-      class="gp-tag gp-tag--activity gp-tag--warning ml-1"
+      class="gp-tag gp-tag--activity gp-tag--warning"
     >
       {{ item.deletedCommentAuthor?.login }}
     </GitHubProfileLink>
@@ -211,7 +208,7 @@
 
   <template v-else-if="item.eventType === 'converted_to_discussion'">
     converted this to a discussion
-    <span class="gp-tag gp-tag--activity gp-tag--raised ml-1">{{ item.discussion?.title }}</span>
+    <span class="gp-tag gp-tag--activity gp-tag--raised">{{ item.discussion?.title }}</span>
   </template>
 
   <template v-else-if="item.eventType === 'unmarked_as_duplicate'"
@@ -223,21 +220,21 @@
       changed status in
       <ProjectTag :project="item.project" />
       from
-      <span class="gp-tag gp-tag--activity gp-tag--warning ml-1">{{ item.previousStatus }}</span>
+      <span class="gp-tag gp-tag--activity gp-tag--warning">{{ item.previousStatus }}</span>
       to
-      <span class="gp-tag gp-tag--activity gp-tag--success ml-1">{{ item.status }}</span>
+      <span class="gp-tag gp-tag--activity gp-tag--success">{{ item.status }}</span>
     </template>
     <template v-else-if="item.status">
       set status in
       <ProjectTag :project="item.project" />
       to
-      <span class="gp-tag gp-tag--activity gp-tag--success ml-1">{{ item.status }}</span>
+      <span class="gp-tag gp-tag--activity gp-tag--success">{{ item.status }}</span>
     </template>
     <template v-else-if="item.previousStatus">
       removed status in
       <ProjectTag :project="item.project" />
       from
-      <span class="gp-tag gp-tag--activity gp-tag--warning ml-1">{{ item.previousStatus }}</span>
+      <span class="gp-tag gp-tag--activity gp-tag--warning">{{ item.previousStatus }}</span>
     </template>
     <template v-else>
       updated project status in
@@ -247,14 +244,11 @@
 
   <template v-else-if="item.eventType === 'moved_columns_in_project'">
     moved this from
-    <span
-      v-if="item.previousProjectColumnName"
-      class="gp-tag gp-tag--activity gp-tag--warning ml-1"
-    >
+    <span v-if="item.previousProjectColumnName" class="gp-tag gp-tag--activity gp-tag--warning">
       {{ item.previousProjectColumnName }}
     </span>
     to
-    <span class="gp-tag gp-tag--activity gp-tag--success ml-1">
+    <span class="gp-tag gp-tag--activity gp-tag--success">
       {{ item.projectColumnName || t('issueDetail.projectColumnFallback') }}
     </span>
   </template>
@@ -266,11 +260,11 @@
       :href="item.fromRepository.url"
       target="_blank"
       rel="noopener"
-      class="gp-tag gp-tag--activity gp-tag--warning ml-1"
+      class="gp-tag gp-tag--activity gp-tag--warning"
     >
       {{ item.fromRepository.nameWithOwner }}
     </a>
-    <span v-else class="gp-tag gp-tag--activity gp-tag--warning ml-1">{{
+    <span v-else class="gp-tag gp-tag--activity gp-tag--warning">{{
       item.fromRepository?.nameWithOwner
     }}</span>
   </template>
@@ -280,7 +274,7 @@
     <GitHubProfileLink
       :login="item.subject?.login"
       :github-href="item.subject?.url"
-      class="gp-tag gp-tag--activity gp-tag--warning ml-1"
+      class="gp-tag gp-tag--activity gp-tag--warning"
     >
       {{ item.subject?.login }}
     </GitHubProfileLink>
@@ -373,6 +367,19 @@ const timelineChangeActorLabel = (change: TimelineStateChange) =>
 </script>
 
 <style scoped lang="scss">
+.gp-tag--activity {
+  margin-left: 0.25rem;
+}
+
+.timeline-state-actor {
+  margin-right: 0.25rem;
+  font-weight: 500;
+
+  &--link {
+    color: var(--gitpulse-link);
+  }
+}
+
 .gp-tag.issue-type-tag {
   border: 1px solid color-mix(in srgb, var(--issue-type-tag-color, #6e7781) 28%, transparent);
   background-color: color-mix(

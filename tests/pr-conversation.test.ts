@@ -540,7 +540,7 @@ describe('Stack Merge', () => {
     const mergeBtn = root.querySelector<HTMLButtonElement>('.merge-box__merge-btn');
     expect(mergeBtn?.hasAttribute('disabled')).toBe(true);
     const reasonEl = root.querySelector('.merge-box__blocked-reason');
-    expect(reasonEl?.classList.contains('is-sr-only')).toBe(false);
+    expect(reasonEl?.classList.contains('sr-only')).toBe(false);
     expect(reasonEl?.textContent?.trim()).toBe(
       'Lower Layers in this Stack must be open and ready before merging.'
     );

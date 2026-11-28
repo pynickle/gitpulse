@@ -1,5 +1,5 @@
 <template>
-  <div class="mb-4">
+  <div class="detail-header">
     <!-- Tier 1: Eyebrow -->
     <div class="detail-header-eyebrow">
       <span class="header-repo">
@@ -13,7 +13,7 @@
 
     <!-- Tier 2: Full-width Title -->
     <div class="detail-header-title">
-      <h1 class="mb-0 header-title__text">{{ issue?.title }}</h1>
+      <h1 class="header-title__text">{{ issue?.title }}</h1>
     </div>
 
     <!-- Tier 3: Single-line Status Strip -->
@@ -28,7 +28,7 @@
       </span>
     </div>
 
-    <p v-if="issue?.duplicate_of" class="header-duplicate mb-3" data-duplicate-target>
+    <p v-if="issue?.duplicate_of" class="header-duplicate" data-duplicate-target>
       <span>{{ t('issueDetail.duplicateOf') }}</span>
       <ReferenceSubject
         :ref-subject="issue.duplicate_of"
@@ -38,7 +38,7 @@
       />
     </p>
 
-    <p v-if="issue?.parent_issue" class="header-duplicate mb-3">
+    <p v-if="issue?.parent_issue" class="header-duplicate">
       <span>{{ t('dashboard.subIssues.parent') }}</span>
       <ReferenceSubject
         :ref-subject="issue.parent_issue"
@@ -55,21 +55,20 @@
 
     <!-- Author row -->
     <div>
-      <div class="is-flex is-align-items-center mb-4">
+      <div class="detail-header-author">
         <GitHubAvatar
           variant="raised"
           interactive
-          class="mr-3"
           width="28"
           height="28"
           :src="issue?.user?.avatar_url"
           :alt="issue?.user?.login"
         />
-        <div class="is-flex is-align-items-center is-flex-wrap-wrap header-author">
+        <div class="header-author">
           <GitHubProfileLink
             :login="issue?.user?.login"
             :github-href="issue?.user?.html_url"
-            class="header-author__name has-text-weight-medium has-text-link"
+            class="header-author__name header-author__name--link"
           >
             {{ issue?.user?.login }}
           </GitHubProfileLink>
@@ -209,6 +208,7 @@ const handleRepoClick = async () => {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.25rem;
+  margin-bottom: 0.75rem;
   font-size: 0.8rem;
   color: var(--gitpulse-text-muted);
 

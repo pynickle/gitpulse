@@ -464,7 +464,7 @@ onBeforeUnmount(() => {
             aria-hidden="true"
           />
           <div class="pr-review-diff-viewer__header-info">
-            <h2 class="mb-0 pr-review-diff-viewer__file-title">
+            <h2 class="pr-review-diff-viewer__file-title">
               <a
                 v-if="opensGitHubLinks && getFilePreferredHref(section.file.filename)"
                 :href="getFilePreferredHref(section.file.filename)!"
@@ -487,7 +487,7 @@ onBeforeUnmount(() => {
                 <PRReviewFilePath :filename="section.file.filename" />
               </span>
             </h2>
-            <p v-if="section.file.previous_filename" class="is-size-7 has-text-grey mb-0">
+            <p v-if="section.file.previous_filename" class="pr-review-diff-viewer__renamed-from">
               {{ t('prReview.renamedFrom', { filename: section.file.previous_filename }) }}
             </p>
           </div>
@@ -520,8 +520,10 @@ onBeforeUnmount(() => {
             v-if="!section.file.patch"
             class="pr-review-diff-viewer__empty pr-review-diff-viewer__empty--file"
           >
-            <p class="mb-2">{{ t('prReview.patchUnavailable') }}</p>
-            <p class="is-size-7 has-text-grey mb-0">{{ t('prReview.patchUnavailableHint') }}</p>
+            <p class="pr-review-diff-viewer__empty-title">{{ t('prReview.patchUnavailable') }}</p>
+            <p class="pr-review-diff-viewer__empty-hint">
+              {{ t('prReview.patchUnavailableHint') }}
+            </p>
           </div>
 
           <template v-else>
@@ -565,10 +567,10 @@ onBeforeUnmount(() => {
               class="pr-review-diff-viewer__draft"
             >
               <div>
-                <p class="is-size-7 has-text-grey mb-1">
+                <p class="pr-review-diff-viewer__draft-line">
                   {{ t('prReview.lineLabel', { line: comment.line }) }}
                 </p>
-                <p class="mb-0">{{ comment.body }}</p>
+                <p class="pr-review-diff-viewer__draft-body">{{ comment.body }}</p>
               </div>
               <button
                 class="gp-dismiss gp-dismiss--small"
@@ -703,10 +705,17 @@ html.dark .pr-review-diff-viewer__header {
 }
 
 .pr-review-diff-viewer__file-title {
+  margin-bottom: 0;
   color: var(--gitpulse-text-strong);
   font-size: 0.875rem;
   font-weight: 800;
   line-height: 1.125;
+}
+
+.pr-review-diff-viewer__renamed-from {
+  margin-bottom: 0;
+  color: var(--gitpulse-text-muted);
+  font-size: 0.75rem;
 }
 
 .pr-review-diff-viewer__header-meta {
@@ -801,6 +810,16 @@ html.dark .pr-review-diff-viewer__header {
   margin: 0 auto;
 }
 
+.pr-review-diff-viewer__empty-title {
+  margin-bottom: 0.5rem;
+}
+
+.pr-review-diff-viewer__empty-hint {
+  margin-bottom: 0;
+  color: var(--gitpulse-text-muted);
+  font-size: 0.75rem;
+}
+
 .pr-review-diff-viewer__drafts {
   max-height: 10rem;
 
@@ -866,5 +885,15 @@ html.dark .pr-review-diff-viewer__header {
 
 .pr-review-diff-viewer__draft + .pr-review-diff-viewer__draft {
   margin-top: 0.75rem;
+}
+
+.pr-review-diff-viewer__draft-line {
+  margin-bottom: 0.25rem;
+  color: var(--gitpulse-text-muted);
+  font-size: 0.75rem;
+}
+
+.pr-review-diff-viewer__draft-body {
+  margin-bottom: 0;
 }
 </style>

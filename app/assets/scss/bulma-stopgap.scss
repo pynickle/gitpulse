@@ -20,37 +20,20 @@
   @layer helpers {
     // Color
     .has-text-grey,
-    .has-text-grey-dark,
-    .has-text-grey-light {
+    .has-text-grey-dark {
       color: var(--gitpulse-text-muted);
-    }
-
-    .has-background-grey-lighter {
-      background-color: var(--gitpulse-surface-muted);
     }
 
     .has-text-primary {
       color: var(--gitpulse-accent);
     }
 
-    .has-text-link {
-      color: var(--gitpulse-link);
-    }
-
     .has-text-info {
       color: var(--gitpulse-info);
     }
 
-    .has-text-success {
-      color: var(--gitpulse-success);
-    }
-
     .has-text-warning {
       color: var(--gitpulse-warning);
-    }
-
-    .has-text-danger {
-      color: var(--gitpulse-danger);
     }
 
     // Flexbox
@@ -78,10 +61,6 @@
       flex-grow: 1;
     }
 
-    .is-flex-wrap-wrap {
-      flex-wrap: wrap;
-    }
-
     // Spacing — margins
     .mb-0 {
       margin-bottom: 0;
@@ -107,20 +86,12 @@
       margin-bottom: 1.5rem;
     }
 
-    .ml-1 {
-      margin-left: 0.25rem;
-    }
-
     .ml-2 {
       margin-left: 0.5rem;
     }
 
     .ml-3 {
       margin-left: 0.75rem;
-    }
-
-    .ml-auto {
-      margin-left: auto;
     }
 
     .mr-1 {
@@ -151,15 +122,6 @@
       margin-top: 0.75rem;
     }
 
-    .mt-4 {
-      margin-top: 1rem;
-    }
-
-    .mx-2 {
-      margin-left: 0.5rem;
-      margin-right: 0.5rem;
-    }
-
     // Spacing — paddings
     .p-0 {
       padding: 0;
@@ -169,74 +131,13 @@
       padding: 0.75rem;
     }
 
-    .pb-1 {
-      padding-bottom: 0.25rem;
-    }
-
-    .pb-3 {
-      padding-bottom: 0.75rem;
-    }
-
     .pl-4 {
       padding-left: 1rem;
-    }
-
-    .pt-2 {
-      padding-top: 0.5rem;
-    }
-
-    .pt-3 {
-      padding-top: 0.75rem;
-    }
-
-    .px-3 {
-      padding-left: 0.75rem;
-      padding-right: 0.75rem;
-    }
-
-    .px-4 {
-      padding-left: 1rem;
-      padding-right: 1rem;
-    }
-
-    .px-6 {
-      padding-left: 3rem;
-      padding-right: 3rem;
-    }
-
-    .py-2 {
-      padding-top: 0.5rem;
-      padding-bottom: 0.5rem;
-    }
-
-    .py-5 {
-      padding-top: 1.5rem;
-      padding-bottom: 1.5rem;
     }
 
     // Typography
     .has-text-centered {
       text-align: center;
-    }
-
-    .has-text-weight-medium {
-      font-weight: 500;
-    }
-
-    .has-text-weight-semibold {
-      font-weight: 600;
-    }
-
-    .is-family-monospace {
-      font-family: var(--gitpulse-code-font-family);
-    }
-
-    .is-size-5 {
-      font-size: 1.25rem;
-    }
-
-    .is-size-6 {
-      font-size: 1rem;
     }
 
     .is-size-7 {
@@ -250,38 +151,6 @@
 
     .is-hidden {
       display: none;
-    }
-
-    .is-inline {
-      display: inline;
-    }
-
-    .is-sr-only {
-      border: none;
-      clip: rect(0, 0, 0, 0);
-      height: 0.01em;
-      overflow: hidden;
-      padding: 0;
-      position: absolute;
-      white-space: nowrap;
-      width: 0.01em;
-    }
-
-    // Other, overflow, position
-    .is-clipped {
-      overflow: hidden;
-    }
-
-    .is-overlay {
-      bottom: 0;
-      left: 0;
-      position: absolute;
-      right: 0;
-      top: 0;
-    }
-
-    .is-radiusless {
-      border-radius: 0;
     }
   }
 }

@@ -890,7 +890,7 @@ onActivated(() => {
           >
             {{ owner }}/{{ repo }}
           </button>
-          <h1 v-if="fileName" class="repo-file-view__title mb-0">{{ fileName }}</h1>
+          <h1 v-if="fileName" class="repo-file-view__title">{{ fileName }}</h1>
         </div>
       </div>
 
@@ -1153,7 +1153,7 @@ onActivated(() => {
             <p class="repo-file-view__binary-hint">{{ t('repoFileView.binaryFileHint') }}</p>
             <button
               type="button"
-              class="gp-btn gp-btn--small gp-btn--light mt-3"
+              class="gp-btn gp-btn--small gp-btn--light repo-file-view__binary-download"
               @click="downloadFile"
             >
               <DownloadIcon :size="14" aria-hidden="true" />
@@ -1254,6 +1254,7 @@ onActivated(() => {
 }
 
 .repo-file-view__title {
+  margin-bottom: 0;
   color: var(--gitpulse-text-strong);
   font-size: 0.9rem;
   font-weight: 700;
@@ -1786,6 +1787,10 @@ onActivated(() => {
   margin: 0;
   font-size: 0.82rem;
   text-align: center;
+}
+
+.repo-file-view__binary-download {
+  margin-top: 0.75rem;
 }
 
 // Code display

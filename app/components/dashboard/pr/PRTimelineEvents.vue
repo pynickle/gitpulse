@@ -1,8 +1,8 @@
 <template>
   <div>
-    <div v-if="loading" class="pr-timeline-events__loading mb-4 is-flex is-align-items-center">
+    <div v-if="loading" class="pr-timeline-events__loading">
       <LoadingIcon :size="16" aria-hidden="true" />
-      <span class="ml-2 is-size-7 has-text-grey">{{ t('detailTimeline.loading') }}</span>
+      <span class="pr-timeline-events__loading-label">{{ t('detailTimeline.loading') }}</span>
     </div>
 
     <div v-if="processedTimeline.length > 0" class="pr-timeline-events__list">
@@ -41,21 +41,21 @@
 
         <TimelineRenamedTitleEvent
           v-else-if="item.eventType === 'renamed'"
-          class="mx-2"
+          class="pr-timeline-events__row"
           :actor="item.actor"
           :previous-title="item.previousTitle"
           :current-title="item.currentTitle"
           :created-at="item.createdAt"
         />
 
-        <div v-else-if="item.groupedEvents" class="mx-2">
+        <div v-else-if="item.groupedEvents" class="pr-timeline-events__row">
           <TimelineEventActorRow :actor="item.actor" align-start>
             <div>
-              <div class="is-size-7 has-text-grey mb-1">
+              <div class="pr-timeline-events__grouped-heading">
                 <GitHubProfileLink
                   :login="item.actor?.login"
                   :github-href="item.actor?.url"
-                  class="has-text-weight-medium has-text-link mr-1"
+                  class="pr-timeline-events__grouped-actor"
                 >
                   {{ item.actor?.login }}
                 </GitHubProfileLink>
@@ -74,7 +74,7 @@
             </div>
           </TimelineEventActorRow>
         </div>
-        <div v-else class="mx-2">
+        <div v-else class="pr-timeline-events__row">
           <TimelineEventActorRow :actor="item.actor">
             <PRTimelineEventBody
               :item="item"
@@ -88,14 +88,11 @@
       </div>
     </div>
 
-    <div v-else-if="!loading" class="has-text-grey is-size-7">
+    <div v-else-if="!loading" class="pr-timeline-events__empty">
       {{ t('detailTimeline.noActivity') }}
     </div>
 
-    <div
-      v-if="hasNextPage && processedTimeline.length > 0"
-      class="mt-4 is-flex is-justify-content-center"
-    >
+    <div v-if="hasNextPage && processedTimeline.length > 0" class="pr-timeline-events__load-more">
       <button
         class="gp-btn gp-btn--light gp-btn--small"
         type="button"
@@ -109,7 +106,7 @@
     </div>
 
     <FloatingMarkdownEditor
-      class="pr-timeline-events__composer mt-4"
+      class="pr-timeline-events__composer"
       :repo-owner="repoOwner"
       :repo-name="repoName"
       :item-number="pullNumber"
@@ -172,8 +169,18 @@ const handleSwitchPullRequest = (owner: string, repo: string, pullNumber: number
 
 <style scoped lang="scss">
 .pr-timeline-events__loading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   min-height: 1.25rem;
+  margin-bottom: 1rem;
   padding-left: 0.5rem;
+}
+
+.pr-timeline-events__loading-label,
+.pr-timeline-events__empty {
+  color: var(--gitpulse-text-muted);
+  font-size: 0.75rem;
 }
 
 .pr-timeline-events__list {
@@ -182,7 +189,30 @@ const handleSwitchPullRequest = (owner: string, repo: string, pullNumber: number
   gap: 1.125rem;
 }
 
+.pr-timeline-events__row {
+  margin-inline: 0.5rem;
+}
+
+.pr-timeline-events__grouped-heading {
+  margin-bottom: 0.25rem;
+  color: var(--gitpulse-text-muted);
+  font-size: 0.75rem;
+}
+
+.pr-timeline-events__grouped-actor {
+  margin-right: 0.25rem;
+  color: var(--gitpulse-link);
+  font-weight: 500;
+}
+
+.pr-timeline-events__load-more {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
 .pr-timeline-events__composer {
+  margin-top: 1rem;
   padding-top: 1rem;
 }
 </style>

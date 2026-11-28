@@ -497,7 +497,7 @@ defineExpose({
           :repo-owner="repoOwner"
           :repo-name="repoName"
         />
-        <p v-else class="has-text-grey is-size-7 mb-0">
+        <p v-else class="markdown-composer__preview-empty">
           {{ t('floatingMarkdownEditor.previewEmpty') }}
         </p>
       </ScrollArea>
@@ -667,5 +667,11 @@ defineExpose({
   border-radius: 8px;
   padding: 0.875rem;
   background: var(--gitpulse-surface-muted);
+}
+
+.markdown-composer__preview-empty {
+  margin-bottom: 0;
+  color: var(--gitpulse-text-muted);
+  font-size: 0.75rem;
 }
 </style>

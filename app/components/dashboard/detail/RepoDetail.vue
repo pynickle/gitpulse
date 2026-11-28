@@ -757,9 +757,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 
           <div class="repo-detail-header__identity">
             <div class="repo-detail-header__meta">
-              <span class="repo-detail-header__full-name mb-0 has-text-weight-medium"
-                >{{ owner }}/{{ repo }}</span
-              >
+              <span class="repo-detail-header__full-name">{{ owner }}/{{ repo }}</span>
               <span
                 v-if="repository.language"
                 class="gp-tag gp-tag--link repo-detail-header__language"
@@ -793,13 +791,13 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
             </p>
           </div>
 
-          <div v-if="repository.description" class="repo-detail-description mb-4">
+          <div v-if="repository.description" class="repo-detail-description">
             <p class="repo-detail-description__body">
               {{ repository.description }}
             </p>
           </div>
 
-          <div class="repo-about mb-4">
+          <div class="repo-about">
             <div class="repo-about__grid">
               <div v-for="item in aboutItems" :key="item.label" class="repo-about__item">
                 <component :is="item.icon" :size="14" class="repo-about__item-icon" />
@@ -866,7 +864,8 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
                   <div
                     class="repo-detail-list-toolbar__pagination"
                     :class="{
-                      'is-hidden': !commitsShowPagination && !commitsLoading,
+                      'repo-detail-list-toolbar__pagination--hidden':
+                        !commitsShowPagination && !commitsLoading,
                       'is-loading': commitsLoading,
                     }"
                     :aria-hidden="!commitsShowPagination && !commitsLoading"
@@ -916,7 +915,8 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
                   <div
                     class="repo-detail-list-toolbar__pagination"
                     :class="{
-                      'is-hidden': !listShowPagination && !listLoading,
+                      'repo-detail-list-toolbar__pagination--hidden':
+                        !listShowPagination && !listLoading,
                       'is-loading': listLoading,
                     }"
                     :aria-hidden="!listShowPagination && !listLoading"
@@ -993,7 +993,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
       <DetailSidebarColumn :hidden="detailSidebarHidden">
         <ScrollArea class="sidebar-scroll" media="(min-width: 1025px)">
           <div class="repo-sidebar">
-            <div class="sidebar-card mb-4">
+            <div class="sidebar-card">
               <div class="sidebar-card__header">
                 <div class="sidebar-card__header-left">
                   <StarIcon :size="14" class="sidebar-card__icon" />
@@ -1018,7 +1018,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
               </div>
             </div>
 
-            <div v-if="languageShares.length > 0 || loadingLanguages" class="sidebar-card mb-4">
+            <div v-if="languageShares.length > 0 || loadingLanguages" class="sidebar-card">
               <div class="sidebar-card__header">
                 <div class="sidebar-card__header-left">
                   <CodeXmlIcon :size="14" class="sidebar-card__icon" />
@@ -1031,7 +1031,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
                   class="repo-languages__loading"
                 >
                   <LoaderCircleIcon :size="16" class="spin-animation" aria-hidden="true" />
-                  <span class="is-sr-only">{{ t('repoDetail.loadingLanguages') }}</span>
+                  <span class="sr-only">{{ t('repoDetail.loadingLanguages') }}</span>
                 </div>
                 <div v-else class="repo-languages">
                   <div class="repo-languages__bar" role="img" :aria-label="languageBarAriaLabel">
@@ -1352,8 +1352,10 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 }
 
 .repo-detail-header__full-name {
+  margin-bottom: 0;
   color: var(--gitpulse-text-muted);
   font-size: 1rem;
+  font-weight: 500;
   line-height: 1.25;
 }
 
@@ -1423,6 +1425,7 @@ onUnmounted(() => document.removeEventListener('click', handleClickOutside));
 
 .repo-detail-description {
   max-width: 54rem;
+  margin-bottom: 1rem;
 }
 
 .repo-detail-description__body {
@@ -1624,7 +1627,7 @@ html.dark .repo-detail-section__chrome {
   /* Keep the same footprint whether pagination is real, loading, or hidden. */
   min-width: 7.5rem;
 
-  &.is-hidden {
+  &--hidden {
     visibility: hidden;
     pointer-events: none;
   }
@@ -1720,6 +1723,7 @@ html.dark .repo-detail-section__chrome {
 }
 
 .sidebar-card {
+  margin-bottom: 1rem;
   overflow: hidden;
   border: 1px solid var(--gitpulse-border);
   border-radius: 8px;

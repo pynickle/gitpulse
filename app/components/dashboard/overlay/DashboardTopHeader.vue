@@ -3,7 +3,7 @@
     <div class="dashboard-top-header__toolbar">
       <div class="gp-btn-group dashboard-top-header__nav">
         <button type="button" class="gp-btn gp-btn--light gp-btn--small" @click="$emit('back')">
-          <ArrowLeftIcon :size="18" class="mr-1" />
+          <ArrowLeftIcon :size="18" />
           {{ backLabel }}
         </button>
         <button
@@ -12,7 +12,7 @@
           class="gp-btn gp-btn--light gp-btn--small"
           @click="$emit('home')"
         >
-          <HouseIcon :size="18" class="mr-1" />
+          <HouseIcon :size="18" />
           {{ homeLabel }}
         </button>
       </div>

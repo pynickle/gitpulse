@@ -35,10 +35,10 @@
       >
         <div
           v-if="detailError"
-          class="gp-notice gp-notice--danger gp-notice--compact mb-4"
+          class="gp-notice gp-notice--danger gp-notice--compact pr-detail__error"
           role="alert"
         >
-          <p class="is-size-7">{{ detailError }}</p>
+          <p class="pr-detail__error-text">{{ detailError }}</p>
         </div>
 
         <div ref="detailHeaderRef" class="detail-header-boundary">
@@ -1315,6 +1315,14 @@ watch(
 .pr-detail-section {
   margin-top: 0.25rem;
   min-width: 0;
+}
+
+.pr-detail__error {
+  margin-bottom: 1rem;
+}
+
+.pr-detail__error-text {
+  font-size: 0.75rem;
 }
 
 .pr-detail-tabs {
