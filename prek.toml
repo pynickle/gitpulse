@@ -66,8 +66,8 @@ pass_filenames = false
 always_run = true
 
 [[repos.hooks]]
-id = "bulma-ratchet"
-name = "Bulma ratchet check"
+id = "bulma-guard"
+name = "Zero-Bulma guard"
 language = "system"
 entry = "bun scripts/check-bulma-ratchet.ts"
 pass_filenames = false

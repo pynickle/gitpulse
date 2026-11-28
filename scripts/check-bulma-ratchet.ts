@@ -1,49 +1,47 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { join, relative, resolve } from 'node:path';
 
 import { parse as parseSfc } from '@vue/compiler-sfc';
 import ts from 'typescript';
 
-export interface BulmaRatchetBaseline {
-  customProperties: number;
-  classes: Record<string, Record<string, number>>;
-}
-
-export interface BulmaUsageReport {
-  customProperties: number;
-  classes: Map<string, number>;
-}
-
-export type BulmaRatchetViolation =
+export type BulmaGuardViolation =
+  | {
+      kind: 'dependency';
+      file: string;
+      section: string;
+    }
+  | {
+      kind: 'import';
+      file: string;
+      specifier: string;
+    }
+  | {
+      kind: 'layer';
+      file: string;
+      params: string;
+    }
   | {
       kind: 'custom-property';
       actual: number;
-      baseline: number;
+      files: string[];
     }
   | {
-      kind: 'class-increase';
-      category: string;
-      name: string;
-      actual: number;
-      baseline: number;
-    }
-  | {
-      kind: 'retired-class';
+      kind: 'disallowed-class';
       name: string;
       actual: number;
     };
 
-export interface BulmaRatchetResult {
+export interface BulmaGuardResult {
   ok: boolean;
-  usage: BulmaUsageReport;
-  violations: BulmaRatchetViolation[];
+  violations: BulmaGuardViolation[];
 }
 
 /**
- * Bulma classes retired in #198 (excluded modules) and future modules once their
- * baseline entries are lowered to 0 or removed.
+ * Legacy Bulma component, layout, form, and element classes permanently retired
+ * under ADR 0057.
  */
-export const RETIRED_BULMA_CLASSES: ReadonlySet<string> = new Set([
+export const DISALLOWED_BULMA_CLASSES: ReadonlySet<string> = new Set([
+  // Modals & overlays
   'modal',
   'modal-background',
   'modal-content',
@@ -53,6 +51,7 @@ export const RETIRED_BULMA_CLASSES: ReadonlySet<string> = new Set([
   'modal-card-body',
   'modal-card-foot',
   'modal-card-title',
+  // Dropdowns, menus, panels, tables
   'dropdown',
   'dropdown-trigger',
   'dropdown-menu',
@@ -65,31 +64,81 @@ export const RETIRED_BULMA_CLASSES: ReadonlySet<string> = new Set([
   'panel-heading',
   'panel-block',
   'panel-tabs',
+  'menu',
+  'menu-label',
+  'menu-list',
+  // Layout & grid relics
   'section',
   'container',
   'content',
   'footer',
+  'columns',
+  'column',
+  'grid',
+  'fixed-grid',
+  'cell',
+  'navbar',
+  'navbar-brand',
+  'navbar-menu',
+  'navbar-item',
+  'hero',
+  'hero-body',
+  'tabs',
+  'pagination',
+  'pagination-previous',
+  'pagination-next',
+  'pagination-link',
+  'pagination-ellipsis',
+  'pagination-list',
+  'media',
+  'media-left',
+  'media-content',
+  'level',
+  'level-item',
+  'loader',
+  'box',
+  'block',
+  // Messages, notifications, cards, skeletons
   'message',
   'message-header',
   'message-body',
+  'notification',
+  'delete',
+  'card',
+  'card-header',
+  'card-header-title',
+  'card-content',
+  'card-footer',
   'breadcrumb',
   'progress',
-  'block',
+  'skeleton-block',
+  'skeleton-lines',
+  'is-skeleton',
+  // Forms
+  'checkbox',
+  'input',
+  'textarea',
+  'field',
+  'control',
+  'label',
+  'help',
+  'has-icons-left',
+  'has-addons',
   'select',
   'file',
   'file-label',
   'file-input',
   'file-cta',
   'file-name',
-  'menu',
-  'menu-label',
-  'menu-list',
-  'grid',
-  'fixed-grid',
-  'cell',
-  'skeleton-block',
-  'skeleton-lines',
-  'is-skeleton',
+  // Buttons, tags, typography, icons, images
+  'button',
+  'buttons',
+  'tag',
+  'tags',
+  'title',
+  'subtitle',
+  'icon',
+  'image',
 ]);
 
 const BULMA_HELPER_PATTERNS: readonly RegExp[] = [
@@ -110,9 +159,33 @@ export function isBulmaHelperClass(className: string): boolean {
   return BULMA_HELPER_PATTERNS.some((pattern) => pattern.test(className));
 }
 
+const PACKAGE_DEPENDENCY_SECTIONS = [
+  'dependencies',
+  'devDependencies',
+  'peerDependencies',
+  'optionalDependencies',
+  'overrides',
+] as const;
+
 const BULMA_CUSTOM_PROPERTY_RE = /--bulma-[a-z0-9-]+/g;
+const STYLESHEET_BULMA_IMPORT_RE =
+  /(?:@(?:use|import|forward)\s+['"](bulma(?:\/[^'"]*)?)['"]|load-css\(\s*['"](bulma(?:\/[^'"]*)?)['"]\s*\))/g;
+const SCRIPT_BULMA_IMPORT_RE =
+  /(?:(?:from|import)\s*\(?\s*['"](bulma(?:\/[^'"]*)?)['"]|['"](bulma\/[^'"]+)['"])/g;
+const CSS_LAYER_RE = /@layer\s+([^{;]+)/g;
+
+function toPosixRelative(repoRoot: string, filePath: string): string {
+  return relative(repoRoot, filePath).replaceAll('\\', '/');
+}
+
+function stripStylesheetComments(source: string): string {
+  return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[\s;{}])\/\/[^\n]*/gm, '$1');
+}
 
 function walkFiles(dir: string): string[] {
+  if (!existsSync(dir)) {
+    return [];
+  }
   const results: string[] = [];
   for (const entry of readdirSync(dir)) {
     const fullPath = join(dir, entry);
@@ -252,23 +325,105 @@ function collectTemplateClasses(node: TemplateAstNodeLike | undefined, out: stri
   }
 }
 
-export function scanBulmaUsage(rootDir: string): BulmaUsageReport {
-  let customProperties = 0;
-  const classes = new Map<string, number>();
+function scanStylesheetSource(
+  source: string,
+  relFile: string,
+  violations: BulmaGuardViolation[]
+): void {
+  const stripped = stripStylesheetComments(source);
 
-  for (const filePath of walkFiles(rootDir)) {
+  for (const match of stripped.matchAll(STYLESHEET_BULMA_IMPORT_RE)) {
+    const specifier = match[1] ?? match[2];
+    if (specifier) {
+      violations.push({ kind: 'import', file: relFile, specifier });
+    }
+  }
+
+  for (const match of stripped.matchAll(CSS_LAYER_RE)) {
+    const params = match[1]?.trim() ?? '';
+    if (/\bbulma\b/i.test(params)) {
+      violations.push({ kind: 'layer', file: relFile, params });
+    }
+  }
+}
+
+function scanScriptSource(
+  source: string,
+  relFile: string,
+  violations: BulmaGuardViolation[]
+): void {
+  for (const match of source.matchAll(SCRIPT_BULMA_IMPORT_RE)) {
+    const specifier = match[1] ?? match[2];
+    if (specifier) {
+      violations.push({ kind: 'import', file: relFile, specifier });
+    }
+  }
+}
+
+export function checkBulmaGuard(repoRoot: string): BulmaGuardResult {
+  const violations: BulmaGuardViolation[] = [];
+
+  const packageJsonPath = join(repoRoot, 'package.json');
+  if (existsSync(packageJsonPath)) {
+    const pkg = JSON.parse(readFileSync(packageJsonPath, 'utf8')) as Record<
+      string,
+      Record<string, unknown> | undefined
+    >;
+    for (const section of PACKAGE_DEPENDENCY_SECTIONS) {
+      const entries = pkg[section];
+      if (entries && typeof entries === 'object' && 'bulma' in entries) {
+        violations.push({ kind: 'dependency', file: 'package.json', section });
+      }
+    }
+  }
+
+  const nuxtConfigPath = join(repoRoot, 'nuxt.config.ts');
+  if (existsSync(nuxtConfigPath)) {
+    scanScriptSource(readFileSync(nuxtConfigPath, 'utf8'), 'nuxt.config.ts', violations);
+  }
+
+  const appDir = join(repoRoot, 'app');
+  let customPropertyCount = 0;
+  const customPropertyFiles = new Set<string>();
+  const disallowedClassCounts = new Map<string, number>();
+
+  for (const filePath of walkFiles(appDir)) {
     if (!/\.(?:vue|scss|css|ts)$/.test(filePath)) {
       continue;
     }
 
+    const relFile = toPosixRelative(repoRoot, filePath);
     const source = readFileSync(filePath, 'utf8');
+
     const customPropMatches = source.match(BULMA_CUSTOM_PROPERTY_RE);
     if (customPropMatches) {
-      customProperties += customPropMatches.length;
+      customPropertyCount += customPropMatches.length;
+      customPropertyFiles.add(relFile);
+    }
+
+    if (filePath.endsWith('.scss') || filePath.endsWith('.css')) {
+      scanStylesheetSource(source, relFile, violations);
+      continue;
+    }
+
+    if (filePath.endsWith('.ts')) {
+      scanScriptSource(source, relFile, violations);
+      continue;
     }
 
     if (filePath.endsWith('.vue')) {
       const { descriptor } = parseSfc(source, { filename: filePath });
+
+      if (descriptor.script?.content) {
+        scanScriptSource(descriptor.script.content, relFile, violations);
+      }
+      if (descriptor.scriptSetup?.content) {
+        scanScriptSource(descriptor.scriptSetup.content, relFile, violations);
+      }
+      for (const style of descriptor.styles) {
+        scanStylesheetSource(style.content, relFile, violations);
+      }
+
       if (descriptor.template?.ast) {
         const templateClasses: string[] = [];
         collectTemplateClasses(
@@ -276,97 +431,65 @@ export function scanBulmaUsage(rootDir: string): BulmaUsageReport {
           templateClasses
         );
         for (const className of templateClasses) {
-          classes.set(className, (classes.get(className) ?? 0) + 1);
+          if (DISALLOWED_BULMA_CLASSES.has(className) || isBulmaHelperClass(className)) {
+            disallowedClassCounts.set(className, (disallowedClassCounts.get(className) ?? 0) + 1);
+          }
         }
       }
     }
   }
 
-  return { customProperties, classes };
-}
-
-export function evaluateBulmaRatchet(
-  usage: BulmaUsageReport,
-  baseline: BulmaRatchetBaseline
-): BulmaRatchetResult {
-  const violations: BulmaRatchetViolation[] = [];
-
-  if (usage.customProperties > baseline.customProperties) {
+  if (customPropertyCount > 0) {
     violations.push({
       kind: 'custom-property',
-      actual: usage.customProperties,
-      baseline: baseline.customProperties,
+      actual: customPropertyCount,
+      files: [...customPropertyFiles].sort(),
     });
   }
 
-  const trackedBaseline = new Map<string, { category: string; cap: number }>();
-  for (const [category, entries] of Object.entries(baseline.classes)) {
-    for (const [className, cap] of Object.entries(entries)) {
-      trackedBaseline.set(className, { category, cap });
-    }
-  }
-
-  for (const [className, { category, cap }] of trackedBaseline.entries()) {
-    const actual = usage.classes.get(className) ?? 0;
-    if (actual > cap) {
-      violations.push(
-        cap === 0
-          ? { kind: 'retired-class', name: className, actual }
-          : { kind: 'class-increase', category, name: className, actual, baseline: cap }
-      );
-    }
-  }
-
-  for (const [className, actual] of usage.classes.entries()) {
-    if (actual <= 0 || trackedBaseline.has(className)) {
-      continue;
-    }
-    if (RETIRED_BULMA_CLASSES.has(className) || isBulmaHelperClass(className)) {
-      violations.push({
-        kind: 'retired-class',
-        name: className,
-        actual,
-      });
-    }
+  for (const [name, actual] of [...disallowedClassCounts.entries()].sort(([a], [b]) =>
+    a.localeCompare(b)
+  )) {
+    violations.push({
+      kind: 'disallowed-class',
+      name,
+      actual,
+    });
   }
 
   return {
     ok: violations.length === 0,
-    usage,
     violations,
   };
 }
 
-export function checkBulmaRatchet(
-  rootDir: string,
-  baseline: BulmaRatchetBaseline
-): BulmaRatchetResult {
-  return evaluateBulmaRatchet(scanBulmaUsage(rootDir), baseline);
-}
-
-export function formatRatchetViolations(violations: readonly BulmaRatchetViolation[]): string {
+export function formatBulmaGuardViolations(violations: readonly BulmaGuardViolation[]): string {
   return violations
     .map((violation) => {
+      if (violation.kind === 'dependency') {
+        return `- Disallowed "bulma" package found in ${violation.file} (${violation.section})`;
+      }
+      if (violation.kind === 'import') {
+        return `- Disallowed Bulma import "${violation.specifier}" found in ${violation.file}`;
+      }
+      if (violation.kind === 'layer') {
+        return `- Disallowed "@layer ${violation.params}" declaration found in ${violation.file}`;
+      }
       if (violation.kind === 'custom-property') {
-        return `- --bulma-* custom properties increased: ${violation.actual} > baseline ${violation.baseline}`;
+        return `- Disallowed --bulma-* custom propert${violation.actual === 1 ? 'y' : 'ies'} detected (${violation.actual} in ${violation.files.join(', ')})`;
       }
-      if (violation.kind === 'class-increase') {
-        return `- Bulma class .${violation.name} (${violation.category}) increased: ${violation.actual} > baseline ${violation.baseline}`;
-      }
-      return `- Retired/disallowed Bulma class .${violation.name} detected (${violation.actual} occurrence${violation.actual === 1 ? '' : 's'})`;
+      return `- Disallowed legacy Bulma class .${violation.name} detected (${violation.actual} occurrence${violation.actual === 1 ? '' : 's'})`;
     })
     .join('\n');
 }
 
 if (import.meta.main) {
-  const baselinePath = resolve(import.meta.dir, 'bulma-ratchet-baseline.json');
-  const appDir = resolve(import.meta.dir, '../app');
-  const baseline = JSON.parse(readFileSync(baselinePath, 'utf8')) as BulmaRatchetBaseline;
-  const result = checkBulmaRatchet(appDir, baseline);
+  const repoRoot = process.argv[2] ? resolve(process.argv[2]) : resolve(import.meta.dir, '..');
+  const result = checkBulmaGuard(repoRoot);
 
   if (!result.ok) {
-    console.error('Bulma ratchet check failed (ADR 0057):');
-    console.error(formatRatchetViolations(result.violations));
+    console.error('Zero-Bulma guard failed (ADR 0057):');
+    console.error(formatBulmaGuardViolations(result.violations));
     process.exit(1);
   }
 }

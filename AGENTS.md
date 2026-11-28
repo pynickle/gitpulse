@@ -67,9 +67,11 @@ The test: Every changed line should trace directly to the user's request.
 - A `:focus-within` that _tints_ (a card wash) is gated with its `:hover`; a `:focus-within` that _reveals_ a control (a row's add button) stays outside the gate — a reveal is a keyboard affordance.
 - A press never adds a tint and never adds motion; the one exception is a filled control, which deepens its own fill. The base rules live in `app/assets/scss/main.scss`, so a component does not re-declare the tap highlight itself; a drag surface keeps its own `touch-action: none`, and a component may keep its own `user-select: none`.
 
-## Web Styling & Bulma Exit (ADR 0057)
+## Web Styling & Pure-SCSS Architecture (ADR 0057)
 
-- Bulma is being retired in favor of native CSS and Vue `<style scoped lang="scss">` driven by `--gitpulse-*` tokens (`docs/adr/0057-web-bulma-exit-and-scss-architecture.md`). Do not add new `--bulma-*` variables or Bulma utility/component classes; `prek.toml` enforces a monotonic ratchet (`scripts/check-bulma-ratchet.ts`), and `@layer reset` intentionally preserves bare `ul`/`ol` list semantics so UI lists must opt into `list-style: none` explicitly.
+- Bulma is retired and uninstalled; web styles live in native CSS and Vue `<style scoped lang="scss">` driven by `--gitpulse-*` Foundation Layer tokens and semantic `.gp-*` Control Layer primitives (`docs/adr/0057-web-bulma-exit-and-scss-architecture.md`).
+- `prek.toml` enforces a permanent zero-Bulma guard (`scripts/check-bulma-ratchet.ts`) blocking `bulma` dependencies, `bulma/` imports, `@layer bulma`, `--bulma-*` variables, and legacy Bulma component or helper classes.
+- `@layer reset` intentionally preserves bare `ul`/`ol` list semantics so UI lists must opt into `list-style: none` explicitly; global and scoped app styles stay unlayered above `@layer reset`.
 
 ## Imports (Strict)
 
