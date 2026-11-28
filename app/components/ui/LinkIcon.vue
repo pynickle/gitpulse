@@ -1,5 +1,5 @@
 <template>
-  <NuxtLinkLocale :to="to" class="is-flex is-justify-content-center">
+  <NuxtLinkLocale :to="to" class="link-icon">
     <slot />
   </NuxtLinkLocale>
 </template>
@@ -11,7 +11,9 @@ defineProps<{
 </script>
 
 <style scoped lang="scss">
-.is-flex {
+.link-icon {
+  display: flex;
+  justify-content: center;
   color: inherit;
   text-decoration: none;
 }

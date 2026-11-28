@@ -1,18 +1,18 @@
 <template>
   <div class="personal-lock-form">
-    <div class="personal-lock-form__header mb-5 has-text-centered">
-      <div class="personal-lock-form__logo mb-3">
-        <LockKeyholeIcon :size="48" class="has-text-primary" />
+    <div class="personal-lock-form__header">
+      <div class="personal-lock-form__logo">
+        <LockKeyholeIcon :size="48" />
       </div>
-      <h2 class="personal-lock-form__title mb-2">{{ t('auth.personalModeTitle') }}</h2>
-      <p class="personal-lock-form__subtitle has-text-grey mb-0">
+      <h2 class="personal-lock-form__title">{{ t('auth.personalModeTitle') }}</h2>
+      <p class="personal-lock-form__subtitle">
         {{ t('auth.personalModeSubtitle') }}
       </p>
     </div>
 
     <div class="personal-lock-form__content">
       <form @submit.prevent="handleUnlock">
-        <div class="gp-field mb-4">
+        <div class="gp-field personal-lock-form__field">
           <label class="gp-label personal-lock-form__label" for="vault-password">{{
             t('auth.passwordLabel')
           }}</label>
@@ -34,24 +34,24 @@
           </div>
         </div>
 
-        <div class="gp-field mb-5">
+        <div class="gp-field personal-lock-form__remember-field">
           <label class="gp-checkbox personal-lock-form__checkbox">
             <input v-model="remember" type="checkbox" :disabled="submitting" />
-            <span class="ml-2">{{ t('auth.rememberDevice') }}</span>
+            <span>{{ t('auth.rememberDevice') }}</span>
           </label>
         </div>
 
         <div
           v-if="error"
-          class="gp-notice gp-notice--danger personal-lock-form__error mb-4"
+          class="gp-notice gp-notice--danger personal-lock-form__error"
           role="alert"
         >
           {{ error }}
         </div>
 
         <Button type="submit" size="large" block :disabled="submitting">
-          <LoadingIcon v-if="submitting" class="mr-3" :size="18" />
-          <LockOpenIcon v-else class="mr-3" :size="18" />
+          <LoadingIcon v-if="submitting" class="personal-lock-form__btn-icon" :size="18" />
+          <LockOpenIcon v-else class="personal-lock-form__btn-icon" :size="18" />
           {{ submitting ? t('auth.unlocking') : t('auth.unlock') }}
         </Button>
       </form>
@@ -113,18 +113,25 @@ const handleUnlock = async () => {
   justify-content: center;
 }
 
+.personal-lock-form__header {
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
 .personal-lock-form__logo {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 80px;
   height: 80px;
+  margin-bottom: 0.75rem;
   border-radius: 50%;
   background: var(--gitpulse-accent-soft);
   color: var(--gitpulse-accent);
 }
 
 .personal-lock-form__title {
+  margin-bottom: 0.5rem;
   color: var(--gitpulse-text-strong);
   font-size: 1.5rem;
   font-weight: 800;
@@ -132,10 +139,19 @@ const handleUnlock = async () => {
 }
 
 .personal-lock-form__subtitle {
+  margin-bottom: 0;
   color: var(--gitpulse-text-muted);
   font-size: 1rem;
   font-weight: 400;
   line-height: 1.25;
+}
+
+.personal-lock-form__field {
+  margin-bottom: 1rem;
+}
+
+.personal-lock-form__remember-field {
+  margin-bottom: 1.5rem;
 }
 
 .personal-lock-form__label {
@@ -150,12 +166,17 @@ const handleUnlock = async () => {
 .personal-lock-form__checkbox {
   display: flex;
   align-items: center;
+  gap: 0.5rem;
   font-size: 0.95rem;
   user-select: none;
 }
 
 .personal-lock-form__error {
-  margin: 0;
+  margin: 0 0 1rem;
   text-align: center;
+}
+
+.personal-lock-form__btn-icon {
+  margin-inline-end: 0.75rem;
 }
 </style>

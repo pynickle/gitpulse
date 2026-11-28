@@ -264,7 +264,7 @@ const handleHome = async () => {
               class="package-page__type-icon"
               aria-hidden="true"
             />
-            <h1 class="mb-0 package-page__name">{{ detail.name }}</h1>
+            <h1 class="package-page__name">{{ detail.name }}</h1>
             <span class="gp-tag">{{ t(`packages.types.${detail.packageType}`) }}</span>
             <span
               v-if="visibilityLabel"
@@ -328,7 +328,7 @@ const handleHome = async () => {
         </header>
 
         <section v-if="installCommand" class="package-page__install">
-          <h2 class="mb-2 package-page__section-title">
+          <h2 class="package-page__section-title">
             <TerminalIcon :size="15" aria-hidden="true" />
             {{ t('packageDetail.install') }}
           </h2>
@@ -339,7 +339,7 @@ const handleHome = async () => {
 
         <section class="package-page__versions">
           <div class="package-page__versions-header">
-            <h2 class="mb-0 package-page__section-title">
+            <h2 class="package-page__section-title">
               <TagIcon :size="15" aria-hidden="true" />
               {{ t('packageDetail.versions') }}
             </h2>
@@ -481,6 +481,7 @@ const handleHome = async () => {
 }
 
 .package-page__name {
+  margin-bottom: 0;
   color: var(--gitpulse-text-strong);
   font-size: 1.5rem;
   font-weight: 800;
@@ -536,10 +537,15 @@ const handleHome = async () => {
   display: flex;
   align-items: center;
   gap: 0.45rem;
+  margin-bottom: 0;
   color: var(--gitpulse-text-strong);
   font-size: 1rem;
   font-weight: 800;
   line-height: 1.125;
+}
+
+.package-page__install > .package-page__section-title {
+  margin-bottom: 0.5rem;
 }
 
 .package-page__install-command {

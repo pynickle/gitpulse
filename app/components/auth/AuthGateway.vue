@@ -1,14 +1,14 @@
 <template>
   <div class="auth-gateway">
-    <div class="auth-gateway__header mb-4">
-      <p class="auth-gateway__eyebrow mb-2">{{ modeLabel }}</p>
-      <h2 class="auth-gateway__title mb-2">{{ t('landing.authCardTitle') }}</h2>
-      <p class="auth-gateway__subtitle has-text-grey mb-0">{{ t('landing.authCardSubtitle') }}</p>
+    <div class="auth-gateway__header">
+      <p class="auth-gateway__eyebrow">{{ modeLabel }}</p>
+      <h2 class="auth-gateway__title">{{ t('landing.authCardTitle') }}</h2>
+      <p class="auth-gateway__subtitle">{{ t('landing.authCardSubtitle') }}</p>
     </div>
 
     <div class="auth-gateway__content">
-      <Button v-if="providers.oauthEnabled" :href="oauthHref" size="large" block class="mb-0">
-        <GitHubIcon class="mr-3" />
+      <Button v-if="providers.oauthEnabled" :href="oauthHref" size="large" block>
+        <GitHubIcon class="auth-gateway__btn-icon" />
         {{ t('auth.connectWithGithub') }}
       </Button>
 
@@ -36,7 +36,7 @@
               <KeyRoundIcon :size="18" />
             </span>
           </div>
-          <p class="gp-help has-text-grey-dark auth-gateway__help">
+          <p class="gp-help auth-gateway__help">
             {{ t('auth.tokenHelp') }}
             <a href="https://github.com/settings/tokens" target="_blank" rel="noreferrer">
               {{ t('auth.tokenHelpLink') }}
@@ -56,8 +56,8 @@
         </div>
 
         <Button type="submit" size="large" block :disabled="submitting">
-          <LoadingIcon v-if="submitting" class="mr-3" :size="18" />
-          <KeyRoundIcon v-else class="mr-3" :size="18" />
+          <LoadingIcon v-if="submitting" class="auth-gateway__btn-icon" :size="18" />
+          <KeyRoundIcon v-else class="auth-gateway__btn-icon" :size="18" />
           {{ submitting ? t('auth.connectingWithPat') : t('auth.continueWithPat') }}
         </Button>
       </form>
@@ -171,7 +171,12 @@ const handlePatSubmit = async () => {
   height: 100%;
 }
 
+.auth-gateway__header {
+  margin-bottom: 1rem;
+}
+
 .auth-gateway__eyebrow {
+  margin-bottom: 0.5rem;
   font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 0.16em;
@@ -180,6 +185,7 @@ const handlePatSubmit = async () => {
 }
 
 .auth-gateway__title {
+  margin-bottom: 0.5rem;
   color: var(--gitpulse-text-strong);
   font-size: 1.5rem;
   font-weight: 800;
@@ -187,10 +193,15 @@ const handlePatSubmit = async () => {
 }
 
 .auth-gateway__subtitle {
+  margin-bottom: 0;
   color: var(--gitpulse-text-muted);
   font-size: 1rem;
   font-weight: 400;
   line-height: 1.25;
+}
+
+.auth-gateway__btn-icon {
+  margin-inline-end: 0.75rem;
 }
 
 .auth-gateway__divider {

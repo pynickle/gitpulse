@@ -4,17 +4,17 @@
     class="dashboard-list-card dashboard-list-card--activity dashboard-list-card--detailed generic-search-card"
     v-bind="linkProps"
   >
-    <div class="dashboard-list-card__body p-3">
+    <div class="dashboard-list-card__body">
       <div class="dashboard-list-card__main-row">
-        <div class="dashboard-list-card__icon ml-2 mt-1">
+        <div class="dashboard-list-card__icon">
           <component :size="22" :is="icon" />
         </div>
         <div class="dashboard-list-card__content">
           <div class="dashboard-list-card__text-stack">
-            <p class="mb-1 dashboard-list-card__title">
+            <p class="dashboard-list-card__title">
               {{ title }}
             </p>
-            <p class="has-text-grey mb-2 dashboard-list-card__meta">
+            <p class="dashboard-list-card__meta">
               <span class="dashboard-list-card__repo">{{ meta }}</span>
               <span v-if="numberLabel" class="gp-tag gp-tag--small dashboard-list-card__number">
                 {{ numberLabel }}
@@ -147,6 +147,12 @@ const icon = computed(() => {
 }
 
 .dashboard-list-card__icon {
+  margin-top: 0.25rem;
+  margin-left: 0.5rem;
   color: var(--gitpulse-accent);
+}
+
+.dashboard-list-card__meta {
+  margin-bottom: 0.5rem;
 }
 </style>

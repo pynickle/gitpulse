@@ -7,7 +7,7 @@
         <RoundImg src="/icon.png" alt="GitPulse Logo" width="28" height="28" />
       </template>
     </ColorScheme>
-    <component :is="titleTag" class="navbar-brand-title mb-0">{{ t('app.title') }}</component>
+    <component :is="titleTag" class="navbar-brand-title">{{ t('app.title') }}</component>
   </NuxtLinkLocale>
 </template>
 
@@ -34,6 +34,7 @@ const logoSrc = computed(() => (colorMode.value === 'dark' ? '/icon-dark.png' : 
 }
 
 .navbar-brand-title {
+  margin-bottom: 0;
   color: var(--gitpulse-text-strong);
   font-size: 1.5rem;
   font-weight: 800;

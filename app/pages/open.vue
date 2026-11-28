@@ -42,7 +42,7 @@ watch(
     </div>
     <div v-else class="open-page__error">
       <h1 class="open-page__title">{{ t('launch.unsupportedTitle') }}</h1>
-      <p class="mb-5">{{ t('launch.unsupportedDescription') }}</p>
+      <p class="open-page__description">{{ t('launch.unsupportedDescription') }}</p>
       <Button variant="primary" :to="localePath('/dashboard')">
         {{ t('error.cta.dashboard') }}
       </Button>
@@ -69,5 +69,9 @@ watch(
   font-size: 1.5rem;
   font-weight: 800;
   line-height: 1.125;
+}
+
+.open-page__description {
+  margin-bottom: 1.5rem;
 }
 </style>
