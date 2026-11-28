@@ -1,7 +1,7 @@
 <template>
-  <div class="auth-shell auth-shell--signed-in is-flex is-justify-content-center">
-    <div class="auth-shell__box has-text-centered">
-      <div class="auth-shell__avatar mb-5">
+  <div class="auth-shell auth-shell--signed-in">
+    <div class="auth-shell__box">
+      <div class="auth-shell__avatar">
         <GitHubAvatar
           variant="raised"
           interactive
@@ -14,18 +14,18 @@
         />
       </div>
 
-      <p class="auth-shell__eyebrow mb-3">{{ t('landing.sessionReady') }}</p>
-      <h2 class="auth-shell__title mb-2">{{ user.name }}</h2>
-      <p class="auth-shell__subtitle has-text-grey mb-5">@{{ user.login }}</p>
+      <p class="auth-shell__eyebrow">{{ t('landing.sessionReady') }}</p>
+      <h2 class="auth-shell__title">{{ user.name }}</h2>
+      <p class="auth-shell__subtitle">@{{ user.login }}</p>
 
-      <div class="gp-btn-group is-flex is-flex-direction-column auth-shell__actions">
+      <div class="gp-btn-group auth-shell__actions">
         <Button size="large" block @click="handleGoToDashboard">
-          <LayoutDashboardIcon class="mr-3" :size="20" />
+          <LayoutDashboardIcon class="auth-shell__action-icon" :size="20" />
           {{ t('landing.goToDashboard') }}
         </Button>
 
         <Button variant="light" size="large" block @click="$emit('logout')">
-          <LogOutIcon class="mr-3" :size="20" />
+          <LogOutIcon class="auth-shell__action-icon" :size="20" />
           {{ t('landing.loggedOut') }}
         </Button>
       </div>
@@ -60,6 +60,11 @@ const handleGoToDashboard = async () => {
 </script>
 
 <style scoped lang="scss">
+.auth-shell {
+  display: flex;
+  justify-content: center;
+}
+
 .auth-shell__box {
   width: min(100%, 32rem);
   padding: 2.5rem 2.25rem;
@@ -68,9 +73,15 @@ const handleGoToDashboard = async () => {
   background-color: var(--gitpulse-surface);
   color: var(--gitpulse-text);
   box-shadow: var(--gitpulse-shadow-raised);
+  text-align: center;
+}
+
+.auth-shell__avatar {
+  margin-bottom: 1.5rem;
 }
 
 .auth-shell__eyebrow {
+  margin-bottom: 0.75rem;
   font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 0.16em;
@@ -79,6 +90,7 @@ const handleGoToDashboard = async () => {
 }
 
 .auth-shell__title {
+  margin-bottom: 0.5rem;
   color: var(--gitpulse-text-strong);
   font-size: 2rem;
   font-weight: 800;
@@ -86,6 +98,7 @@ const handleGoToDashboard = async () => {
 }
 
 .auth-shell__subtitle {
+  margin-bottom: 1.5rem;
   color: var(--gitpulse-text-muted);
   font-size: 1rem;
   font-weight: 400;
@@ -93,6 +106,12 @@ const handleGoToDashboard = async () => {
 }
 
 .auth-shell__actions {
+  display: flex;
+  flex-direction: column;
   gap: 0.85rem;
+}
+
+.auth-shell__action-icon {
+  margin-inline-end: 0.75rem;
 }
 </style>

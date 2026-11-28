@@ -1,11 +1,7 @@
 <template>
   <div class="tab-stats">
     <nav class="tab-stats__list">
-      <div
-        v-for="(stat, index) in displayStats"
-        :key="index"
-        class="tab-stats__item has-text-centered"
-      >
+      <div v-for="(stat, index) in displayStats" :key="index" class="tab-stats__item">
         <div>
           <p class="heading" :class="stat.colorClass">{{ stat.label }}</p>
           <p class="tab-stats__value">{{ stat.value }}</p>
@@ -31,17 +27,17 @@ const displayStats = computed(() => {
       {
         label: t('dashboard.widgets.stats.unread'),
         value: stats.unread || 0,
-        colorClass: 'has-text-warning',
+        colorClass: 'tab-stats__heading--warning',
       },
       {
         label: t('dashboard.widgets.stats.read'),
         value: stats.read || 0,
-        colorClass: 'has-text-success',
+        colorClass: 'tab-stats__heading--success',
       },
       {
         label: t('dashboard.widgets.stats.total'),
         value: stats.total || Object.values(stats).reduce((a, b) => a + b, 0),
-        colorClass: 'has-text-info',
+        colorClass: 'tab-stats__heading--info',
       },
     ];
   } else if (currentTab === 'pulls') {
@@ -49,17 +45,17 @@ const displayStats = computed(() => {
       {
         label: t('dashboard.widgets.stats.open'),
         value: stats.open || 0,
-        colorClass: 'has-text-success',
+        colorClass: 'tab-stats__heading--success',
       },
       {
         label: t('dashboard.widgets.stats.merged'),
         value: stats.merged || 0,
-        colorClass: 'has-text-purple',
+        colorClass: 'tab-stats__heading--purple',
       },
       {
         label: t('dashboard.widgets.stats.closed'),
         value: stats.closed || 0,
-        colorClass: 'has-text-danger',
+        colorClass: 'tab-stats__heading--danger',
       },
     ];
   } else {
@@ -67,17 +63,17 @@ const displayStats = computed(() => {
       {
         label: t('dashboard.widgets.stats.open'),
         value: stats.open || 0,
-        colorClass: 'has-text-success',
+        colorClass: 'tab-stats__heading--success',
       },
       {
         label: t('dashboard.widgets.stats.closed'),
         value: stats.closed || 0,
-        colorClass: 'has-text-danger',
+        colorClass: 'tab-stats__heading--danger',
       },
       {
         label: t('dashboard.widgets.stats.total'),
         value: stats.total || (stats.open || 0) + (stats.closed || 0),
-        colorClass: 'has-text-info',
+        colorClass: 'tab-stats__heading--info',
       },
     ];
   }
@@ -103,6 +99,7 @@ const displayStats = computed(() => {
     flex: 1 0 auto;
     align-items: center;
     justify-content: center;
+    text-align: center;
   }
 
   .heading {
@@ -112,23 +109,23 @@ const displayStats = computed(() => {
     margin-bottom: 0.5rem;
     font-weight: 600;
 
-    &.has-text-warning {
+    &.tab-stats__heading--warning {
       color: var(--gitpulse-warning);
     }
 
-    &.has-text-success {
+    &.tab-stats__heading--success {
       color: var(--gitpulse-success);
     }
 
-    &.has-text-info {
+    &.tab-stats__heading--info {
       color: var(--gitpulse-info);
     }
 
-    &.has-text-danger {
+    &.tab-stats__heading--danger {
       color: var(--gitpulse-danger);
     }
 
-    &.has-text-purple {
+    &.tab-stats__heading--purple {
       color: var(--gitpulse-purple);
     }
   }

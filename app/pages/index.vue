@@ -35,9 +35,9 @@
       {{ t('auth.providerStateUnavailable') }}
     </div>
 
-    <div v-if="showProvidersLoading" class="landing-shell__loading has-text-centered">
+    <div v-if="showProvidersLoading" class="landing-shell__loading">
       <LoadingIcon :size="22" />
-      <p class="mt-3 has-text-grey">{{ t('auth.loadingProviders') }}</p>
+      <p class="landing-shell__loading-text">{{ t('auth.loadingProviders') }}</p>
     </div>
 
     <PersonalLockForm v-else-if="isPersonalMode" />
@@ -181,9 +181,15 @@ const handleLogout = async () => {
   border: 1px solid var(--gitpulse-border);
   border-radius: var(--gitpulse-radius-lg);
   background: var(--gitpulse-surface-muted);
+  text-align: center;
 
   @media (max-width: 480px) {
     padding: 1.25rem;
   }
+}
+
+.landing-shell__loading-text {
+  margin-top: 0.75rem;
+  color: var(--gitpulse-text-muted);
 }
 </style>

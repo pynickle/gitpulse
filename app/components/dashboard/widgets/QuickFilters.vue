@@ -14,7 +14,7 @@
             :value="option.value"
             v-model="selectedValues"
             @change="onChange"
-            class="is-hidden"
+            class="quick-filters__input"
           />
           <span class="quick-filters__checkbox">
             <svg
@@ -167,6 +167,10 @@ const onChange = () => {
         font-weight: 500;
       }
     }
+  }
+
+  &__input {
+    display: none;
   }
 
   &__checkbox {

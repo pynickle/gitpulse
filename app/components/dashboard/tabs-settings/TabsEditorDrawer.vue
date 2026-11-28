@@ -92,7 +92,7 @@ const {
 
         <div class="gp-field">
           <div class="subtitle-label-row">
-            <label class="gp-label mb-0" for="new-tab-subtitle">
+            <label class="gp-label subtitle-label-row__label" for="new-tab-subtitle">
               {{ t('dashboard.tabsSettings.viewSubtitleLabel') }}
             </label>
             <div
@@ -130,7 +130,7 @@ const {
         </div>
 
         <section class="search-fields-panel">
-          <div class="section-label-row mb-3">
+          <div class="section-label-row search-fields-panel__header">
             <div class="section-label">
               <span class="section-icon is-query" aria-hidden="true">
                 <ListFilterIcon :size="13" />
@@ -256,3 +256,13 @@ const {
     </footer>
   </aside>
 </template>
+
+<style scoped lang="scss">
+.subtitle-label-row .subtitle-label-row__label {
+  margin-bottom: 0;
+}
+
+.search-fields-panel__header {
+  margin-bottom: 0.75rem;
+}
+</style>

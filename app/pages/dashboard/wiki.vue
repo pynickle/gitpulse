@@ -352,8 +352,8 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
     <div class="wiki-page">
       <div class="wiki-page__header">
         <div class="wiki-page__heading">
-          <h1 class="wiki-page__title mb-0 is-flex is-align-items-center">
-            <BookOpenIcon :size="18" class="mr-2" aria-hidden="true" />
+          <h1 class="wiki-page__title">
+            <BookOpenIcon :size="18" aria-hidden="true" />
             {{ t('wikiPage.heading') }}
           </h1>
 
@@ -468,7 +468,7 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
               </div>
 
               <div v-else class="wiki-page__empty">
-                <p class="mb-2">{{ t('wikiPage.pageUnavailable') }}</p>
+                <p class="wiki-page__empty-message">{{ t('wikiPage.pageUnavailable') }}</p>
                 <Button
                   variant="ghost"
                   size="small"
@@ -476,7 +476,7 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <ExternalLinkIcon :size="14" class="mr-1" />
+                  <ExternalLinkIcon :size="14" class="wiki-page__empty-icon" />
                   <span>{{ t('wikiPage.viewOnGitHub') }}</span>
                 </Button>
               </div>
@@ -537,6 +537,10 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
 }
 
 .wiki-page__title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0;
   color: var(--gitpulse-text-strong);
   font-size: 1.25rem;
   font-weight: 800;
@@ -579,6 +583,14 @@ watch([repoFullName, activeSlug], ([newRepo, newSlug], [oldRepo, oldSlug]) => {
   min-height: 12rem;
   color: var(--gitpulse-text-muted);
   font-size: 0.9rem;
+}
+
+.wiki-page__empty-message {
+  margin-bottom: 0.5rem;
+}
+
+.wiki-page__empty-icon {
+  margin-inline-end: 0.25rem;
 }
 
 .wiki-page__layout {

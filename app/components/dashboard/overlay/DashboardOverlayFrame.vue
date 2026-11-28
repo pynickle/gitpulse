@@ -130,7 +130,6 @@ defineEmits<{
   padding: 2rem 4rem;
   background: var(--gitpulse-surface);
 
-  &.p-0,
   &.detail-frame__content--unpadded {
     padding: 0;
   }
@@ -144,7 +143,6 @@ defineEmits<{
   @media (max-width: 860px) {
     padding: 1.25rem 1.25rem 1.5rem;
 
-    &.p-0,
     &.detail-frame__content--unpadded {
       padding: 0;
     }
