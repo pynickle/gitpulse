@@ -1,10 +1,10 @@
 <template>
-  <span class="is-size-7">
+  <span class="issue-timeline-event-body">
     <GitHubProfileLink
       v-if="shouldRenderActorPrefix"
       :login="item.actor?.login"
       :github-href="item.actor?.url"
-      class="has-text-weight-medium has-text-link mr-1"
+      class="issue-timeline-event-body__actor"
     >
       {{ item.actor?.login }}
     </GitHubProfileLink>
@@ -41,7 +41,7 @@
       }}
     </template>
 
-    <span class="ml-2 has-text-grey">
+    <span class="issue-timeline-event-body__time">
       {{ formatDurationFromNow(item.createdAt || '', localeCode, relativeTimeNow) }}
     </span>
   </span>
@@ -159,4 +159,19 @@ const handleSwitchPullRequest = (owner: string, repo: string, pullNumber: number
 };
 </script>
 
-<style scoped lang="scss"></style>
+<style scoped lang="scss">
+.issue-timeline-event-body {
+  font-size: 0.75rem;
+}
+
+.issue-timeline-event-body__actor {
+  margin-right: 0.25rem;
+  color: var(--gitpulse-link);
+  font-weight: 500;
+}
+
+.issue-timeline-event-body__time {
+  margin-left: 0.5rem;
+  color: var(--gitpulse-text-muted);
+}
+</style>

@@ -238,7 +238,7 @@ const confirm = async () => {
       <p :id="descriptionId" class="stack-rebase__description">
         {{ t('prReview.stackRebase.description', { trunk }) }}
       </p>
-      <p class="is-sr-only" role="status" aria-live="polite">
+      <p class="sr-only" role="status" aria-live="polite">
         {{ liveAnnouncement }}
       </p>
       <ol class="stack-rebase__layers">

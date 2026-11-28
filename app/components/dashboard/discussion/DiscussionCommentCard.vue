@@ -77,17 +77,20 @@ const submitReplyDraft = async (body: string) => {
           v-if="comment.author?.login || comment.author?.url"
           :login="comment.author.login"
           :github-href="comment.author.url"
-          class="has-text-weight-medium has-text-link"
+          class="discussion-comment__author discussion-comment__author--link"
         >
           {{ comment.author.login }}
         </GitHubProfileLink>
-        <span v-else class="has-text-weight-medium">
+        <span v-else class="discussion-comment__author">
           {{ comment.author?.login || t('discussionDetail.authorFallback') }}
         </span>
-        <span class="discussion-comment__time is-size-7 has-text-grey">
+        <span class="discussion-comment__time">
           {{ formatDurationFromNow(comment.createdAt || '', localeCode, relativeTimeNow) }}
         </span>
-        <span v-if="comment.isAnswer" class="gp-tag gp-tag--success gp-tag--small ml-auto">
+        <span
+          v-if="comment.isAnswer"
+          class="gp-tag gp-tag--success gp-tag--small discussion-comment__answer-tag"
+        >
           <CircleCheckIcon :size="14" />
           {{ t('discussionDetail.answer') }}
         </span>
@@ -102,7 +105,7 @@ const submitReplyDraft = async (body: string) => {
             :repo-owner="repoOwner"
             :repo-name="repoName"
           />
-          <p v-else class="has-text-grey is-size-7">
+          <p v-else class="discussion-comment__empty">
             {{ t('discussionDetail.noCommentBody') }}
           </p>
         </div>
@@ -122,7 +125,7 @@ const submitReplyDraft = async (body: string) => {
 
       <DiscussionReplyList
         v-if="showReplies"
-        class="mt-3"
+        class="discussion-comment__replies"
         :replies="comment.replies"
         :repo-owner="repoOwner"
         :repo-name="repoName"
@@ -131,7 +134,7 @@ const submitReplyDraft = async (body: string) => {
         @load-more="emit('load-more-replies', comment)"
       />
 
-      <div v-if="canReply" class="discussion-comment__reply-entry mt-3">
+      <div v-if="canReply" class="discussion-comment__reply-entry">
         <button
           v-if="!isEditorActive"
           class="discussion-comment__reply-capsule gp-btn gp-btn--light"
@@ -139,7 +142,9 @@ const submitReplyDraft = async (body: string) => {
           @click="expandReplyEditor"
         >
           <MessageSquareReplyIcon :size="14" />
-          <span class="has-text-grey">{{ t('discussionDetail.replyPlaceholder') }}</span>
+          <span class="discussion-comment__reply-placeholder">{{
+            t('discussionDetail.replyPlaceholder')
+          }}</span>
         </button>
 
         <div v-else class="discussion-comment__reply-editor">
@@ -209,8 +214,35 @@ const submitReplyDraft = async (body: string) => {
   min-width: 0;
 }
 
+.discussion-comment__author {
+  font-weight: 500;
+
+  &--link {
+    color: var(--gitpulse-link);
+  }
+}
+
 .discussion-comment__time {
   flex: none;
+  color: var(--gitpulse-text-muted);
+  font-size: 0.75rem;
+}
+
+.discussion-comment__answer-tag {
+  margin-left: auto;
+}
+
+.discussion-comment__empty {
+  color: var(--gitpulse-text-muted);
+  font-size: 0.75rem;
+}
+
+.discussion-comment__replies {
+  margin-top: 0.75rem;
+}
+
+.discussion-comment__reply-placeholder {
+  color: var(--gitpulse-text-muted);
 }
 
 .discussion-comment__body {
@@ -243,6 +275,7 @@ const submitReplyDraft = async (body: string) => {
 }
 
 .discussion-comment__reply-entry {
+  margin-top: 0.75rem;
   margin-left: 0.5rem;
   padding-left: 1rem;
   border-left: 2px solid var(--gitpulse-border);

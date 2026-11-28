@@ -76,7 +76,7 @@ const toggleReviewThread = (thread: PRReviewCommentThread) => {
               v-if="comment.author?.login || comment.author?.url"
               :login="comment.author.login"
               :github-href="comment.author.url"
-              class="has-text-link has-text-weight-semibold"
+              class="pr-review-diff-viewer__review-author"
             >
               {{ comment.author.login }}
             </GitHubProfileLink>
@@ -86,11 +86,11 @@ const toggleReviewThread = (thread: PRReviewCommentThread) => {
               :href="comment.url"
               target="_blank"
               rel="noopener noreferrer"
-              class="has-text-grey"
+              class="pr-review-diff-viewer__review-time"
             >
               {{ formatDurationFromNow(comment.createdAt || '', localeCode, relativeTimeNow) }}
             </a>
-            <span v-else-if="comment.createdAt" class="has-text-grey">
+            <span v-else-if="comment.createdAt" class="pr-review-diff-viewer__review-time">
               {{ formatDurationFromNow(comment.createdAt, localeCode, relativeTimeNow) }}
             </span>
           </div>
@@ -111,7 +111,7 @@ const toggleReviewThread = (thread: PRReviewCommentThread) => {
               :repo-owner="repoOwner"
               :repo-name="repoName"
             />
-            <p v-else class="has-text-grey mb-0">
+            <p v-else class="pr-review-diff-viewer__review-empty">
               {{ t('prReview.noReviewCommentBody') }}
             </p>
           </div>
@@ -169,6 +169,20 @@ const toggleReviewThread = (thread: PRReviewCommentThread) => {
   flex-wrap: wrap;
   gap: 0.35rem 0.5rem;
   align-items: center;
+}
+
+.pr-review-diff-viewer__review-author {
+  color: var(--gitpulse-link);
+  font-weight: 600;
+}
+
+.pr-review-diff-viewer__review-time {
+  color: var(--gitpulse-text-muted);
+}
+
+.pr-review-diff-viewer__review-empty {
+  margin-bottom: 0;
+  color: var(--gitpulse-text-muted);
 }
 
 .pr-review-diff-viewer__review-comment-body {

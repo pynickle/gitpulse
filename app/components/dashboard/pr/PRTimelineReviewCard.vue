@@ -35,7 +35,7 @@
         <GitHubProfileLink
           :login="item.author?.login"
           :github-href="item.author?.url"
-          class="has-text-link has-text-weight-semibold review-item__author"
+          class="review-item__author"
         >
           {{ item.author?.login }}
         </GitHubProfileLink>
@@ -43,7 +43,7 @@
         <span v-if="item.dismissal" class="review-item__dismissed-note">
           {{ t('prReview.timelineDismissedNote') }}
         </span>
-        <TimelineEventTime class="review-item__time has-text-grey" :date="item.createdAt" />
+        <TimelineEventTime class="review-item__time" :date="item.createdAt" />
         <span v-if="item.copilotReviewEffort" class="gp-tag gp-tag--activity gp-tag--info">
           {{ t(`prReview.copilot.${item.copilotReviewEffort}`) }}
         </span>
@@ -62,7 +62,13 @@
           :key="team.url || team.slug || team.name || index"
         >
           <span v-if="index > 0">, </span>
-          <a v-if="team.url" :href="team.url" target="_blank" rel="noopener" class="has-text-link">
+          <a
+            v-if="team.url"
+            :href="team.url"
+            target="_blank"
+            rel="noopener"
+            class="review-item__link"
+          >
             {{ getOnBehalfOfTeamLabel(team) }}
           </a>
           <span v-else>{{ getOnBehalfOfTeamLabel(team) }}</span>
@@ -87,7 +93,7 @@
           <GitHubProfileLink
             :login="item.dismissal.actor.login"
             :github-href="item.dismissal.actor.url"
-            class="has-text-link"
+            class="review-item__link"
           >
             {{ item.dismissal.actor.login }}
           </GitHubProfileLink>
@@ -152,7 +158,7 @@
                 <GitHubProfileLink
                   :login="comment.author?.login"
                   :github-href="comment.author?.url"
-                  class="has-text-link"
+                  class="review-item__link"
                 >
                   {{ comment.author?.login }}
                 </GitHubProfileLink>
@@ -165,7 +171,7 @@
                 >
                   {{ commentLineLabel(comment) }}
                 </a>
-                <span v-if="comment.createdAt" class="has-text-grey">
+                <span v-if="comment.createdAt" class="review-item__comment-time">
                   {{ formatDurationFromNow(comment.createdAt, localeCode, relativeTimeNow) }}
                 </span>
                 <span
@@ -202,7 +208,7 @@
                     />
                   </template>
                 </template>
-                <p v-else class="has-text-grey is-size-7">
+                <p v-else class="review-item__comment-empty">
                   {{ t('prReview.noReviewCommentBody') }}
                 </p>
               </div>
@@ -768,7 +774,22 @@ const buildSuggestionDiffLines = (
 }
 
 .review-item__author {
+  color: var(--gitpulse-link);
   font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.review-item__link {
+  color: var(--gitpulse-link);
+}
+
+.review-item__comment-time {
+  color: var(--gitpulse-text-muted);
+}
+
+.review-item__comment-empty {
+  color: var(--gitpulse-text-muted);
+  font-size: 0.75rem;
 }
 
 .review-item__action {
@@ -789,6 +810,7 @@ const buildSuggestionDiffLines = (
 }
 
 .review-item__time {
+  color: var(--gitpulse-text-muted);
   font-size: 0.8rem;
 }
 

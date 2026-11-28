@@ -207,7 +207,7 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
   >
     <div class="pr-review-file-sidebar__content">
       <div class="pr-review-file-sidebar__header">
-        <h2 class="pr-review-file-sidebar__title mb-1">{{ t('prReview.files') }}</h2>
+        <h2 class="pr-review-file-sidebar__title">{{ t('prReview.files') }}</h2>
         <div class="pr-review-file-sidebar__header-actions">
           <div
             class="pr-review-file-sidebar__view-toggle"
@@ -275,10 +275,10 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
           </span>
           <span class="pr-review-file-sidebar__name">{{ file.filename }}</span>
           <span class="pr-review-file-sidebar__meta">
-            <span class="has-text-success" :title="exact(file.additions)"
+            <span class="pr-review-file-sidebar__stat--add" :title="exact(file.additions)"
               >+{{ compact(file.additions) }}</span
             >
-            <span class="has-text-danger" :title="exact(file.deletions)"
+            <span class="pr-review-file-sidebar__stat--delete" :title="exact(file.deletions)"
               >-{{ compact(file.deletions) }}</span
             >
             <span v-if="getDraftCount(file.filename)" class="pr-review-file-sidebar__draft-count">
@@ -361,7 +361,7 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
         size="small"
         block
         :loading="loadingMore"
-        class="mt-3"
+        class="pr-review-file-sidebar__load-more"
         @click="emit('load-more')"
       >
         {{ t('prReview.loadMoreFiles') }}
@@ -497,6 +497,7 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
 }
 
 .pr-review-file-sidebar__title {
+  margin-bottom: 0.25rem;
   color: var(--gitpulse-text-strong);
   font-size: 0.82rem;
   font-weight: 800;
@@ -619,6 +620,18 @@ const statusLabel = (status: string) => status.slice(0, 1).toUpperCase();
   flex-wrap: wrap;
   gap: 0.4rem;
   font-size: 0.75rem;
+}
+
+.pr-review-file-sidebar__stat--add {
+  color: var(--gitpulse-success);
+}
+
+.pr-review-file-sidebar__stat--delete {
+  color: var(--gitpulse-danger);
+}
+
+.pr-review-file-sidebar__load-more {
+  margin-top: 0.75rem;
 }
 
 .pr-review-file-sidebar__status {

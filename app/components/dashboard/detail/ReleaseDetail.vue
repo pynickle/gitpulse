@@ -118,7 +118,7 @@ usePageMeta(
           </div>
 
           <div class="detail-header-title">
-            <h1 class="mb-0 header-title__text release-header__title">
+            <h1 class="header-title__text release-header__title">
               {{ releaseTitle }}
             </h1>
           </div>

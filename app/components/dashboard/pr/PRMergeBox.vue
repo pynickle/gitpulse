@@ -323,7 +323,7 @@
         <!-- Zone 2: Dedicated Merge Footer -->
         <div v-if="showMergeActions || automationBadgeLabel" class="merge-box__actions">
           <template v-if="showMergeActions">
-            <p class="is-sr-only" role="status" aria-live="polite">
+            <p class="sr-only" role="status" aria-live="polite">
               {{ loadingCommitDefaults ? t('prReview.mergeBox.loadingCommitDefaults') : '' }}
             </p>
 

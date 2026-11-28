@@ -12,7 +12,7 @@
       <GitHubProfileLink
         :login="item.actor.login"
         :github-href="item.actor.url"
-        class="has-text-weight-medium has-text-link"
+        class="pr-timeline-state__actor-link"
       >
         {{ item.actor.login }}
       </GitHubProfileLink>
@@ -33,15 +33,19 @@
   >
   <template v-else-if="item.eventType === 'head_ref_deleted'">
     deleted the head branch
-    <span v-if="item.ref?.name" class="gp-tag gp-tag--activity gp-tag--warning ml-1">{{
-      item.ref.name
-    }}</span>
+    <span
+      v-if="item.ref?.name"
+      class="gp-tag gp-tag--activity gp-tag--warning pr-timeline-state__tag"
+      >{{ item.ref.name }}</span
+    >
   </template>
   <template v-else-if="item.eventType === 'head_ref_restored'">
     restored the head branch
-    <span v-if="item.ref?.name" class="gp-tag gp-tag--activity gp-tag--success ml-1">{{
-      item.ref.name
-    }}</span>
+    <span
+      v-if="item.ref?.name"
+      class="gp-tag gp-tag--activity gp-tag--success pr-timeline-state__tag"
+      >{{ item.ref.name }}</span
+    >
   </template>
   <template v-else-if="item.eventType === 'issue_comment_pinned'">pinned a comment</template>
   <template v-else-if="item.eventType === 'issue_comment_unpinned'">unpinned a comment</template>
@@ -61,11 +65,11 @@
       :href="item.fromRepository.url"
       target="_blank"
       rel="noopener"
-      class="gp-tag gp-tag--activity gp-tag--warning ml-1"
+      class="gp-tag gp-tag--activity gp-tag--warning pr-timeline-state__tag"
     >
       {{ item.fromRepository.nameWithOwner }}
     </a>
-    <span v-else class="gp-tag gp-tag--activity gp-tag--warning ml-1">
+    <span v-else class="gp-tag gp-tag--activity gp-tag--warning pr-timeline-state__tag">
       {{ item.fromRepository?.nameWithOwner }}
     </span>
   </template>
@@ -76,7 +80,7 @@
 
   <template v-else-if="item.eventType === 'added_to_project'">
     added this to project
-    <span class="gp-tag gp-tag--activity gp-tag--info ml-1">{{
+    <span class="gp-tag gp-tag--activity gp-tag--info pr-timeline-state__tag">{{
       item.project?.name || item.projectColumnName || 'project'
     }}</span>
   </template>
@@ -87,7 +91,7 @@
       :href="item.project?.url"
       target="_blank"
       rel="noopener"
-      class="gp-tag gp-tag--activity gp-tag--info ml-1"
+      class="gp-tag gp-tag--activity gp-tag--info pr-timeline-state__tag"
     >
       {{ item.project?.title }}
     </a>
@@ -97,7 +101,7 @@
     disabled auto-merge
     <span
       v-if="item.reason || item.reasonCode"
-      class="gp-tag gp-tag--activity gp-tag--warning ml-1"
+      class="gp-tag gp-tag--activity gp-tag--warning pr-timeline-state__tag"
       >{{ item.reason || item.reasonCode }}</span
     >
   </template>
@@ -114,23 +118,29 @@
         : 'automatic base change succeeded from'
     }}
     {{ item.oldBase }}
-    <span v-if="item.newBase" class="gp-tag gp-tag--activity gp-tag--info ml-1"
+    <span v-if="item.newBase" class="gp-tag gp-tag--activity gp-tag--info pr-timeline-state__tag"
       >to {{ item.newBase }}</span
     >
   </template>
 
   <template v-else-if="item.eventType === 'base_ref_changed'">
     changed base branch from
-    <span class="gp-tag gp-tag--activity gp-tag--info ml-1">{{ item.previousRefName }}</span>
+    <span class="gp-tag gp-tag--activity gp-tag--info pr-timeline-state__tag">{{
+      item.previousRefName
+    }}</span>
     to
-    <span class="gp-tag gp-tag--activity gp-tag--info ml-1">{{ item.currentRefName }}</span>
+    <span class="gp-tag gp-tag--activity gp-tag--info pr-timeline-state__tag">{{
+      item.currentRefName
+    }}</span>
   </template>
 
   <template v-else-if="item.eventType === 'base_ref_deleted'">
     deleted the base branch
-    <span v-if="item.baseRefName" class="gp-tag gp-tag--activity gp-tag--info ml-1">{{
-      item.baseRefName
-    }}</span>
+    <span
+      v-if="item.baseRefName"
+      class="gp-tag gp-tag--activity gp-tag--info pr-timeline-state__tag"
+      >{{ item.baseRefName }}</span
+    >
   </template>
 
   <template
@@ -157,16 +167,18 @@
 
   <template v-else-if="item.eventType === 'closed'">
     closed this PR
-    <span v-if="item.stateReason" class="gp-tag gp-tag--activity gp-tag--info ml-1">{{
-      item.stateReason
-    }}</span>
+    <span
+      v-if="item.stateReason"
+      class="gp-tag gp-tag--activity gp-tag--info pr-timeline-state__tag"
+      >{{ item.stateReason }}</span
+    >
   </template>
 
   <template v-else-if="item.eventType === 'comment_deleted'">
     deleted a comment by
     <GitHubProfileLink
       :login="item.deletedCommentAuthor?.login"
-      class="gp-tag gp-tag--activity gp-tag--info ml-1"
+      class="gp-tag gp-tag--activity gp-tag--info pr-timeline-state__tag"
     >
       {{ item.deletedCommentAuthor?.login }}
     </GitHubProfileLink>
@@ -174,7 +186,9 @@
 
   <template v-else-if="item.eventType === 'converted_to_discussion'">
     converted this to a discussion
-    <span class="gp-tag gp-tag--activity gp-tag--info ml-1">{{ item.discussion?.title }}</span>
+    <span class="gp-tag gp-tag--activity gp-tag--info pr-timeline-state__tag">{{
+      item.discussion?.title
+    }}</span>
   </template>
 
   <template v-else-if="item.eventType === 'demilestoned' || item.eventType === 'milestoned'">
@@ -183,14 +197,16 @@
         ? 'removed this PR from milestone'
         : 'added this PR to milestone'
     }}
-    <span class="gp-tag gp-tag--activity gp-tag--info ml-1">{{ item.milestoneTitle }}</span>
+    <span class="gp-tag gp-tag--activity gp-tag--info pr-timeline-state__tag">{{
+      item.milestoneTitle
+    }}</span>
   </template>
 
   <template
     v-else-if="item.eventType === 'deployed' || item.eventType === 'deployment_environment_changed'"
   >
     {{ item.eventType === 'deployed' ? 'deployed to' : 'changed deployment environment to' }}
-    <span class="gp-tag gp-tag--activity gp-tag--info ml-1">{{
+    <span class="gp-tag gp-tag--activity gp-tag--info pr-timeline-state__tag">{{
       item.deployment?.environment || item.deploymentStatus?.environment
     }}</span>
   </template>
@@ -203,9 +219,11 @@
     "
   >
     {{ issueFieldPrefix }}
-    <span v-if="item.issueField?.name" class="gp-tag gp-tag--activity gp-tag--info ml-1">{{
-      item.issueField.name
-    }}</span>
+    <span
+      v-if="item.issueField?.name"
+      class="gp-tag gp-tag--activity gp-tag--info pr-timeline-state__tag"
+      >{{ item.issueField.name }}</span
+    >
   </template>
 
   <template v-else-if="item.eventType === 'issue_type_changed'">
@@ -226,8 +244,8 @@
           <GitHubProfileLink
             :login="change.actor?.login"
             :github-href="change.actor?.url"
-            class="has-text-weight-medium mr-1"
-            :class="{ 'has-text-link': change.actor?.login || change.actor?.url }"
+            class="pr-timeline-state__actor"
+            :class="{ 'pr-timeline-state__actor--link': change.actor?.login || change.actor?.url }"
           >
             {{ timelineChangeActorLabel(change) }}
           </GitHubProfileLink>
@@ -236,7 +254,7 @@
         <GitHubProfileLink
           :login="change.assignee?.login"
           :github-href="change.assignee?.url"
-          class="gp-tag gp-tag--activity gp-tag--info ml-1"
+          class="gp-tag gp-tag--activity gp-tag--info pr-timeline-state__tag"
         >
           {{ assigneeChangeLabel(change) }}
         </GitHubProfileLink>
@@ -255,7 +273,7 @@
   <template v-else-if="item.eventType === 'labeled' || item.eventType === 'unlabeled'">
     {{ item.eventType === 'labeled' ? 'added label' : 'removed label' }}
     <span
-      class="gp-tag gp-tag--activity ml-1 has-text-weight-medium"
+      class="gp-tag gp-tag--activity pr-timeline-state__tag pr-timeline-state__label-tag"
       :style="labelStyle(item.label?.color)"
     >
       {{ item.label?.name }}
@@ -272,15 +290,15 @@
           <GitHubProfileLink
             :login="change.actor?.login"
             :github-href="change.actor?.url"
-            class="has-text-weight-medium mr-1"
-            :class="{ 'has-text-link': change.actor?.login || change.actor?.url }"
+            class="pr-timeline-state__actor"
+            :class="{ 'pr-timeline-state__actor--link': change.actor?.login || change.actor?.url }"
           >
             {{ timelineChangeActorLabel(change) }}
           </GitHubProfileLink>
         </template>
         {{ change.action }}
         <span
-          class="gp-tag gp-tag--activity ml-1 has-text-weight-medium"
+          class="gp-tag gp-tag--activity pr-timeline-state__tag pr-timeline-state__label-tag"
           :style="labelStyle(change.label?.color)"
         >
           {{ labelChangeLabel(change) }}
@@ -295,46 +313,58 @@
 
   <template v-else-if="item.eventType === 'locked' || item.eventType === 'unlocked'">
     {{ item.eventType === 'locked' ? 'locked this PR' : 'unlocked this PR' }}
-    <span v-if="item.lockReason" class="gp-tag gp-tag--activity gp-tag--info ml-1">{{
-      item.lockReason
-    }}</span>
+    <span
+      v-if="item.lockReason"
+      class="gp-tag gp-tag--activity gp-tag--info pr-timeline-state__tag"
+      >{{ item.lockReason }}</span
+    >
   </template>
 
   <template v-else-if="item.eventType === 'merged'"> merged this PR </template>
 
   <template v-else-if="item.eventType === 'moved_columns_in_project'">
     moved this from column
-    <span class="gp-tag gp-tag--activity gp-tag--info ml-1">{{
+    <span class="gp-tag gp-tag--activity gp-tag--info pr-timeline-state__tag">{{
       item.previousProjectColumnName
     }}</span>
     to
-    <span class="gp-tag gp-tag--activity gp-tag--info ml-1">{{ item.projectColumnName }}</span>
+    <span class="gp-tag gp-tag--activity gp-tag--info pr-timeline-state__tag">{{
+      item.projectColumnName
+    }}</span>
   </template>
 
   <template v-else-if="item.eventType === 'project_v2_item_status_changed'">
     changed status from
-    <span class="gp-tag gp-tag--activity gp-tag--info ml-1">{{ item.previousStatus }}</span>
+    <span class="gp-tag gp-tag--activity gp-tag--info pr-timeline-state__tag">{{
+      item.previousStatus
+    }}</span>
     to
-    <span class="gp-tag gp-tag--activity gp-tag--info ml-1">{{ item.status }}</span>
+    <span class="gp-tag gp-tag--activity gp-tag--info pr-timeline-state__tag">{{
+      item.status
+    }}</span>
   </template>
 
   <template
     v-else-if="item.eventType === 'commit_commented' || item.eventType === 'line_commented'"
   >
     {{ threadPrefix }}
-    <span v-if="item.path" class="gp-tag gp-tag--activity gp-tag--info ml-1">{{ item.path }}</span>
+    <span v-if="item.path" class="gp-tag gp-tag--activity gp-tag--info pr-timeline-state__tag">{{
+      item.path
+    }}</span>
     <span
       v-if="item.eventType === 'line_commented' && item.isOutdated"
-      class="gp-tag gp-tag--activity gp-tag--warning ml-1"
+      class="gp-tag gp-tag--activity gp-tag--warning pr-timeline-state__tag"
       >{{ t('prReview.threadOutdated') }}</span
     >
   </template>
 
   <template v-else-if="item.eventType === 'removed_from_merge_queue'">
     removed this from merge queue
-    <span v-if="item.reason" class="gp-tag gp-tag--activity gp-tag--warning ml-1">{{
-      item.reason
-    }}</span>
+    <span
+      v-if="item.reason"
+      class="gp-tag gp-tag--activity gp-tag--warning pr-timeline-state__tag"
+      >{{ item.reason }}</span
+    >
   </template>
 
   <template
@@ -343,7 +373,7 @@
     "
   >
     removed this from project
-    <span class="gp-tag gp-tag--activity gp-tag--info ml-1">{{
+    <span class="gp-tag gp-tag--activity gp-tag--info pr-timeline-state__tag">{{
       item.project?.name || item.projectColumnName || item.project?.title
     }}</span>
   </template>
@@ -352,7 +382,7 @@
     dismissed review by
     <GitHubProfileLink
       :login="item.review?.author?.login"
-      class="gp-tag gp-tag--activity gp-tag--info ml-1"
+      class="gp-tag gp-tag--activity gp-tag--info pr-timeline-state__tag"
     >
       {{ item.review?.author?.login }}
     </GitHubProfileLink>
@@ -368,7 +398,7 @@
       v-if="reviewer?.login || reviewer?.url"
       :login="reviewer.login"
       :github-href="reviewer.url"
-      class="gp-tag gp-tag--activity gp-tag--info ml-1"
+      class="gp-tag gp-tag--activity gp-tag--info pr-timeline-state__tag"
     >
       {{ reviewer.label }}
     </GitHubProfileLink>
@@ -378,7 +408,7 @@
     blocked user
     <GitHubProfileLink
       :login="item.subject?.login"
-      class="gp-tag gp-tag--activity gp-tag--info ml-1"
+      class="gp-tag gp-tag--activity gp-tag--info pr-timeline-state__tag"
     >
       {{ item.subject?.login }}
     </GitHubProfileLink>
@@ -454,3 +484,27 @@ const labelChangeLabel = (change: TimelineStateChange) => change.label?.name || 
 const timelineChangeActorLabel = (change: TimelineStateChange) =>
   change.actor?.login || change.actor?.name || '';
 </script>
+
+<style scoped lang="scss">
+.pr-timeline-state__tag {
+  margin-left: 0.25rem;
+}
+
+.pr-timeline-state__label-tag {
+  font-weight: 500;
+}
+
+.pr-timeline-state__actor-link {
+  color: var(--gitpulse-link);
+  font-weight: 500;
+}
+
+.pr-timeline-state__actor {
+  margin-right: 0.25rem;
+  font-weight: 500;
+
+  &--link {
+    color: var(--gitpulse-link);
+  }
+}
+</style>

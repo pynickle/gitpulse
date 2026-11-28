@@ -4,11 +4,11 @@
     :href="project.url"
     target="_blank"
     rel="noopener"
-    class="gp-tag gp-tag--activity gp-tag--link ml-1"
+    class="gp-tag gp-tag--activity gp-tag--link project-tag"
   >
     {{ project.title }}
   </a>
-  <span v-else class="gp-tag gp-tag--activity gp-tag--link ml-1">{{
+  <span v-else class="gp-tag gp-tag--activity gp-tag--link project-tag">{{
     project?.title || fallbackTitle
   }}</span>
 </template>
@@ -22,3 +22,9 @@ defineProps<{
   fallbackTitle?: string;
 }>();
 </script>
+
+<style scoped lang="scss">
+.project-tag {
+  margin-left: 0.25rem;
+}
+</style>

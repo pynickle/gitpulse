@@ -1,6 +1,6 @@
 <template>
   <section v-if="isVisible" class="linked-pr-list" :aria-busy="loading || undefined">
-    <hr class="mr-4 linked-pr-list__rule" />
+    <hr class="linked-pr-list__rule" />
 
     <div
       v-if="loading && nodes.length === 0"
@@ -216,6 +216,7 @@ watch(
  */
 .linked-pr-list__rule {
   margin-top: 0.5rem;
+  margin-right: 1rem;
   margin-bottom: 0.75rem;
 }
 

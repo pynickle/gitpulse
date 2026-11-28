@@ -496,13 +496,15 @@ onUnmounted(() => syncDetailSidebarPane(null));
       :show-detail-sidebar-toggle="isDetailSidebarToggleVisible"
       :detail-sidebar-hidden="isDetailSidebarHidden"
       @toggle-detail-sidebar="toggleDetailSidebar"
-      content-class="detail-host-content p-0 is-clipped"
+      content-class="detail-host-content"
+      content-unpadded
+      content-clipped
       @back="emit('back')"
       @home="emit('home')"
     >
       <div class="detail-host-body" :style="keyboardInsetStyle">
         <div
-          class="detail-pane-stage is-clipped"
+          class="detail-pane-stage"
           :class="{
             'detail-pane-stage--page-scroll': activeDetailPane?.type === 'repository',
           }"
@@ -517,21 +519,18 @@ onUnmounted(() => syncDetailSidebarPane(null));
               }"
               :disabled="!isRepositoryContentVisible"
             >
-              <div
-                v-if="isContentLoading"
-                class="detail-loading-pane is-flex is-flex-direction-column is-justify-content-center is-align-items-center"
-              >
-                <div class="has-text-centered py-5 px-6 shadow-md detail-loading-box">
+              <div v-if="isContentLoading" class="detail-loading-pane">
+                <div class="detail-loading-box shadow-md">
                   <LoaderCircleIcon
-                    class="spin-animation has-text-link mb-3"
+                    class="spin-animation detail-loading-box__spinner"
                     :size="40"
                     :stroke-width="2.5"
                   />
 
-                  <p class="is-size-6 has-text-weight-semibold has-text-grey-dark">
+                  <p class="detail-loading-box__title">
                     {{ activeDetailPane?.loadingTitle || t('detailOverlay.loading.issue') }}
                   </p>
-                  <p class="is-size-7 has-text-grey-light mt-1">{{ t('detailOverlay.syncing') }}</p>
+                  <p class="detail-loading-box__subtitle">{{ t('detailOverlay.syncing') }}</p>
                 </div>
               </div>
 
@@ -600,7 +599,7 @@ onUnmounted(() => syncDetailSidebarPane(null));
                 />
                 <template #fallback>
                   <div
-                    class="detail-loading-pane is-flex is-justify-content-center is-align-items-center"
+                    class="detail-loading-pane"
                     role="status"
                     :aria-label="activeDetailPane?.loadingTitle"
                     aria-busy="true"
@@ -634,6 +633,7 @@ onUnmounted(() => syncDetailSidebarPane(null));
   position: relative;
   flex: 1 1 0;
   min-height: 0;
+  overflow: hidden;
   background: var(--gitpulse-surface);
 }
 
@@ -692,21 +692,38 @@ onUnmounted(() => syncDetailSidebarPane(null));
 
 .detail-loading-pane,
 .detail-feedback-pane {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   height: 100%;
   background: var(--gitpulse-surface-muted);
 }
 
-.detail-feedback-pane {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .detail-loading-box {
   min-width: 200px;
+  padding: 1.5rem 3rem;
+  text-align: center;
   border-radius: var(--gitpulse-radius-xl);
   background-color: var(--gitpulse-surface);
   color: var(--gitpulse-text);
+}
+
+.detail-loading-box__spinner {
+  color: var(--gitpulse-link);
+  margin-bottom: 0.75rem;
+}
+
+.detail-loading-box__title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--gitpulse-text-strong);
+}
+
+.detail-loading-box__subtitle {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--gitpulse-text-muted);
 }
 
 .detail-overlay-fade-enter-active,

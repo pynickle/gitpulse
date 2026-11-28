@@ -247,30 +247,8 @@ describe('global SCSS architecture (#196)', () => {
     expect(findUngatedHoverSelectors(root)).toEqual([]);
   });
 
-  test('bulma-overrides.scss emits component overrides using Foundation Layer tokens without a Bulma token bridge', () => {
-    const root = postcss.parse(compileScssFile('bulma-overrides.scss'));
-    const lightRoot = collectTopLevelDecls(root, ':root');
-    const darkRoot = collectTopLevelDecls(root, 'html.dark');
-
-    expect(lightRoot.size).toBe(0);
-    expect(darkRoot.size).toBe(0);
-
-    const bulmaTokens: string[] = [];
-    root.walkDecls((decl) => {
-      if (decl.prop.startsWith('--bulma-') || decl.value.includes('--bulma-')) {
-        bulmaTokens.push(`${decl.prop}: ${decl.value}`);
-      }
-    });
-    expect(bulmaTokens).toEqual([]);
-
-    expect(collectTopLevelDecls(root, '.has-text-weight-semibold').get('color')).toBe(
-      'var(--gitpulse-text-strong)'
-    );
-    expect(collectTopLevelDecls(root, '.has-background-grey-lighter').get('background-color')).toBe(
-      'var(--gitpulse-surface-muted)'
-    );
-    expect(collectTopLevelDecls(root, '.has-text-link').get('color')).toBe('var(--gitpulse-link)');
-    expect(findUngatedHoverSelectors(root)).toEqual([]);
+  test('bulma-overrides.scss is retired after all Bulma component and helper overrides hit zero callers', () => {
+    expect(existsSync(resolve(SCSS_DIR, 'bulma-overrides.scss'))).toBe(false);
   });
 
   test('main.scss composes all partials in cascade order with no duplicate output', async () => {
@@ -290,7 +268,6 @@ describe('global SCSS architecture (#196)', () => {
     let darkPrimarySolidCount = 0;
     let baseLinkIndex = -1;
     let controlsBtnIndex = -1;
-    let overrideIndex = -1;
     let ruleIndex = 0;
 
     root.walkRules((rule) => {
@@ -313,9 +290,6 @@ describe('global SCSS architecture (#196)', () => {
       if (rule.parent === root && rule.selector === '.gp-btn' && controlsBtnIndex === -1) {
         controlsBtnIndex = ruleIndex;
       }
-      if (rule.parent === root && rule.selector === '.has-text-link' && overrideIndex === -1) {
-        overrideIndex = ruleIndex;
-      }
       ruleIndex += 1;
     });
 
@@ -324,7 +298,6 @@ describe('global SCSS architecture (#196)', () => {
     expect(darkPrimarySolidCount).toBe(1);
     expect(baseLinkIndex).toBeGreaterThanOrEqual(0);
     expect(controlsBtnIndex).toBeGreaterThan(baseLinkIndex);
-    expect(overrideIndex).toBeGreaterThan(controlsBtnIndex);
   });
 
   test('leading underscore strictly separates zero-output partials from CSS-emitting sheets', () => {
@@ -573,7 +546,7 @@ describe('layered Bulma stopgap, in-house reset, and non-important helpers (#198
     expect(unlayeredSelectors.has('.gitpulse-floating-fab')).toBe(true);
     expect(unlayeredSelectors.has('.dashboard-shell')).toBe(true);
     expect(unlayeredSelectors.has('.gp-btn')).toBe(true);
-    expect(unlayeredSelectors.has('.has-text-link')).toBe(true);
+    expect(unlayeredSelectors.has('.sr-only')).toBe(true);
     expect(unlayeredSelectors.has('body')).toBe(true);
   });
 
@@ -680,65 +653,18 @@ describe('layered Bulma stopgap, in-house reset, and non-important helpers (#198
     expect(unexpected).toEqual([]);
   });
 
-  test('active Bulma modules and non-important helper compat rules are emitted inside @layer bulma', async () => {
+  test('non-important helper compatibility sheet inside @layer bulma has zero remaining active helpers', async () => {
     const root = await getProcessedMainRoot();
 
-    const bulmaLayeredClasses = new Set<string>();
+    const helperLayerSelectors: string[] = [];
     root.walkRules((rule) => {
-      if (enclosingLayerNames(rule)[0] !== 'bulma') {
-        return;
-      }
-      for (const match of rule.selector.matchAll(/\.[a-z][a-z0-9-]*/g)) {
-        bulmaLayeredClasses.add(match[0]);
+      const layers = enclosingLayerNames(rule);
+      if (layers[0] === 'bulma' && layers.includes('helpers')) {
+        helperLayerSelectors.push(rule.selector);
       }
     });
 
-    // Active non-!important compatibility helpers
-    for (const helperClass of [
-      '.mb-0',
-      '.mb-4',
-      '.mr-4',
-      '.p-0',
-      '.px-6',
-      '.is-flex',
-      '.is-align-items-center',
-      '.is-justify-content-center',
-      '.is-size-7',
-      '.is-sr-only',
-      '.is-hidden',
-      '.is-clipped',
-      '.is-overlay',
-      '.is-radiusless',
-      '.has-text-grey',
-      '.has-text-link',
-      '.has-background-grey-lighter',
-    ]) {
-      expect(bulmaLayeredClasses.has(helperClass), `expected ${helperClass} in @layer bulma`).toBe(
-        true
-      );
-    }
-  });
-
-  test('bulma-overrides.scss removes dead module rules and uses zero !important declarations', () => {
-    const root = postcss.parse(compileScssFile('bulma-overrides.scss'));
-
-    const importantDecls: string[] = [];
-    root.walkDecls((decl) => {
-      if (decl.important) {
-        const selector = decl.parent?.type === 'rule' ? (decl.parent as Rule).selector : '';
-        importantDecls.push(`${selector} { ${decl.prop}: ${decl.value} !important }`);
-      }
-    });
-    expect(importantDecls).toEqual([]);
-
-    // Active semantic text overrides remain without !important
-    expect(collectTopLevelDecls(root, '.has-text-link').get('color')).toBe('var(--gitpulse-link)');
-    expect(collectTopLevelDecls(root, '.has-text-danger').get('color')).toBe(
-      'var(--gitpulse-danger)'
-    );
-    expect(collectTopLevelDecls(root, '.has-background-grey-lighter').get('background-color')).toBe(
-      'var(--gitpulse-surface-muted)'
-    );
+    expect(helperLayerSelectors).toEqual([]);
   });
 
   test('audited UI list components explicitly opt into unstyled list markers', () => {
@@ -970,23 +896,6 @@ describe('layout and single-file Bulma relics retirement (#200)', () => {
     expect(unexpected).toEqual([]);
   });
 
-  test('bulma-overrides.scss emits zero rules for retired hero, navbar, box, and tabs modules', () => {
-    const root = postcss.parse(compileScssFile('bulma-overrides.scss'));
-    const emittedArms = new Set<string>();
-    root.walkRules((rule) => {
-      for (const arm of rule.selector.split(',')) {
-        emittedArms.add(arm.replace(/\s+/g, ' ').trim());
-      }
-    });
-
-    for (const retired of ['.hero', '.hero-body', '.navbar', '.navbar .title', '.box', '.tabs a']) {
-      expect(
-        emittedArms.has(retired),
-        `${retired} should be removed from bulma-overrides.scss`
-      ).toBe(false);
-    }
-  });
-
   test('_detail-sidebar-columns.scss drives CSS Grid collapse and narrow stacking via .detail-columns without Bulma .columns', () => {
     const css = compileScssSnippet(`
       @use '~/assets/scss/detail-sidebar-columns' as *;
@@ -1109,7 +1018,6 @@ describe('Foundation Layer custom property migration and bridge removal (#199)',
       'assets/scss/scrollbars.scss',
       'assets/scss/base.scss',
       'assets/scss/controls.scss',
-      'assets/scss/bulma-overrides.scss',
       'assets/scss/dashboard-list-card.scss',
       'assets/scss/modal-shell.scss',
       'assets/scss/detail-metadata-editor.scss',
@@ -1199,13 +1107,7 @@ describe('Bulma button retirement and semantic Button primitive migration (#202)
     expect(buttonRuleSelectors).toEqual([]);
   });
 
-  test('bulma-overrides.scss emits zero .button rules and base.scss excludes .button from unselectable chrome', () => {
-    const overridesRoot = postcss.parse(compileScssFile('bulma-overrides.scss'));
-    const overrideButtonSelectors = collectSelectors(overridesRoot).filter((selector) =>
-      /\.(?:button|buttons)(?![a-zA-Z0-9_-])/.test(selector)
-    );
-    expect(overrideButtonSelectors).toEqual([]);
-
+  test('base.scss excludes retired .button from unselectable chrome while keeping .gp-btn', () => {
     const baseRoot = postcss.parse(compileScssFile('base.scss'));
     const baseSelectors = collectSelectors(baseRoot);
     expect(baseSelectors.some((selector) => selector.includes('.gp-btn'))).toBe(true);
@@ -1320,39 +1222,6 @@ describe('Bulma tag, title, subtitle, icon, and image retirement (#203)', () => 
     expect(unexpected).toEqual([]);
   });
 
-  test('bulma-overrides.scss emits zero rules for retired title, subtitle, and tag modules', () => {
-    const root = postcss.parse(compileScssFile('bulma-overrides.scss'));
-    const emittedArms = new Set<string>();
-    root.walkRules((rule) => {
-      for (const arm of rule.selector.split(',')) {
-        emittedArms.add(arm.replace(/\s+/g, ' ').trim());
-      }
-    });
-
-    for (const retired of [
-      '.title',
-      '.subtitle',
-      '.tag.is-light',
-      ".tag:not([class*='is-'])",
-      '.tag.is-activity',
-      '.tag.is-info.is-light',
-      '.tag.is-link.is-light',
-      '.tag.is-primary.is-light',
-      '.tag.is-black.is-light',
-      '.tag.is-success.is-light',
-      '.tag.is-danger.is-light',
-      '.tag.is-warning.is-light',
-    ]) {
-      expect(
-        emittedArms.has(retired),
-        `${retired} should be removed from bulma-overrides.scss`
-      ).toBe(false);
-    }
-
-    // #205 helper overrides remain intact.
-    expect(emittedArms.has('.has-text-link')).toBe(true);
-  });
-
   test('base.scss removes retired .tag from $unselectable-chrome while keeping .gp-tag', () => {
     const root = postcss.parse(compileScssFile('base.scss'));
     const unselectableArms = new Set<string>();
@@ -1459,9 +1328,8 @@ describe('Bulma tag, title, subtitle, icon, and image retirement (#203)', () => 
 });
 
 describe('Bulma utility helper retirement across Public Shell, Auth, Pages, and Dashboard Home (#204)', () => {
-  test('compiled global CSS emits zero rules for zero-caller Bulma helpers retired in #204', async () => {
+  test('compiled global CSS emits zero rules for Bulma helpers retired in #204', async () => {
     const root = await getProcessedMainRoot();
-    const overridesRoot = postcss.parse(compileScssFile('bulma-overrides.scss'));
 
     const retiredHelpers = [
       '.has-text-primary',
@@ -1476,21 +1344,14 @@ describe('Bulma utility helper retirement across Public Shell, Auth, Pages, and 
       '.is-inline',
     ];
 
-    const collectArms = (cssRoot: Root) => {
-      const arms = new Set<string>();
-      cssRoot.walkRules((rule) => {
-        for (const arm of rule.selector.split(',')) {
-          arms.add(arm.replace(/\s+/g, ' ').trim());
-        }
-      });
-      return arms;
-    };
+    const emittedArms = new Set<string>();
+    root.walkRules((rule) => {
+      for (const arm of rule.selector.split(',')) {
+        emittedArms.add(arm.replace(/\s+/g, ' ').trim());
+      }
+    });
 
-    const mainArms = collectArms(root);
-    const overrideArms = collectArms(overridesRoot);
-
-    expect(retiredHelpers.filter((sel) => mainArms.has(sel))).toEqual([]);
-    expect(retiredHelpers.filter((sel) => overrideArms.has(sel))).toEqual([]);
+    expect(retiredHelpers.filter((sel) => emittedArms.has(sel))).toEqual([]);
   });
 
   test('dashboard-list-card.scss and notification-card.scss own card body padding, title spacing, and action column margin', () => {
@@ -1628,5 +1489,160 @@ describe('Bulma utility helper retirement across Public Shell, Auth, Pages, and 
     });
     expect(baseRowIndex).toBeGreaterThanOrEqual(0);
     expect(narrowRowIndex).toBeGreaterThan(baseRowIndex);
+  });
+});
+
+describe('Bulma utility helper retirement — Detail Overlays, PR Review, Timeline, Releases (#205)', () => {
+  test('base.scss emits global .sr-only accessibility utility', () => {
+    const root = postcss.parse(compileScssFile('base.scss'));
+    const srOnlyDecls = collectTopLevelDecls(root, '.sr-only');
+
+    expect(srOnlyDecls.get('position')).toBe('absolute');
+    expect(srOnlyDecls.get('width')).toBe('1px');
+    expect(srOnlyDecls.get('height')).toBe('1px');
+    expect(srOnlyDecls.get('overflow')).toBe('hidden');
+    expect(srOnlyDecls.get('white-space')).toBe('nowrap');
+    expect(srOnlyDecls.get('clip-path')).toBe('inset(50%)');
+  });
+
+  test('compiled global CSS emits zero rules for all retired Bulma utility helpers (#204 + #205)', async () => {
+    const root = await getProcessedMainRoot();
+
+    const retiredHelpers = [
+      '.has-background-grey-lighter',
+      '.has-text-centered',
+      '.has-text-danger',
+      '.has-text-grey',
+      '.has-text-grey-dark',
+      '.has-text-grey-light',
+      '.has-text-info',
+      '.has-text-link',
+      '.has-text-primary',
+      '.has-text-success',
+      '.has-text-warning',
+      '.has-text-weight-medium',
+      '.has-text-weight-semibold',
+      '.is-align-items-center',
+      '.is-align-items-flex-start',
+      '.is-clipped',
+      '.is-family-monospace',
+      '.is-flex',
+      '.is-flex-direction-column',
+      '.is-flex-grow-1',
+      '.is-flex-wrap-wrap',
+      '.is-hidden',
+      '.is-inline',
+      '.is-justify-content-center',
+      '.is-justify-content-space-between',
+      '.is-overlay',
+      '.is-radiusless',
+      '.is-size-5',
+      '.is-size-6',
+      '.is-size-7',
+      '.is-sr-only',
+      '.mb-0',
+      '.mb-1',
+      '.mb-2',
+      '.mb-3',
+      '.mb-4',
+      '.mb-5',
+      '.ml-1',
+      '.ml-2',
+      '.ml-3',
+      '.ml-auto',
+      '.mr-1',
+      '.mr-2',
+      '.mr-3',
+      '.mr-4',
+      '.mt-1',
+      '.mt-2',
+      '.mt-3',
+      '.mt-4',
+      '.mx-2',
+      '.p-0',
+      '.p-3',
+      '.pb-1',
+      '.pb-3',
+      '.pl-4',
+      '.pt-2',
+      '.pt-3',
+      '.px-3',
+      '.px-4',
+      '.px-6',
+      '.py-2',
+      '.py-5',
+    ];
+
+    const emittedArms = new Set<string>();
+    root.walkRules((rule) => {
+      for (const arm of rule.selector.split(',')) {
+        emittedArms.add(arm.replace(/\s+/g, ' ').trim());
+      }
+    });
+
+    const unexpected = retiredHelpers.filter((sel) => emittedArms.has(sel));
+    expect(unexpected).toEqual([]);
+  });
+
+  test('all 48 migrated #205 SFCs compile cleanly with ADR 0049 hover gating and zero --bulma-* references', () => {
+    const migratedSfcs = [
+      'components/dashboard/overlay/DashboardOverlayFrame.vue',
+      'components/dashboard/overlay/DashboardTopHeader.vue',
+      'components/dashboard/detail/DetailAssignees.vue',
+      'components/dashboard/detail/DetailLabels.vue',
+      'components/dashboard/detail/DetailOverlayHost.vue',
+      'components/dashboard/detail/IssueDetail.vue',
+      'components/dashboard/detail/PRDetail.vue',
+      'components/dashboard/detail/ReleaseDetail.vue',
+      'components/dashboard/detail/RepoContributorsCard.vue',
+      'components/dashboard/detail/RepoDetail.vue',
+      'components/dashboard/detail/RepoLatestCommitBar.vue',
+      'components/dashboard/composer/MarkdownComposer.vue',
+      'components/dashboard/repo-files/RepoFileView.vue',
+      'components/dashboard/discussion/DiscussionAnswerCard.vue',
+      'components/dashboard/discussion/DiscussionCommentCard.vue',
+      'components/dashboard/discussion/DiscussionComments.vue',
+      'components/dashboard/discussion/DiscussionHeader.vue',
+      'components/dashboard/discussion/DiscussionReplyList.vue',
+      'components/dashboard/issue/IssueHeader.vue',
+      'components/dashboard/issue/IssueTimelineEventBody.vue',
+      'components/dashboard/issue/IssueTimelineEvents.vue',
+      'components/dashboard/issue/IssueTimelineReferencedEventCard.vue',
+      'components/dashboard/issue/IssueTimelineStateEvents.vue',
+      'components/dashboard/issue/IssueTypeCard.vue',
+      'components/dashboard/issue/LinkedPullRequestList.vue',
+      'components/dashboard/issue/SubIssuePickerModal.vue',
+      'components/dashboard/pr/PRHeader.vue',
+      'components/dashboard/pr/PRMergeBox.vue',
+      'components/dashboard/pr/PRReviewDiffReviewThreads.vue',
+      'components/dashboard/pr/PRReviewDiffViewer.vue',
+      'components/dashboard/pr/PRReviewFileSidebar.vue',
+      'components/dashboard/pr/PRReviewSubmitBar.vue',
+      'components/dashboard/pr/PRReviewWorkspace.vue',
+      'components/dashboard/pr/PRStackRebaseDialog.vue',
+      'components/dashboard/pr/PRTimelineEventBody.vue',
+      'components/dashboard/pr/PRTimelineEvents.vue',
+      'components/dashboard/pr/PRTimelineMergeCard.vue',
+      'components/dashboard/pr/PRTimelineReferenceEvents.vue',
+      'components/dashboard/pr/PRTimelineReviewCard.vue',
+      'components/dashboard/pr/PRTimelineStateEvents.vue',
+      'components/dashboard/timeline/DeferredFloatingMarkdownEditor.vue',
+      'components/dashboard/timeline/FloatingMarkdownEditor.vue',
+      'components/dashboard/timeline/ProjectTag.vue',
+      'components/dashboard/timeline/ReferenceSubject.vue',
+      'components/dashboard/timeline/TimelineCardHeader.vue',
+      'components/dashboard/timeline/TimelineCommentCard.vue',
+      'components/dashboard/timeline/TimelineEventActorRow.vue',
+      'components/dashboard/timeline/TimelineRenamedTitleEvent.vue',
+    ];
+
+    for (const sfc of migratedSfcs) {
+      const root = compileSfcStyles(sfc);
+      expect(
+        collectBulmaCustomPropertyUsages(root),
+        `${sfc} must not emit --bulma-* custom properties`
+      ).toEqual([]);
+      expect(findUngatedHoverSelectors(root), `${sfc} hover gating`).toEqual([]);
+    }
   });
 });

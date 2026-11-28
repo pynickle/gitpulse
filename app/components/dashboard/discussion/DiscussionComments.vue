@@ -47,12 +47,12 @@ const { t } = useI18n();
       class="gp-notice gp-notice--danger gp-notice--compact discussion-comments__error"
       role="alert"
     >
-      <p class="is-size-7">
-        <CircleExclamationPointIcon :size="14" class="mr-1" style="vertical-align: text-bottom" />
+      <p class="discussion-comments__error-text">
+        <CircleExclamationPointIcon :size="14" class="discussion-comments__error-icon" />
         {{ error }}
       </p>
       <button
-        class="gp-btn gp-btn--danger-soft gp-btn--small mt-2"
+        class="gp-btn gp-btn--danger-soft gp-btn--small discussion-comments__retry"
         type="button"
         @click="emit('load-more-comments')"
       >
@@ -62,7 +62,9 @@ const { t } = useI18n();
 
     <div v-if="loading" class="discussion-comments__loading">
       <LoadingIcon :size="16" aria-hidden="true" />
-      <span class="is-size-7 has-text-grey">{{ t('discussionDetail.loadingComments') }}</span>
+      <span class="discussion-comments__loading-label">{{
+        t('discussionDetail.loadingComments')
+      }}</span>
     </div>
 
     <div v-else-if="comments.length" class="discussion-comments__timeline">
@@ -89,7 +91,7 @@ const { t } = useI18n();
       />
     </div>
 
-    <p v-else class="discussion-comments__empty has-text-grey">
+    <p v-else class="discussion-comments__empty">
       {{ t('discussionDetail.noCommentsPrompt') }}
     </p>
 
@@ -134,6 +136,19 @@ const { t } = useI18n();
   flex-direction: column;
 }
 
+.discussion-comments__error-text {
+  font-size: 0.75rem;
+}
+
+.discussion-comments__error-icon {
+  margin-right: 0.25rem;
+  vertical-align: text-bottom;
+}
+
+.discussion-comments__retry {
+  margin-top: 0.5rem;
+}
+
 .discussion-comments__timeline {
   display: flex;
   flex-direction: column;
@@ -149,11 +164,17 @@ const { t } = useI18n();
   background: var(--gitpulse-surface-muted);
 }
 
+.discussion-comments__loading-label {
+  color: var(--gitpulse-text-muted);
+  font-size: 0.75rem;
+}
+
 .discussion-comments__empty {
   border: 1px dashed var(--gitpulse-border);
   border-radius: 8px;
   margin-bottom: 0;
   padding: 1rem;
+  color: var(--gitpulse-text-muted);
   text-align: center;
 }
 

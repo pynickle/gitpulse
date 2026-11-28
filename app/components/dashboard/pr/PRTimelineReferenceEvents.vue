@@ -4,7 +4,7 @@
     <a
       href="#"
       @click.prevent="switchToIssueOrPR(item.source)"
-      class="gp-tag gp-tag--activity gp-tag--info ml-1"
+      class="gp-tag gp-tag--activity gp-tag--info"
     >
       {{ item.source?.title || '#' + item.source?.number }}
     </a>
@@ -17,11 +17,11 @@
       :href="item.commit.commitUrl"
       target="_blank"
       rel="noopener"
-      class="gp-tag gp-tag--activity ml-1 is-family-monospace"
+      class="gp-tag gp-tag--activity pr-timeline-ref__sha"
     >
       {{ item.commit?.oid?.slice(0, 7) || t('prReview.commitFallbackRef') }}
     </a>
-    <span v-else class="gp-tag gp-tag--activity ml-1 is-family-monospace">
+    <span v-else class="gp-tag gp-tag--activity pr-timeline-ref__sha">
       {{ item.commit?.oid?.slice(0, 7) || t('prReview.commitFallbackRef') }}
     </span>
   </template>
@@ -31,7 +31,7 @@
     <a
       href="#"
       @click.prevent="switchToIssueOrPR(item.duplicate)"
-      class="gp-tag gp-tag--activity gp-tag--info ml-1"
+      class="gp-tag gp-tag--activity gp-tag--info"
     >
       {{ item.duplicate?.title }} #{{ item.duplicate?.number }}
     </a>
@@ -42,7 +42,7 @@
     <a
       href="#"
       @click.prevent="switchToIssueOrPR(item.duplicate)"
-      class="gp-tag gp-tag--activity gp-tag--info ml-1"
+      class="gp-tag gp-tag--activity gp-tag--info"
     >
       {{ item.duplicate?.title }} #{{ item.duplicate?.number }}
     </a>
@@ -72,7 +72,7 @@
     <a
       href="#"
       @click.prevent="switchToIssueOrPR(item.parent)"
-      class="gp-tag gp-tag--activity gp-tag--info ml-1"
+      class="gp-tag gp-tag--activity gp-tag--info"
     >
       {{ item.parent?.title }} #{{ item.parent?.number }}
     </a>
@@ -162,3 +162,13 @@ const switchToIssueOrPR = (reference?: TimelineReference) => {
   emit('switch-issue', parsed.owner, parsed.repo, reference.number);
 };
 </script>
+
+<style scoped lang="scss">
+.gp-tag--activity {
+  margin-left: 0.25rem;
+}
+
+.pr-timeline-ref__sha {
+  font-family: var(--gitpulse-code-font-family);
+}
+</style>
