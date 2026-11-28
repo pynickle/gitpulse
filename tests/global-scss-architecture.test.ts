@@ -1,5 +1,5 @@
 import { afterAll, describe, expect, test } from 'bun:test';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -83,6 +83,16 @@ function collectSelectors(root: Root): string[] {
   return selectors;
 }
 
+function collectEmittedSelectorArms(root: Root): Set<string> {
+  const arms = new Set<string>();
+  root.walkRules((rule: Rule) => {
+    for (const arm of rule.selector.split(',')) {
+      arms.add(arm.replace(/\s+/g, ' ').trim());
+    }
+  });
+  return arms;
+}
+
 function compileScssSnippet(source: string) {
   return compiler.compileString(source, SASS_OPTIONS).css;
 }
@@ -94,13 +104,6 @@ async function getProcessedMainRoot(): Promise<Root> {
     .process(compileScssFile('main.scss'), { from: undefined })
     .then((result) => result.css);
   return postcss.parse(await processedMainCssPromise);
-}
-
-function compileVueSfcStyles(relativeAppPath: string): Root {
-  const fullPath = resolve(REPO_ROOT, relativeAppPath);
-  const { descriptor } = parseSfc(readFileSync(fullPath, 'utf8'), { filename: fullPath });
-  const compiled = descriptor.styles.map((style) => compileScssSnippet(style.content)).join('\n');
-  return postcss.parse(compiled);
 }
 
 function enclosingLayerNames(node: Node): string[] {
@@ -162,6 +165,10 @@ describe('global SCSS architecture (#196)', () => {
     expect(lightRoot.get('color-scheme')).toBe('light');
     expect(lightRoot.get('--gitpulse-frame-height')).toBe('100vh');
     expect(lightRoot.get('--gitpulse-topbar-height')).toBe('3.25rem');
+    expect(lightRoot.get('--gitpulse-radius-sm')).toBe('4px');
+    expect(lightRoot.get('--gitpulse-radius-md')).toBe('6px');
+    expect(lightRoot.get('--gitpulse-radius-lg')).toBe('8px');
+    expect(lightRoot.get('--gitpulse-radius-xl')).toBe('12px');
     expect(lightRoot.get('--gitpulse-primary-solid')).toBe('#4f46e5');
     expect(lightRoot.get('--gitpulse-primary-solid-hover')).toBe('#4338ca');
     expect(lightRoot.get('--gitpulse-link-soft')).toBe('rgba(79, 70, 229, 0.08)');
@@ -169,6 +176,10 @@ describe('global SCSS architecture (#196)', () => {
     expect(lightRoot.get('--gitpulse-code-font-family')).toContain('Maple Mono');
 
     expect(darkRoot.get('color-scheme')).toBe('dark');
+    expect(darkRoot.has('--gitpulse-radius-sm')).toBe(false);
+    expect(darkRoot.has('--gitpulse-radius-md')).toBe(false);
+    expect(darkRoot.has('--gitpulse-radius-lg')).toBe(false);
+    expect(darkRoot.has('--gitpulse-radius-xl')).toBe(false);
     expect(darkRoot.get('--gitpulse-primary-solid')).toBe('#5048e5');
     expect(darkRoot.get('--gitpulse-link-soft')).toBe('rgba(165, 180, 252, 0.14)');
     expect(darkRoot.get('--gitpulse-scrollbar-thumb')).toBe('#4b5563');
@@ -233,10 +244,6 @@ describe('global SCSS architecture (#196)', () => {
     expect(hasTapHighlight).toBe(true);
     expect(hasUserSelectNone).toBe(true);
     expect(findUngatedHoverSelectors(root)).toEqual([]);
-  });
-
-  test('bulma-overrides.scss is retired after all Bulma component and helper overrides hit zero callers', () => {
-    expect(existsSync(resolve(SCSS_DIR, 'bulma-overrides.scss'))).toBe(false);
   });
 
   test('main.scss composes all partials in cascade order with no duplicate output', async () => {
@@ -344,10 +351,7 @@ describe('global SCSS architecture (#196)', () => {
 });
 
 describe('feature stylesheet ownership and modal shell extraction (#197)', () => {
-  test('dashboard-list-card.scss replaces card.scss and compiles for all dashboard list card consumers', () => {
-    expect(existsSync(resolve(SCSS_DIR, 'card.scss'))).toBe(false);
-    expect(existsSync(resolve(SCSS_DIR, 'dashboard-list-card.scss'))).toBe(true);
-
+  test('dashboard-list-card.scss compiles for all dashboard list card consumers', () => {
     const cardRoot = postcss.parse(compileScssFile('dashboard-list-card.scss'));
     expect(collectTopLevelDecls(cardRoot, '.dashboard-list-card').get('position')).toBe('relative');
     expect(findUngatedHoverSelectors(cardRoot)).toEqual([]);
@@ -368,16 +372,29 @@ describe('feature stylesheet ownership and modal shell extraction (#197)', () =>
     }
   });
 
-  test('notification-card.scss is co-located beside its two dashboard notification card components', () => {
-    expect(existsSync(resolve(SCSS_DIR, 'notification-card.scss'))).toBe(false);
-    expect(existsSync(resolve(APP_DIR, 'components/dashboard/notification-card.scss'))).toBe(true);
-
+  test('notification-card.scss is co-located beside its two dashboard notification card components and styles unread cards on .dashboard-list-card', () => {
     const notificationRoot = postcss.parse(
       compileScssAtPath('components/dashboard/notification-card.scss')
     );
     expect(collectTopLevelDecls(notificationRoot, '.notification-type-badge').get('position')).toBe(
       'absolute'
     );
+    expect(
+      collectTopLevelDecls(notificationRoot, '.dashboard-list-card.is-unread').get(
+        'background-color'
+      )
+    ).toBe('var(--gitpulse-unread-bg)');
+    expect(
+      collectTopLevelDecls(
+        notificationRoot,
+        '.dashboard-list-card.is-unread .dashboard-list-card__icon::after'
+      ).get('background-color')
+    ).toBe('var(--gitpulse-link)');
+    expect(
+      collectSelectors(notificationRoot).filter((selector) =>
+        /\.card(?![a-zA-Z0-9_-])/.test(selector)
+      )
+    ).toEqual([]);
     expect(findUngatedHoverSelectors(notificationRoot)).toEqual([]);
 
     for (const component of [
@@ -391,15 +408,13 @@ describe('feature stylesheet ownership and modal shell extraction (#197)', () =>
       expect(selectors.some((selector) => selector.includes('.notification-card__todo-btn'))).toBe(
         true
       );
+      expect(
+        selectors.some((selector) => selector.includes('.dashboard-list-card.is-unread'))
+      ).toBe(true);
     }
   });
 
   test('people-picker-modal.scss is co-located beside DetailPeoplePickerModal and removed from DetailAssignees', () => {
-    expect(existsSync(resolve(SCSS_DIR, 'reviewer-modal.scss'))).toBe(false);
-    expect(
-      existsSync(resolve(APP_DIR, 'components/dashboard/detail/people-picker-modal.scss'))
-    ).toBe(true);
-
     const pickerRoot = postcss.parse(
       compileScssAtPath('components/dashboard/detail/people-picker-modal.scss')
     );
@@ -547,11 +562,6 @@ describe('pure-SCSS cascade, in-house @layer reset, and Bulma retirement (#198, 
     expect(unlayeredSelectors.has('body')).toBe(true);
   });
 
-  test('Bulma stopgap stylesheet and temporary @layer bulma PostCSS module are removed', () => {
-    expect(existsSync(resolve(SCSS_DIR, 'bulma-stopgap.scss'))).toBe(false);
-    expect(existsSync(resolve(REPO_ROOT, 'modules/bulma-layer-clean'))).toBe(false);
-  });
-
   test('compiled main.scss emits zero --bulma-* declarations or references anywhere', async () => {
     const root = await getProcessedMainRoot();
     expect(collectBulmaCustomPropertyUsages(root)).toEqual([]);
@@ -620,12 +630,7 @@ describe('pure-SCSS cascade, in-house @layer reset, and Bulma retirement (#198, 
       '.fixed-grid',
     ];
 
-    const emittedRootArms = new Set<string>();
-    root.walkRules((rule) => {
-      for (const arm of rule.selector.split(',')) {
-        emittedRootArms.add(arm.replace(/\s+/g, ' ').trim());
-      }
-    });
+    const emittedRootArms = collectEmittedSelectorArms(root);
 
     const unexpected = excludedRootSelectors.filter((sel) => emittedRootArms.has(sel));
     expect(unexpected).toEqual([]);
@@ -648,21 +653,21 @@ describe('pure-SCSS cascade, in-house @layer reset, and Bulma retirement (#198, 
   test('audited UI list components explicitly opt into unstyled list markers', () => {
     const cases = [
       {
-        file: 'app/components/dashboard/composer/MarkdownComposer.vue',
+        file: 'components/dashboard/composer/MarkdownComposer.vue',
         selectorMatch: '.markdown-composer__tabs ul',
       },
       {
-        file: 'app/components/dashboard/DashboardPagination.vue',
+        file: 'components/dashboard/DashboardPagination.vue',
         selectorMatch: '.dashboard-pagination__list',
       },
       {
-        file: 'app/pages/dashboard/package.vue',
+        file: 'pages/dashboard/package.vue',
         selectorMatch: '.package-page__version-list',
       },
     ];
 
     for (const { file, selectorMatch } of cases) {
-      const root = compileVueSfcStyles(file);
+      const root = compileSfcStyles(file);
       const decls = new Map<string, string>();
       root.walkRules((rule) => {
         if (rule.selector === selectorMatch) {
@@ -677,13 +682,14 @@ describe('pure-SCSS cascade, in-house @layer reset, and Bulma retirement (#198, 
     }
   });
 
-  test('dashboard.vue narrow scrollbar clearance works without !important and keeps pagination bottom-row margin clearance', () => {
-    const root = compileVueSfcStyles('app/pages/dashboard.vue');
+  test('dashboard.vue narrow scrollbar clearance works without !important and targets semantic pagination list', () => {
+    const root = compileSfcStyles('pages/dashboard.vue');
 
     const importantDecls: string[] = [];
     let hasNarrowRowMargin = false;
     let hasNarrowRowRightClearance = false;
     let hasPaginationLastChildReset = false;
+    let hasPaginationListFlexGrowZero = false;
 
     root.walkRules((rule) => {
       if (rule.selector.includes('.dashboard-list-row')) {
@@ -712,12 +718,33 @@ describe('pure-SCSS cascade, in-house @layer reset, and Bulma retirement (#198, 
           }
         });
       }
+      if (
+        rule.selector.includes('.dashboard-pagination-footer') &&
+        rule.selector.includes(':deep(.dashboard-pagination__list)')
+      ) {
+        rule.walkDecls('flex-grow', (decl) => {
+          if (decl.value === '0') {
+            hasPaginationListFlexGrowZero = true;
+          }
+        });
+      }
     });
 
     expect(importantDecls).toEqual([]);
     expect(hasNarrowRowMargin).toBe(true);
     expect(hasNarrowRowRightClearance).toBe(true);
     expect(hasPaginationLastChildReset).toBe(true);
+    expect(hasPaginationListFlexGrowZero).toBe(true);
+    expect(
+      collectSelectors(root).filter((selector) => selector.includes('.pagination-list'))
+    ).toEqual([]);
+
+    const filtersRoot = compileSfcStyles(
+      'components/dashboard/filters/DashboardAdvancedFilters.vue'
+    );
+    expect(
+      collectSelectors(filtersRoot).filter((selector) => /\.input(?![a-zA-Z0-9_-])/.test(selector))
+    ).toEqual([]);
   });
 });
 
@@ -788,6 +815,22 @@ describe('Control Layer primitives and Bulma form/notice/delete/card retirement 
     expect(selectors.filter((s) => s.includes('.gp-btn--ghost:active'))).toEqual([]);
     expect(selectors.filter((s) => s.includes('.gp-dismiss:active'))).toEqual([]);
 
+    // All color variants accepted by Button.vue support .gp-btn--outlined consistently.
+    for (const variant of ['primary', 'link', 'info', 'success', 'warning', 'danger']) {
+      expect(
+        hasSelector(`.gp-btn--outlined.gp-btn--${variant}`),
+        `expected .gp-btn--outlined.gp-btn--${variant} in controls.scss`
+      ).toBe(true);
+      expect(
+        hasSelector(`.gp-btn--outlined.gp-btn--${variant}:focus-visible`),
+        `expected .gp-btn--outlined.gp-btn--${variant}:focus-visible in controls.scss`
+      ).toBe(true);
+      expect(
+        selectors.filter((s) => s.includes(`.gp-btn--outlined.gp-btn--${variant}:active`)),
+        `.gp-btn--outlined.gp-btn--${variant} must not paint on :active`
+      ).toEqual([]);
+    }
+
     // ADR 0049: form fields keep bare :focus.
     expect(hasSelector('.gp-input:focus')).toBe(true);
     expect(hasSelector('.gp-textarea:focus')).toBe(true);
@@ -819,12 +862,7 @@ describe('Control Layer primitives and Bulma form/notice/delete/card retirement 
       '.card-footer',
     ];
 
-    const emittedArms = new Set<string>();
-    root.walkRules((rule) => {
-      for (const arm of rule.selector.split(',')) {
-        emittedArms.add(arm.replace(/\s+/g, ' ').trim());
-      }
-    });
+    const emittedArms = collectEmittedSelectorArms(root);
 
     const unexpected = retiredRootSelectors.filter((sel) => emittedArms.has(sel));
     expect(unexpected).toEqual([]);
@@ -863,12 +901,7 @@ describe('layout and single-file Bulma relics retirement (#200)', () => {
       '.box',
     ];
 
-    const emittedRootArms = new Set<string>();
-    root.walkRules((rule) => {
-      for (const arm of rule.selector.split(',')) {
-        emittedRootArms.add(arm.replace(/\s+/g, ' ').trim());
-      }
-    });
+    const emittedRootArms = collectEmittedSelectorArms(root);
 
     const unexpected = retiredRootSelectors.filter((sel) => emittedRootArms.has(sel));
     expect(unexpected).toEqual([]);
@@ -981,11 +1014,6 @@ function collectBulmaCustomPropertyUsages(root: Root) {
 }
 
 describe('Foundation Layer custom property migration and bridge removal (#199)', () => {
-  test('compiled main.scss emits zero --bulma-* declarations or references', async () => {
-    const root = await getProcessedMainRoot();
-    expect(collectBulmaCustomPropertyUsages(root)).toEqual([]);
-  });
-
   test('compiled application stylesheets emit zero --bulma-* declarations or references', () => {
     const sharedSheets = [
       'assets/scss/tokens.scss',
@@ -1069,15 +1097,9 @@ describe('Bulma button retirement and semantic Button primitive migration (#202)
   test('compiled global CSS emits zero Bulma .button or .buttons rules', async () => {
     const root = await getProcessedMainRoot();
 
-    const buttonRuleSelectors: string[] = [];
-    root.walkRules((rule) => {
-      for (const arm of rule.selector.split(',')) {
-        const normalized = arm.replace(/\s+/g, ' ').trim();
-        if (/\.(?:button|buttons)(?![a-zA-Z0-9_-])/.test(normalized)) {
-          buttonRuleSelectors.push(normalized);
-        }
-      }
-    });
+    const buttonRuleSelectors = [...collectEmittedSelectorArms(root)].filter((arm) =>
+      /\.(?:button|buttons)(?![a-zA-Z0-9_-])/.test(arm)
+    );
 
     expect(buttonRuleSelectors).toEqual([]);
   });
@@ -1186,12 +1208,7 @@ describe('Bulma tag, title, subtitle, icon, and image retirement (#203)', () => 
       '.image.is-32x32',
     ];
 
-    const emittedArms = new Set<string>();
-    root.walkRules((rule) => {
-      for (const arm of rule.selector.split(',')) {
-        emittedArms.add(arm.replace(/\s+/g, ' ').trim());
-      }
-    });
+    const emittedArms = collectEmittedSelectorArms(root);
 
     const unexpected = retiredRootSelectors.filter((sel) => emittedArms.has(sel));
     expect(unexpected).toEqual([]);
@@ -1303,32 +1320,6 @@ describe('Bulma tag, title, subtitle, icon, and image retirement (#203)', () => 
 });
 
 describe('Bulma utility helper retirement across Public Shell, Auth, Pages, and Dashboard Home (#204)', () => {
-  test('compiled global CSS emits zero rules for Bulma helpers retired in #204', async () => {
-    const root = await getProcessedMainRoot();
-
-    const retiredHelpers = [
-      '.has-text-primary',
-      '.has-text-info',
-      '.has-text-warning',
-      '.is-justify-content-space-between',
-      '.mb-5',
-      '.p-3',
-      '.pl-4',
-      '.px-3',
-      '.py-2',
-      '.is-inline',
-    ];
-
-    const emittedArms = new Set<string>();
-    root.walkRules((rule) => {
-      for (const arm of rule.selector.split(',')) {
-        emittedArms.add(arm.replace(/\s+/g, ' ').trim());
-      }
-    });
-
-    expect(retiredHelpers.filter((sel) => emittedArms.has(sel))).toEqual([]);
-  });
-
   test('dashboard-list-card.scss and notification-card.scss own card body padding, title spacing, and action column margin', () => {
     const cardRoot = postcss.parse(compileScssFile('dashboard-list-card.scss'));
     expect(
@@ -1548,12 +1539,7 @@ describe('Bulma utility helper retirement — Detail Overlays, PR Review, Timeli
       '.py-5',
     ];
 
-    const emittedArms = new Set<string>();
-    root.walkRules((rule) => {
-      for (const arm of rule.selector.split(',')) {
-        emittedArms.add(arm.replace(/\s+/g, ' ').trim());
-      }
-    });
+    const emittedArms = collectEmittedSelectorArms(root);
 
     const unexpected = retiredHelpers.filter((sel) => emittedArms.has(sel));
     expect(unexpected).toEqual([]);

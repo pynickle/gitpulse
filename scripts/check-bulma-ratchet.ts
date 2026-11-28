@@ -151,7 +151,7 @@ const BULMA_HELPER_PATTERNS: readonly RegExp[] = [
   /^is-justify-content-/,
   /^(?:m|p)[trblxy]?-(?:[0-6]|auto)$/,
   /^is-hidden(?:-[a-z]+)?$/,
-  /^is-(?:sr-only|block|inline|inline-block|inline-flex|invisible|clipped|radiusless|shadowless|overlay|relative|clickable|unselectable|clearfix|uppercase|lowercase|capitalized|italic|underlined)$/,
+  /^is-(?:sr-only|block|inline|inline-block|inline-flex|fullwidth|invisible|clipped|radiusless|shadowless|overlay|relative|clickable|unselectable|clearfix|uppercase|lowercase|capitalized|italic|underlined)$/,
   /^is-pulled-(?:left|right)$/,
 ];
 
@@ -173,6 +173,9 @@ const STYLESHEET_BULMA_IMPORT_RE =
 const SCRIPT_BULMA_IMPORT_RE =
   /(?:(?:from|import)\s*\(?\s*['"](bulma(?:\/[^'"]*)?)['"]|['"](bulma\/[^'"]+)['"])/g;
 const CSS_LAYER_RE = /@layer\s+([^{;]+)/g;
+const STYLESHEET_STRING_RE = /'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"/g;
+const STYLESHEET_ATTR_SELECTOR_RE = /\[[^\]]*\]/g;
+const STYLESHEET_CLASS_TOKEN_RE = /\.([a-zA-Z_-][a-zA-Z0-9_-]*)/g;
 
 function toPosixRelative(repoRoot: string, filePath: string): string {
   return relative(repoRoot, filePath).replaceAll('\\', '/');
@@ -214,6 +217,7 @@ function extractClassesFromTsExpression(node: ts.Expression, out: string[]): voi
   if (ts.isTemplateExpression(node)) {
     addClassTokens(node.head.text, out);
     for (const span of node.templateSpans) {
+      extractClassesFromTsExpression(span.expression, out);
       addClassTokens(span.literal.text, out);
     }
     return;
@@ -255,13 +259,16 @@ function extractClassesFromTsExpression(node: ts.Expression, out: string[]): voi
     extractClassesFromTsExpression(node.expression, out);
     return;
   }
-  if (
-    ts.isBinaryExpression(node) &&
-    (node.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken ||
+  if (ts.isBinaryExpression(node)) {
+    if (node.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken) {
+      extractClassesFromTsExpression(node.right, out);
+    } else if (
       node.operatorToken.kind === ts.SyntaxKind.BarBarToken ||
-      node.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken)
-  ) {
-    extractClassesFromTsExpression(node.right, out);
+      node.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken
+    ) {
+      extractClassesFromTsExpression(node.left, out);
+      extractClassesFromTsExpression(node.right, out);
+    }
   }
 }
 
@@ -325,10 +332,39 @@ function collectTemplateClasses(node: TemplateAstNodeLike | undefined, out: stri
   }
 }
 
+function extractStylesheetSelectorClasses(stripped: string): string[] {
+  const withoutStrings = stripped.replace(STYLESHEET_STRING_RE, '');
+  const classes: string[] = [];
+  let segmentStart = 0;
+
+  for (let i = 0; i < withoutStrings.length; i += 1) {
+    const ch = withoutStrings[i];
+    if (ch === '{') {
+      const header = withoutStrings.slice(segmentStart, i).trim();
+      segmentStart = i + 1;
+      if (!header || header.startsWith('@') || header.endsWith(':')) {
+        continue;
+      }
+      const selectorText = header.replace(STYLESHEET_ATTR_SELECTOR_RE, '');
+      for (const match of selectorText.matchAll(STYLESHEET_CLASS_TOKEN_RE)) {
+        const className = match[1];
+        if (className) {
+          classes.push(className);
+        }
+      }
+    } else if (ch === '}' || ch === ';') {
+      segmentStart = i + 1;
+    }
+  }
+
+  return classes;
+}
+
 function scanStylesheetSource(
   source: string,
   relFile: string,
-  violations: BulmaGuardViolation[]
+  violations: BulmaGuardViolation[],
+  disallowedClassCounts: Map<string, number>
 ): void {
   const stripped = stripStylesheetComments(source);
 
@@ -343,6 +379,12 @@ function scanStylesheetSource(
     const params = match[1]?.trim() ?? '';
     if (/\bbulma\b/i.test(params)) {
       violations.push({ kind: 'layer', file: relFile, params });
+    }
+  }
+
+  for (const className of extractStylesheetSelectorClasses(stripped)) {
+    if (isBulmaHelperClass(className)) {
+      disallowedClassCounts.set(className, (disallowedClassCounts.get(className) ?? 0) + 1);
     }
   }
 }
@@ -402,7 +444,7 @@ export function checkBulmaGuard(repoRoot: string): BulmaGuardResult {
     }
 
     if (filePath.endsWith('.scss') || filePath.endsWith('.css')) {
-      scanStylesheetSource(source, relFile, violations);
+      scanStylesheetSource(source, relFile, violations, disallowedClassCounts);
       continue;
     }
 
@@ -421,7 +463,7 @@ export function checkBulmaGuard(repoRoot: string): BulmaGuardResult {
         scanScriptSource(descriptor.scriptSetup.content, relFile, violations);
       }
       for (const style of descriptor.styles) {
-        scanStylesheetSource(style.content, relFile, violations);
+        scanStylesheetSource(style.content, relFile, violations, disallowedClassCounts);
       }
 
       if (descriptor.template?.ast) {

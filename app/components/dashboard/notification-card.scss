@@ -4,12 +4,12 @@
 // Base Card Styles
 // ============================================
 
-.card.is-unread {
+.dashboard-list-card.is-unread {
   border-color: color-mix(in srgb, var(--gitpulse-link) 24%, var(--gitpulse-border));
   background-color: var(--gitpulse-unread-bg);
 }
 
-.card.is-unread .dashboard-list-card__icon::after {
+.dashboard-list-card.is-unread .dashboard-list-card__icon::after {
   content: '';
   position: absolute;
   top: -3px;

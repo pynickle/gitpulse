@@ -364,10 +364,6 @@ const toggleCollapsed = () => {
   font-weight: 600;
 }
 
-.dashboard-advanced-filters__control .input {
-  width: 100%;
-}
-
 @media (max-width: 860px) {
   .sidebar-card {
     display: none;

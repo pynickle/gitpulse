@@ -200,12 +200,65 @@ describe('Permanent zero-Bulma guard (ADR 0057)', () => {
     ]);
   });
 
+  test('detects disallowed Bulma classes inside template literal interpolations and || / ?? left operands', () => {
+    const root = createFixtureRepo({
+      'package.json': JSON.stringify({ name: 'fixture', dependencies: {} }),
+      'app/components/DynamicRegressed.vue': `
+        <template>
+          <div :class="\`gp-row \${isCompact ? 'is-fullwidth' : 'has-text-grey'}\`">A</div>
+          <div :class="'mb-4' || fallbackClass">B</div>
+          <div :class="(isSmall ? 'is-size-7' : '') ?? fallbackClass">C</div>
+        </template>
+      `,
+    });
+
+    const result = checkBulmaGuard(root);
+    expect(result.ok).toBe(false);
+    const classViolations = result.violations
+      .filter((v) => v.kind === 'disallowed-class')
+      .map((v) => v.name)
+      .sort();
+    expect(classViolations).toEqual(['has-text-grey', 'is-fullwidth', 'is-size-7', 'mb-4']);
+  });
+
+  test('fails when Bulma helper class selectors appear in SCSS, CSS, or Vue <style> blocks', () => {
+    const root = createFixtureRepo({
+      'package.json': JSON.stringify({ name: 'fixture', dependencies: {} }),
+      'app/assets/scss/stale.scss': `
+        /* .has-text-primary in a comment is ignored */
+        .panel-header .has-text-grey { color: var(--gitpulse-text-muted); }
+        .form-row {
+          padding: 0.5rem;
+          &.is-fullwidth { width: 100%; }
+        }
+      `,
+      'app/assets/scss/plain.css': `
+        .legacy-wrap .mb-4 { margin-bottom: 1rem; }
+      `,
+      'app/components/StaleStyle.vue': `
+        <template><div class="gp-box">Hi</div></template>
+        <style scoped lang="scss">
+        .gp-box :deep(.is-flex) { display: flex; }
+        </style>
+      `,
+    });
+
+    const result = checkBulmaGuard(root);
+    expect(result.ok).toBe(false);
+    const classViolations = result.violations
+      .filter((v) => v.kind === 'disallowed-class')
+      .map((v) => v.name)
+      .sort();
+    expect(classViolations).toEqual(['has-text-grey', 'is-flex', 'is-fullwidth', 'mb-4']);
+  });
+
   test('classifies Bulma helper classes accurately without false positives on semantic classes', () => {
     expect(isBulmaHelperClass('mb-4')).toBe(true);
     expect(isBulmaHelperClass('p-0')).toBe(true);
     expect(isBulmaHelperClass('has-text-weight-semibold')).toBe(true);
     expect(isBulmaHelperClass('is-flex-direction-column')).toBe(true);
     expect(isBulmaHelperClass('is-sr-only')).toBe(true);
+    expect(isBulmaHelperClass('is-fullwidth')).toBe(true);
 
     expect(isBulmaHelperClass('sr-only')).toBe(false);
     expect(isBulmaHelperClass('gp-btn')).toBe(false);

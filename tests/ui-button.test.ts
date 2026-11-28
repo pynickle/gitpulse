@@ -175,4 +175,97 @@ describe('ui/Button.vue (#201)', () => {
     button.click();
     expect(clicks).toBe(1);
   });
+
+  test('blocks caller click handlers on disabled and loading links while forwarding clicks on enabled links', () => {
+    let disabledHrefClicks = 0;
+    const disabledHrefRoot = mountButton({
+      href: 'https://github.com',
+      disabled: true,
+      onClick: () => {
+        disabledHrefClicks += 1;
+      },
+    });
+    const disabledHrefEvent = new dom.window.MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+    });
+    disabledHrefRoot.querySelector('a')!.dispatchEvent(disabledHrefEvent);
+    expect(disabledHrefEvent.defaultPrevented).toBe(true);
+    expect(disabledHrefClicks).toBe(0);
+
+    let loadingHrefClicks = 0;
+    const loadingHrefRoot = mountButton({
+      href: 'https://github.com',
+      loading: true,
+      onClick: () => {
+        loadingHrefClicks += 1;
+      },
+    });
+    const loadingHrefEvent = new dom.window.MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+    });
+    loadingHrefRoot.querySelector('a')!.dispatchEvent(loadingHrefEvent);
+    expect(loadingHrefEvent.defaultPrevented).toBe(true);
+    expect(loadingHrefClicks).toBe(0);
+
+    let disabledToClicks = 0;
+    const disabledToRoot = mountButton({
+      to: '/dashboard',
+      disabled: true,
+      onClick: () => {
+        disabledToClicks += 1;
+      },
+    });
+    const disabledToEvent = new dom.window.MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+    });
+    disabledToRoot.querySelector('a[data-nuxt-link-locale="true"]')!.dispatchEvent(disabledToEvent);
+    expect(disabledToEvent.defaultPrevented).toBe(true);
+    expect(disabledToClicks).toBe(0);
+
+    let loadingToClicks = 0;
+    const loadingToRoot = mountButton({
+      to: '/dashboard',
+      loading: true,
+      onClick: () => {
+        loadingToClicks += 1;
+      },
+    });
+    const loadingToEvent = new dom.window.MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+    });
+    loadingToRoot.querySelector('a[data-nuxt-link-locale="true"]')!.dispatchEvent(loadingToEvent);
+    expect(loadingToEvent.defaultPrevented).toBe(true);
+    expect(loadingToClicks).toBe(0);
+
+    const enabledHrefCalls: string[] = [];
+    const enabledHrefRoot = mountButton({
+      href: 'https://github.com',
+      onClick: [
+        (event: MouseEvent) => {
+          event.preventDefault();
+          enabledHrefCalls.push('first');
+        },
+        () => {
+          enabledHrefCalls.push('second');
+        },
+      ],
+    });
+    enabledHrefRoot.querySelector('a')!.click();
+    expect(enabledHrefCalls).toEqual(['first', 'second']);
+
+    let enabledToClicks = 0;
+    const enabledToRoot = mountButton({
+      to: '/dashboard',
+      onClick: (event: MouseEvent) => {
+        event.preventDefault();
+        enabledToClicks += 1;
+      },
+    });
+    enabledToRoot.querySelector('a[data-nuxt-link-locale="true"]')!.click();
+    expect(enabledToClicks).toBe(1);
+  });
 });
